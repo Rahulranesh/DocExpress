@@ -1,0 +1,97 @@
+name: docxpress
+description: All-in-one document scanner, converter, compressor, and note-taking app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Material Design
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.3.0
+  shimmer: ^3.0.0
+  cached_network_image: ^3.3.1
+  flutter_svg: ^2.0.9
+  lottie: ^3.0.0
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # Navigation
+  go_router: ^13.0.1
+
+  # Networking
+  dio: ^5.4.0
+  connectivity_plus: ^5.0.2
+
+  # Local Storage
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  hive_flutter: ^1.1.0
+
+  # File Handling
+  image_picker: ^1.0.5
+  file_picker: ^6.1.1
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  share_plus: ^7.2.1
+  open_filex: ^4.3.4
+  mime: ^1.0.5
+
+  # Image Processing (for scan mode)
+  image: ^4.1.4
+  crop_your_image: ^1.0.2
+
+  # Camera
+  camera: ^0.10.5+7
+  permission_handler: ^11.1.0
+
+  # Utilities
+  intl: ^0.18.1
+  uuid: ^4.2.2
+  equatable: ^2.0.5
+  json_annotation: ^4.8.1
+  freezed_annotation: ^2.4.1
+  flutter_hooks: ^0.20.4
+  hooks_riverpod: ^2.4.9
+
+  # UI Components
+  flutter_staggered_grid_view: ^0.7.0
+  reorderable_grid_view: ^2.2.8
+  percent_indicator: ^4.2.3
+  flutter_slidable: ^3.0.1
+  pull_to_refresh: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.8
+  json_serializable: ^6.7.1
+  freezed: ^2.4.6
+  riverpod_generator: ^2.3.9
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
