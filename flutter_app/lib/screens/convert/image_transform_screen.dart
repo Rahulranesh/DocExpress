@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -61,30 +62,42 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
     });
 
     try {
-      final options = <String, dynamic>{
-        'operation': _transformType,
-      };
-
+      // For now, use a simple approach - create transform operations
+      final operations = <TransformOperation>[];
+      
       switch (_transformType) {
         case 'resize':
-          options['width'] = _resizeWidth;
-          options['height'] = _resizeHeight;
-          options['maintainAspectRatio'] = _maintainAspectRatio;
+          operations.add(TransformOperation(
+            type: 'resize',
+            options: {
+              'width': _resizeWidth,
+              'height': _resizeHeight,
+              'maintainAspectRatio': _maintainAspectRatio,
+            },
+          ));
           break;
         case 'rotate':
-          options['angle'] = _rotationAngle;
+          operations.add(TransformOperation(
+            type: 'rotate',
+            options: {'angle': _rotationAngle},
+          ));
           break;
         case 'crop':
-          options['x'] = _cropX;
-          options['y'] = _cropY;
-          options['width'] = _cropWidth;
-          options['height'] = _cropHeight;
+          operations.add(TransformOperation(
+            type: 'crop',
+            options: {
+              'x': _cropX,
+              'y': _cropY,
+              'width': _cropWidth,
+              'height': _cropHeight,
+            },
+          ));
           break;
       }
 
       await ref.read(conversionRepositoryProvider).transformImage(
-            _selectedFilePath!,
-            options,
+            fileId: _selectedFilePath!,
+            operations: operations,
           );
 
       _showSnackBar('Image transformed successfully!', isSuccess: true);

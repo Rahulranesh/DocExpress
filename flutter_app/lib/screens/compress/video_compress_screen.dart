@@ -105,13 +105,10 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
 
       // Call actual compression API
       await ref.read(compressionRepositoryProvider).compressVideo(
-        filePath: _selectedFilePath!,
-        options: {
-          'quality': _quality,
-          'resolution': _resolution,
-          'bitrate': _bitrate,
-          'removeAudio': _removeAudio,
-        },
+        fileId: _selectedFilePath!,
+        preset: _quality,
+        resolution: _resolution,
+        customBitrate: _bitrate.toString(),
       );
 
       _showSnackBar('Video compressed successfully!', isSuccess: true);

@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
-import '../../widgets/common_widgets.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -480,7 +480,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'System default',
                 isSelected: currentMode == ThemeMode.system,
                 onTap: () {
-                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeModeSetting.system);
                   Navigator.pop(context);
                 },
               ),
@@ -489,7 +489,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Light',
                 isSelected: currentMode == ThemeMode.light,
                 onTap: () {
-                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeModeSetting.light);
                   Navigator.pop(context);
                 },
               ),
@@ -498,7 +498,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Dark',
                 isSelected: currentMode == ThemeMode.dark,
                 onTap: () {
-                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeModeSetting.dark);
                   Navigator.pop(context);
                 },
               ),
@@ -956,7 +956,23 @@ class _StorageItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.bodyMedium),
+                Text(size, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

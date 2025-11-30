@@ -653,10 +653,33 @@ class ShimmerLoading extends StatelessWidget {
         .animate(onPlay: (controller) => controller.repeat())
         .shimmer(
           duration: 1200.ms,
-          color: highlightColor.withOpacity(0.5),
+              color: highlightColor.withOpacity(0.5),
         );
   }
 }
+
+    /// Backwards compatible small shimmer box used across screens
+    class ShimmerBox extends StatelessWidget {
+      final double width;
+      final double height;
+      final double borderRadius;
+
+      const ShimmerBox({
+        super.key,
+        this.width = double.infinity,
+        this.height = 16,
+        this.borderRadius = 8,
+      });
+
+      @override
+      Widget build(BuildContext context) {
+        return ShimmerLoading(
+          width: width,
+          height: height,
+          borderRadius: borderRadius,
+        );
+      }
+    }
 
 // ==================== Status & Badges ====================
 

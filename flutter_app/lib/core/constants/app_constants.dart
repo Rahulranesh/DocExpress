@@ -167,6 +167,7 @@ class ApiEndpoints {
   static const String logout = '/auth/logout';
   static const String changePassword = '/auth/change-password';
   static const String refreshToken = '/auth/refresh';
+  static const String deleteAccount = '/auth/delete-account';
 
   // Notes
   static const String notes = '/notes';

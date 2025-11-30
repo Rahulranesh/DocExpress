@@ -110,9 +110,9 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
     try {
       final pageOrder = _pages.map((p) => p.originalIndex).toList();
 
-      await ref.read(pdfRepositoryProvider).reorderPages(
-            _selectedFilePath!,
-            pageOrder,
+      await ref.read(conversionRepositoryProvider).reorderPdfPages(
+            fileId: _selectedFilePath!,
+            pageOrder: pageOrder,
           );
 
       _showSnackBar('PDF pages reordered successfully!', isSuccess: true);

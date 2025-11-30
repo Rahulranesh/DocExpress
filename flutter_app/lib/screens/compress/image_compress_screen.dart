@@ -79,16 +79,6 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
     });
 
     try {
-      final paths = _selectedImages.map((f) => f.path).toList();
-      final options = {
-        'quality': _quality,
-        'level': _compressionLevel,
-        'preserveMetadata': _preserveMetadata,
-        'resizeIfLarger': _resizeIfLarger,
-        'maxWidth': _maxWidth,
-        'maxHeight': _maxHeight,
-      };
-
       // Simulate progress
       for (int i = 0; i < _selectedImages.length; i++) {
         await Future.delayed(const Duration(milliseconds: 500));
@@ -97,10 +87,15 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
         });
       }
 
-      await ref.read(compressionRepositoryProvider).compressImages(
-            filePaths: paths,
-            options: options,
-          );
+      // For now, compress images one by one
+      for (final image in _selectedImages) {
+        await ref.read(compressionRepositoryProvider).compressImage(
+              fileId: image.path,
+              quality: _quality,
+              maxWidth: _maxWidth,
+              maxHeight: _maxHeight,
+            );
+      }
 
       _showSnackBar('Images compressed successfully!', isSuccess: true);
 
@@ -942,6 +937,92 @@ class _ImageFile {
   });
 }
 
+class _ResizePreset extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  const _ResizePreset({
+    required this.label,
+    required this.value,
+    this.isSelected = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(6),
+          color: isSelected ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(value, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CompressionLevelOption extends StatelessWidget {
   final String title;
-  final String description
+  final String description;
+  final IconData? icon;
+  final bool isSelected;
+  final VoidCallback? onTap;
+  final bool isDark;
+  final Color? color;
+
+  const _CompressionLevelOption({
+    required this.title,
+    required this.description,
+    this.icon,
+    this.isSelected = false,
+    this.onTap,
+    this.isDark = false,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? (color ?? Colors.blue) : Colors.grey.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? (color ?? Colors.blue).withOpacity(0.1) : Colors.transparent,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 8),
+            ],
+            Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(description, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -217,6 +217,7 @@ class FileModel extends Equatable {
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? sourceJob;
+  final bool isFavorite;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -232,6 +233,7 @@ class FileModel extends Equatable {
     this.extension,
     this.metadata,
     this.isDeleted = false,
+    this.isFavorite = false,
     this.deletedAt,
     this.sourceJob,
     required this.createdAt,
@@ -252,7 +254,8 @@ class FileModel extends Equatable {
       metadata: json['metadata'] != null
           ? FileMetadata.fromJson(json['metadata'])
           : null,
-      isDeleted: json['isDeleted'] ?? false,
+    isDeleted: json['isDeleted'] ?? false,
+    isFavorite: json['isFavorite'] ?? json['favorite'] ?? false,
       deletedAt: json['deletedAt'] != null
           ? DateTime.parse(json['deletedAt'])
           : null,
@@ -279,6 +282,7 @@ class FileModel extends Equatable {
       'extension': extension,
       'metadata': metadata?.toJson(),
       'isDeleted': isDeleted,
+      'isFavorite': isFavorite,
       'deletedAt': deletedAt?.toIso8601String(),
       'sourceJob': sourceJob,
       'createdAt': createdAt.toIso8601String(),
@@ -300,6 +304,9 @@ class FileModel extends Equatable {
   bool get isVideo => fileType == 'video';
   bool get isDocument => fileType == 'document';
 
+  /// Convenience alias expected by some UI files
+  bool get isFavoriteFlag => isFavorite;
+
   @override
   List<Object?> get props => [
         id,
@@ -308,8 +315,9 @@ class FileModel extends Equatable {
         mimeType,
         size,
         fileType,
-        isDeleted,
-        createdAt
+    isDeleted,
+    isFavorite,
+    createdAt
       ];
 }
 
@@ -478,6 +486,26 @@ class Job extends Equatable {
     if (completedAt == null) return null;
     return completedAt!.difference(createdAt);
   }
+
+  /// Compatibility getters used by some UI screens
+  List<String> get inputs => inputFiles.map((f) => f.originalName.isNotEmpty ? f.originalName : f.filename).toList();
+
+  List<String> get outputs => outputFiles.map((f) => f.originalName.isNotEmpty ? f.originalName : f.filename).toList();
+
+  double? get progress {
+    final val = options['progress'];
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    try {
+      return double.parse(val.toString());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? get error => errorMessage;
+
+  String get statusString => status.value;
 
   @override
   List<Object?> get props => [

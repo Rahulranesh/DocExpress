@@ -211,7 +211,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   }
 
   Widget _buildStatusCard(Job job, ThemeData theme, bool isDark) {
-    final statusInfo = _getStatusInfo(job.status);
+    final statusInfo = _getStatusInfo(job.status.toString());
 
     return Container(
       width: double.infinity,

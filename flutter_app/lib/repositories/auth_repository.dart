@@ -172,6 +172,20 @@ class AuthRepository {
     );
   }
 
+  /// Delete account
+  Future<void> deleteAccount() async {
+    try {
+      // Call delete account endpoint
+      await _apiService.delete(ApiEndpoints.deleteAccount);
+    } catch (_) {
+      // Continue with local cleanup even if API call fails
+    }
+
+    // Clear all stored data
+    await _storageService.deleteToken();
+    await _storageService.deleteUser();
+  }
+
   /// Logout
   Future<void> logout() async {
     try {

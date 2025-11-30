@@ -106,11 +106,8 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
         await Future.delayed(const Duration(milliseconds: 800));
 
         await ref.read(compressionRepositoryProvider).compressPdf(
-              filePath: _selectedFiles[i].path,
-              compressionLevel: _compressionLevel,
-              removeImages: _removeImages,
-              downsampleImages: _downsampleImages,
-              imageQuality: _imageQuality,
+              fileId: _selectedFiles[i].path,
+              quality: _compressionLevel,
             );
 
         setState(() {

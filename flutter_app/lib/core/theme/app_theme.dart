@@ -210,7 +210,7 @@ class AppTheme {
       ),
 
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: lightCard,
         surfaceTintColor: Colors.transparent,
@@ -413,7 +413,7 @@ class AppTheme {
       ),
 
       // Dialog Theme
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: lightSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -482,7 +482,7 @@ class AppTheme {
       ),
 
       // Tab Bar Theme
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: primaryColor,
         unselectedLabelColor: lightTextSecondary,
         indicatorColor: primaryColor,
@@ -541,7 +541,7 @@ class AppTheme {
       ),
 
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: darkCard,
         surfaceTintColor: Colors.transparent,
@@ -745,7 +745,7 @@ class AppTheme {
       ),
 
       // Dialog Theme
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: darkSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -814,7 +814,7 @@ class AppTheme {
       ),
 
       // Tab Bar Theme
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: primaryLight,
         unselectedLabelColor: darkTextSecondary,
         indicatorColor: primaryLight,

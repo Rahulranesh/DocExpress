@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -80,26 +81,28 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
     });
 
     try {
-      Map<String, dynamic> options = {
-        'mode': _splitMode,
-      };
-
+      // Create page ranges based on split mode
+      final List<PageRange> ranges = [];
+      
       switch (_splitMode) {
         case 'range':
-          options['startPage'] = _startPage;
-          options['endPage'] = _endPage;
+          ranges.add(PageRange(start: _startPage, end: _endPage));
           break;
         case 'single':
-          options['pages'] = _selectedPages;
+          for (int page in _selectedPages) {
+            ranges.add(PageRange(start: page, end: page));
+          }
           break;
         case 'interval':
-          options['interval'] = _intervalPages;
+          for (int i = 1; i <= 100; i += _intervalPages) {
+            ranges.add(PageRange(start: i, end: (i + _intervalPages - 1)));
+          }
           break;
       }
 
       await ref.read(conversionRepositoryProvider).splitPdf(
-            _selectedFilePath!,
-            options,
+            fileId: _selectedFilePath!,
+            ranges: ranges,
           );
 
       _showSnackBar('PDF split successfully!', isSuccess: true);

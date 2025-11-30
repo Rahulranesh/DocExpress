@@ -69,17 +69,25 @@ class ConversionRepository {
 
   /// Convert image format (e.g., PNG to JPG)
   Future<Job> convertImageFormat({
-    required String fileId,
+    String? fileId,
+    String? filePath,
     required String targetFormat,
     int quality = 80,
   }) async {
+    if (fileId == null && filePath == null) {
+      throw ArgumentError('Either fileId or filePath must be provided');
+    }
+
+    final data = <String, dynamic>{
+      if (fileId != null) 'fileId': fileId,
+      if (filePath != null) 'filePath': filePath,
+      'targetFormat': targetFormat,
+      'quality': quality,
+    };
+
     final response = await _apiService.post(
       ApiEndpoints.imageFormat,
-      data: {
-        'fileId': fileId,
-        'targetFormat': targetFormat,
-        'quality': quality,
-      },
+      data: data,
     );
 
     return _parseJobResponse(response, 'Failed to convert image format');
@@ -463,6 +471,38 @@ class ConversionRepository {
         'Legal',
         'A3',
       ];
+
+  /// Convenience method used by UI to convert documents by file paths.
+  /// Note: File upload should be handled in the UI layer before calling this method.
+  /// This method expects file IDs that have already been uploaded.
+  Future<Job> convertDocument({
+    required List<String> fileIds,
+    required String conversionType,
+  }) async {
+    // Route to appropriate conversion method based on type
+    switch (conversionType.toUpperCase()) {
+      case 'IMAGE_TO_PDF':
+        return imagesToPdf(fileIds: fileIds);
+      case 'IMAGE_TO_PPTX':
+        return imagesToPptx(fileIds: fileIds);
+      case 'IMAGE_TO_DOCX':
+        return imagesToDocx(fileIds: fileIds);
+      case 'PDF_TO_PPTX':
+        if (fileIds.length != 1) throw ArgumentError('PDF to PPTX requires exactly one file');
+        return pdfToPptx(fileId: fileIds.first);
+      case 'PDF_TO_DOCX':
+        if (fileIds.length != 1) throw ArgumentError('PDF to DOCX requires exactly one file');
+        return pdfToDocx(fileId: fileIds.first);
+      case 'DOCX_TO_PDF':
+        if (fileIds.length != 1) throw ArgumentError('DOCX to PDF requires exactly one file');
+        return docxToPdf(fileId: fileIds.first);
+      case 'PPTX_TO_PDF':
+        if (fileIds.length != 1) throw ArgumentError('PPTX to PDF requires exactly one file');
+        return pptxToPdf(fileId: fileIds.first);
+      default:
+        throw ArgumentError('Unknown conversion type: $conversionType');
+    }
+  }
 
   /// Get conversion type from input and output formats
   static String getConversionType(String inputType, String outputFormat) {

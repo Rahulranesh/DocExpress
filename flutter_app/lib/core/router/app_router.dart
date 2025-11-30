@@ -86,7 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.splash,
+    initialLocation: AppRoutes.home,
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final isLoggedIn = authState.isAuthenticated;

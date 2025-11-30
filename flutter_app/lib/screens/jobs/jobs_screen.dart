@@ -446,9 +446,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 Navigator.pop(context);
-                await ref.read(jobsListProvider.notifier).clearAllJobs();
+                ref.read(jobsListProvider.notifier).clearAllJobs();
                 _showSnackBar('History cleared', isSuccess: true);
               },
               style: ElevatedButton.styleFrom(
@@ -546,22 +546,22 @@ class _JobCard extends StatelessWidget {
                 ),
 
                 // Status badge
-                _StatusBadge(status: job.status),
+                _StatusBadge(status: job.status.toString()),
               ],
             ),
 
             // Progress bar for processing jobs
-            if (job.status == 'processing') ...[
+            if (job.status.toString().contains('processing')) ...[
               const SizedBox(height: 12),
               LinearProgressIndicator(
-                value: job.progress,
+                value: job.progress ?? 0.0,
                 backgroundColor:
                     isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
                 borderRadius: BorderRadius.circular(4),
               ),
               const SizedBox(height: 4),
               Text(
-                '${(job.progress * 100).toInt()}% complete',
+                '${((job.progress ?? 0.0) * 100).toInt()}% complete',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: isDark
                       ? AppTheme.darkTextSecondary

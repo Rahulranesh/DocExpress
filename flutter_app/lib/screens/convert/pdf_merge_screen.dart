@@ -83,8 +83,7 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
       final paths = _selectedPdfs.map((f) => f.path).toList();
 
       await ref.read(conversionRepositoryProvider).mergePdfs(
-        filePaths: paths,
-        outputName: _outputName,
+        fileIds: paths,
       );
 
       _showSnackBar('PDFs merged successfully!', isSuccess: true);

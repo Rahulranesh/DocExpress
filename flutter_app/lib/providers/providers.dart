@@ -236,6 +236,18 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Delete account
+  Future<bool> deleteAccount() async {
+    try {
+      await _authRepository.deleteAccount();
+      state = AuthState.unauthenticated();
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
   /// Clear error
   void clearError() {
     state = state.copyWith(error: null);
@@ -768,6 +780,36 @@ class JobsListNotifier extends StateNotifier<JobsListState> {
       state = state.copyWith(jobs: updatedJobs);
     }
   }
+
+  /// Delete a job (cancel/remove from list)
+  Future<void> deleteJob(String id) async {
+    try {
+      await _repository.cancelJob(id);
+      state = state.copyWith(jobs: state.jobs.where((j) => j.id != id).toList());
+    } catch (_) {
+      rethrow;
+    }
+  }
+
+  /// Retry a failed job
+  Future<void> retryJob(String id) async {
+    try {
+      final job = await _repository.retryJob(id);
+      final index = state.jobs.indexWhere((j) => j.id == id);
+      if (index != -1) {
+        final updated = [...state.jobs];
+        updated[index] = job;
+        state = state.copyWith(jobs: updated);
+      }
+    } catch (_) {
+      rethrow;
+    }
+  }
+
+  /// Clear all jobs from local state
+  void clearAllJobs() {
+    state = state.copyWith(jobs: []);
+  }
 }
 
 /// Jobs list provider
@@ -786,6 +828,54 @@ final recentJobsProvider = FutureProvider<List<Job>>((ref) async {
 final jobStatsProvider = FutureProvider<JobStats>((ref) async {
   final repository = ref.watch(jobsRepositoryProvider);
   return repository.getJobStats();
+});
+
+// ==================== Job Detail Provider ====================
+
+class JobDetailState {
+  final Job? job;
+  final bool isLoading;
+  final String? error;
+
+  const JobDetailState({this.job, this.isLoading = false, this.error});
+
+  JobDetailState copyWith({Job? job, bool? isLoading, String? error}) {
+    return JobDetailState(
+      job: job ?? this.job,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+class JobDetailNotifier extends StateNotifier<JobDetailState> {
+  final JobsRepository _repository;
+  final String jobId;
+
+  JobDetailNotifier(this._repository, this.jobId) : super(const JobDetailState());
+
+  Future<void> loadJob() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final job = await _repository.getJob(jobId);
+      state = state.copyWith(job: job, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> retryJob() async {
+    try {
+      await _repository.retryJob(jobId);
+      await loadJob();
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
+final jobDetailProvider = StateNotifierProvider.family<JobDetailNotifier, JobDetailState, String>((ref, jobId) {
+  return JobDetailNotifier(ref.watch(jobsRepositoryProvider), jobId);
 });
 
 // ==================== Selected Files for Operations ====================
@@ -857,6 +947,38 @@ final defaultQualityProvider = StateProvider<int>((ref) {
 /// Default format provider
 final defaultFormatProvider = StateProvider<String>((ref) {
   return 'pdf';
+});
+
+// ==================== Conversion Controller ====================
+
+/// A simple conversion controller used by screens to start conversions.
+/// This is intentionally lightweight — it forwards calls to the
+/// `ConversionRepository`. Implement upload and richer state as needed.
+class ConversionController extends StateNotifier<void> {
+  final ConversionRepository _repository;
+
+  ConversionController(this._repository) : super(null);
+
+  Future<Job> convertImagesToPdf(List<String> pathsOrIds, [Map<String, dynamic>? options]) async {
+    // If pathsOrIds look like ids (no path separators), assume they are ids
+    final looksLikeId = pathsOrIds.isNotEmpty && !pathsOrIds.first.contains('/');
+    if (looksLikeId) {
+      return _repository.imagesToPdf(fileIds: pathsOrIds);
+    }
+
+    // For local paths, we would need to upload first, but this is handled in the UI layer
+    // This method is kept for backwards compatibility
+    throw UnimplementedError('Use the UI layer to handle file uploads before conversion');
+  }
+}
+
+final conversionProvider = StateNotifierProvider<ConversionController, void>((ref) {
+  return ConversionController(ref.watch(conversionRepositoryProvider));
+});
+
+/// Alias provider for PDF-specific operations (backwards compatibility)
+final pdfRepositoryProvider = Provider<ConversionRepository>((ref) {
+  return ref.watch(conversionRepositoryProvider);
 });
 
 // ==================== Loading States ====================

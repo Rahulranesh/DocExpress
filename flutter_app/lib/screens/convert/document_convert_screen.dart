@@ -208,7 +208,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
 
       // Call actual conversion
       await ref.read(conversionRepositoryProvider).convertDocument(
-            filePaths: paths,
+            fileIds: paths,
             conversionType: widget.conversionType,
           );
 
