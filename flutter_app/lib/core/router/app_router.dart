@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,20 +81,59 @@ class AppRoutes {
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Auth state listenable for router refresh
+class AuthStateNotifier extends ChangeNotifier {
+  bool _isAuthenticated = false;
+  bool _isLoading = false;
+
+  bool get isAuthenticated => _isAuthenticated;
+  bool get isLoading => _isLoading;
+
+  void update({required bool isAuthenticated, required bool isLoading}) {
+    if (_isAuthenticated != isAuthenticated || _isLoading != isLoading) {
+      _isAuthenticated = isAuthenticated;
+      _isLoading = isLoading;
+      notifyListeners();
+    }
+  }
+}
+
+/// Global auth notifier for router
+final _routerAuthNotifier = AuthStateNotifier();
+
 /// Router provider
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  // Watch auth state and update the notifier
+  ref.listen<AuthState>(authStateProvider, (previous, next) {
+    debugPrint(
+        '🔄 Auth state changed - isAuthenticated: ${next.isAuthenticated}, isLoading: ${next.isLoading}');
+    _routerAuthNotifier.update(
+      isAuthenticated: next.isAuthenticated,
+      isLoading: next.isLoading,
+    );
+  });
+
+  // Initialize with current state
+  final authState = ref.read(authStateProvider);
+  _routerAuthNotifier.update(
+    isAuthenticated: authState.isAuthenticated,
+    isLoading: authState.isLoading,
+  );
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    refreshListenable: _routerAuthNotifier,
     redirect: (context, state) {
-      final isLoggedIn = authState.isAuthenticated;
-      final isLoading = authState.isLoading;
+      final isLoggedIn = _routerAuthNotifier.isAuthenticated;
+      final isLoading = _routerAuthNotifier.isLoading;
       final isAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.register;
       final isSplash = state.matchedLocation == AppRoutes.splash;
+
+      debugPrint(
+          '🚦 Redirect check - location: ${state.matchedLocation}, isLoggedIn: $isLoggedIn, isLoading: $isLoading');
 
       // Allow splash screen always
       if (isSplash) return null;
@@ -103,11 +143,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // If not logged in and not on auth route, redirect to login
       if (!isLoggedIn && !isAuthRoute) {
+        debugPrint('➡️ Redirecting to login');
         return AppRoutes.login;
       }
 
       // If logged in and on auth route, redirect to home
       if (isLoggedIn && isAuthRoute) {
+        debugPrint('➡️ Redirecting to home');
         return AppRoutes.home;
       }
 

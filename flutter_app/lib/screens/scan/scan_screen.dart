@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,7 +105,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -212,15 +215,53 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   Future<void> _processToPdf() async {
     setState(() => _isProcessing = true);
     try {
-      await ref.read(conversionProvider.notifier).convertImagesToPdf(
-        _capturedImages,
-        {'pageSize': 'A4', 'quality': 85},
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final conversionRepo = ref.read(conversionRepositoryProvider);
+
+      // Step 1: Upload all images and collect their IDs
+      final List<String> uploadedFileIds = [];
+      for (final imagePath in _capturedImages) {
+        final file = File(imagePath);
+        final uploadedFile = await filesRepo.uploadFile(file);
+        uploadedFileIds.add(uploadedFile.id);
+      }
+
+      // Step 2: Convert using server file IDs
+      final job = await conversionRepo.imagesToPdf(
+        fileIds: uploadedFileIds,
+        pageSize: 'A4',
       );
-      _showSnackBar('PDF created successfully!', isSuccess: true);
-      if (mounted) context.go(AppRoutes.jobs);
-    } catch (e) {
-      _showSnackBar('Failed to create PDF: $e', isSuccess: false);
-    } finally {
+
+      if (mounted) {
+        setState(() => _isProcessing = false);
+
+        // Show success dialog with options
+        final result = await ConversionSuccessDialog.show(
+          context,
+          title: 'PDF Creation Started!',
+          message: 'Your scanned images are being converted to PDF.',
+          jobId: job.id,
+        );
+
+        if (!mounted) return;
+
+        switch (result) {
+          case 'view_job':
+            context.openJobDetail(job.id);
+            break;
+          case 'history':
+            context.go(AppRoutes.jobs);
+            break;
+          case 'stay':
+            setState(() {
+              _capturedImages.clear();
+            });
+            break;
+        }
+      }
+    } on Exception catch (e) {
+      _showSnackBar('Failed to create PDF: ${_getErrorMessage(e)}',
+          isSuccess: false);
       if (mounted) setState(() => _isProcessing = false);
     }
   }
@@ -228,13 +269,46 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   Future<void> _processOcr() async {
     setState(() => _isProcessing = true);
     try {
-      // Call OCR conversion
-      await Future.delayed(const Duration(seconds: 2));
-      _showSnackBar('Text extracted successfully!', isSuccess: true);
-      if (mounted) context.go(AppRoutes.jobs);
-    } catch (e) {
-      _showSnackBar('OCR failed: $e', isSuccess: false);
-    } finally {
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final conversionRepo = ref.read(conversionRepositoryProvider);
+
+      // Upload first image for OCR
+      if (_capturedImages.isNotEmpty) {
+        final file = File(_capturedImages.first);
+        final uploadedFile = await filesRepo.uploadFile(file);
+        final job = await conversionRepo.imageToText(fileId: uploadedFile.id);
+
+        if (mounted) {
+          setState(() => _isProcessing = false);
+
+          // Show success dialog with options
+          final result = await ConversionSuccessDialog.show(
+            context,
+            title: 'OCR Started!',
+            message:
+                'Text is being extracted from your image. View the result when complete.',
+            jobId: job.id,
+          );
+
+          if (!mounted) return;
+
+          switch (result) {
+            case 'view_job':
+              context.openJobDetail(job.id);
+              break;
+            case 'history':
+              context.go(AppRoutes.jobs);
+              break;
+            case 'stay':
+              setState(() {
+                _capturedImages.clear();
+              });
+              break;
+          }
+        }
+      }
+    } on Exception catch (e) {
+      _showSnackBar('OCR failed: ${_getErrorMessage(e)}', isSuccess: false);
       if (mounted) setState(() => _isProcessing = false);
     }
   }
@@ -251,6 +325,22 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
   }
 
   @override
@@ -523,7 +613,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
+                color:
+                    isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,29 +79,57 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
     });
 
     try {
-      // Upload images first if needed, then call conversion API
-      final options = {
-        'pageSize': _pageSize,
-        'orientation': _orientation,
-        'quality': _quality.toInt(),
-        'fitToPage': _fitToPage,
-        'outputName': _pdfName,
-      };
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      await ref.read(conversionProvider.notifier).convertImagesToPdf(
-        _selectedImages,
-        options,
+      // Step 1: Upload all images and collect their IDs
+      final List<String> uploadedFileIds = [];
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final file = File(_selectedImages[i]);
+        final uploadedFile = await filesRepo.uploadFile(file);
+        uploadedFileIds.add(uploadedFile.id);
+      }
+
+      // Step 2: Convert using server file IDs
+      final job = await conversionRepo.imagesToPdf(
+        fileIds: uploadedFileIds,
+        pageSize: _pageSize,
       );
 
-      _showSnackBar('Conversion started! Check history for progress.', isSuccess: true);
-
-      // Navigate to jobs screen
       if (mounted) {
-        context.go(AppRoutes.jobs);
+        setState(() {
+          _isProcessing = false;
+        });
+
+        // Show success dialog with options
+        final result = await ConversionSuccessDialog.show(
+          context,
+          title: 'Conversion Started!',
+          message:
+              'Your images are being converted to PDF. You can view the progress or convert more files.',
+          jobId: job.id,
+        );
+
+        if (!mounted) return;
+
+        switch (result) {
+          case 'view_job':
+            context.openJobDetail(job.id);
+            break;
+          case 'history':
+            context.go(AppRoutes.jobs);
+            break;
+          case 'stay':
+            // Clear selection for next conversion
+            setState(() {
+              _selectedImages.clear();
+            });
+            break;
+        }
       }
-    } catch (e) {
-      _showSnackBar('Failed to start conversion: $e', isSuccess: false);
-    } finally {
+    } on Exception catch (e) {
+      _showSnackBar('Failed to start conversion: ${_getErrorMessage(e)}',
+          isSuccess: false);
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -108,11 +138,28 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
     }
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
+  }
+
   void _showSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -152,7 +199,9 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                            color: isDark
+                                ? AppTheme.darkDivider
+                                : AppTheme.lightDivider,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -213,7 +262,8 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
                               });
                               setState(() {});
                             },
-                            selectedColor: theme.colorScheme.primary.withOpacity(0.2),
+                            selectedColor:
+                                theme.colorScheme.primary.withOpacity(0.2),
                           );
                         }).toList(),
                       ),
@@ -233,7 +283,8 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
                           final isSelected = _orientation == orientation;
                           return ChoiceChip(
                             label: Text(
-                              orientation[0].toUpperCase() + orientation.substring(1),
+                              orientation[0].toUpperCase() +
+                                  orientation.substring(1),
                             ),
                             selected: isSelected,
                             onSelected: (selected) {
@@ -242,7 +293,8 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
                               });
                               setState(() {});
                             },
-                            selectedColor: theme.colorScheme.primary.withOpacity(0.2),
+                            selectedColor:
+                                theme.colorScheme.primary.withOpacity(0.2),
                           );
                         }).toList(),
                       ),
@@ -285,7 +337,8 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
                       // Fit to page toggle
                       SwitchListTile(
                         title: const Text('Fit to page'),
-                        subtitle: const Text('Resize images to fit page dimensions'),
+                        subtitle:
+                            const Text('Resize images to fit page dimensions'),
                         value: _fitToPage,
                         onChanged: (value) {
                           setSheetState(() {
@@ -509,14 +562,16 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
         final imagePath = _selectedImages[index];
         final fileName = imagePath.split('/').last;
 
-        return _ImageListItem(
-          key: ValueKey(imagePath),
-          imagePath: imagePath,
-          fileName: fileName,
-          index: index,
-          isDark: isDark,
-          onRemove: () => _removeImage(index),
-        ).animate().fadeIn(delay: (index * 50).ms, duration: 200.ms);
+        return Container(
+          key: ValueKey('image_$index\_$imagePath'),
+          child: _ImageListItem(
+            imagePath: imagePath,
+            fileName: fileName,
+            index: index,
+            isDark: isDark,
+            onRemove: () => _removeImage(index),
+          ),
+        );
       },
     );
   }
@@ -631,8 +686,8 @@ class _ImageListItem extends StatelessWidget {
               width: 48,
               height: 48,
               color: Colors.grey.withOpacity(0.2),
-              child: Image.asset(
-                imagePath,
+              child: Image.file(
+                File(imagePath),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Icon(

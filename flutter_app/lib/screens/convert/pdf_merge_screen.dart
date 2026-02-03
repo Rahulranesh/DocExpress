@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,20 +82,54 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
     });
 
     try {
-      final paths = _selectedPdfs.map((f) => f.path).toList();
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      await ref.read(conversionRepositoryProvider).mergePdfs(
-        fileIds: paths,
+      // Upload files first and get their IDs
+      final List<String> uploadedFileIds = [];
+      for (int i = 0; i < _selectedPdfs.length; i++) {
+        final file = File(_selectedPdfs[i].path);
+        final uploadedFile = await filesRepo.uploadFile(file);
+        uploadedFileIds.add(uploadedFile.id);
+      }
+
+      // Merge using server file IDs
+      final job = await conversionRepo.mergePdfs(
+        fileIds: uploadedFileIds,
       );
 
-      _showSnackBar('PDFs merged successfully!', isSuccess: true);
-
       if (mounted) {
-        context.go(AppRoutes.jobs);
+        setState(() {
+          _isProcessing = false;
+        });
+
+        // Show success dialog with options
+        final result = await ConversionSuccessDialog.show(
+          context,
+          title: 'PDF Merge Started!',
+          message: 'Your PDFs are being merged. View the result when complete.',
+          jobId: job.id,
+        );
+
+        if (!mounted) return;
+
+        switch (result) {
+          case 'view_job':
+            context.openJobDetail(job.id);
+            break;
+          case 'history':
+            context.go(AppRoutes.jobs);
+            break;
+          case 'stay':
+            setState(() {
+              _selectedPdfs.clear();
+            });
+            break;
+        }
       }
-    } catch (e) {
-      _showSnackBar('Failed to merge PDFs: $e', isSuccess: false);
-    } finally {
+    } on Exception catch (e) {
+      _showSnackBar('Failed to merge PDFs: ${_getErrorMessage(e)}',
+          isSuccess: false);
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -102,11 +138,28 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
     }
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
+  }
+
   void _showSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -123,8 +176,10 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Output File Name'),
           content: TextField(
             controller: controller,
@@ -145,7 +200,8 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  _outputName = controller.text.isEmpty ? 'merged' : controller.text;
+                  _outputName =
+                      controller.text.isEmpty ? 'merged' : controller.text;
                 });
                 Navigator.pop(context);
               },
@@ -359,13 +415,15 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
       },
       itemBuilder: (context, index) {
         final pdf = _selectedPdfs[index];
-        return _PdfListItem(
-          key: ValueKey(pdf.path),
-          pdf: pdf,
-          index: index,
-          isDark: isDark,
-          onRemove: () => _removePdf(index),
-        ).animate().fadeIn(delay: (index * 50).ms, duration: 200.ms);
+        return Container(
+          key: ValueKey('pdf_$index\_${pdf.path}'),
+          child: _PdfListItem(
+            pdf: pdf,
+            index: index,
+            isDark: isDark,
+            onRemove: () => _removePdf(index),
+          ),
+        );
       },
     );
   }
@@ -392,7 +450,8 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
               GestureDetector(
                 onTap: _showOutputNameDialog,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: isDark

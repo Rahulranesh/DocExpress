@@ -75,6 +75,17 @@ const retryJob = catchAsync(async (req, res) => {
 });
 
 /**
+ * Delete a job
+ * DELETE /api/jobs/:id
+ */
+const deleteJob = catchAsync(async (req, res) => {
+  console.log('🗑️ Delete job request for:', req.params.id, 'by user:', req.userId);
+  await jobService.deleteJob(req.params.id, req.userId);
+  console.log('🗑️ Job deleted successfully');
+  successResponse(res, { deleted: true }, 'Job deleted successfully');
+});
+
+/**
  * Get available job types
  * GET /api/jobs/types
  */
@@ -161,6 +172,7 @@ module.exports = {
   getJobStats,
   cancelJob,
   retryJob,
+  deleteJob,
   getJobTypes,
   getPendingCount,
   checkJobLimit,

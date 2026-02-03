@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,12 +26,16 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
   double _progress = 0.0;
 
   final List<_FormatOption> _formatOptions = [
-    _FormatOption('png', 'PNG', 'Lossless compression, supports transparency', Icons.image_rounded, Colors.blue),
-    _FormatOption('jpg', 'JPG', 'Best for photos, smaller file size', Icons.photo_rounded, Colors.orange),
-    _FormatOption('webp', 'WebP', 'Modern format, excellent compression', Icons.web_rounded, Colors.green),
-    _FormatOption('gif', 'GIF', 'Supports animation, limited colors', Icons.gif_rounded, Colors.purple),
-    _FormatOption('bmp', 'BMP', 'Uncompressed, large file size', Icons.grid_on_rounded, Colors.grey),
-    _FormatOption('tiff', 'TIFF', 'High quality, professional use', Icons.high_quality_rounded, Colors.teal),
+    _FormatOption('png', 'PNG', 'Lossless compression, supports transparency',
+        Icons.image_rounded, Colors.blue),
+    _FormatOption('jpg', 'JPG', 'Best for photos, smaller file size',
+        Icons.photo_rounded, Colors.orange),
+    _FormatOption('webp', 'WebP', 'Modern format, excellent compression',
+        Icons.web_rounded, Colors.green),
+    _FormatOption('gif', 'GIF', 'Supports animation, limited colors',
+        Icons.gif_rounded, Colors.purple),
+    _FormatOption('tiff', 'TIFF', 'High quality, professional use',
+        Icons.high_quality_rounded, Colors.teal),
   ];
 
   Future<void> _pickFiles() async {
@@ -78,13 +84,17 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
     });
 
     try {
-      for (int i = 0; i < _selectedFiles.length; i++) {
-        // Simulate conversion progress
-        await Future.delayed(const Duration(milliseconds: 500));
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final conversionRepo = ref.read(conversionRepositoryProvider);
 
-        // Call actual conversion API
-        await ref.read(conversionRepositoryProvider).convertImageFormat(
-          filePath: _selectedFiles[i],
+      for (int i = 0; i < _selectedFiles.length; i++) {
+        // Upload file first to get server file ID
+        final file = File(_selectedFiles[i]);
+        final uploadedFile = await filesRepo.uploadFile(file);
+
+        // Call actual conversion API with server file ID
+        await conversionRepo.convertImageFormat(
+          fileId: uploadedFile.id,
           targetFormat: _targetFormat,
           quality: _quality,
         );
@@ -101,12 +111,19 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
         context.go('/jobs');
       }
     } catch (e) {
-      _showSnackBar('Conversion failed: $e', isError: true);
+      _showSnackBar('Conversion failed: ${_getErrorMessage(e)}', isError: true);
     } finally {
       setState(() {
         _isConverting = false;
       });
     }
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error is Exception) {
+      return error.toString().replaceAll('Exception: ', '');
+    }
+    return error.toString();
   }
 
   void _showSnackBar(String message, {required bool isError}) {
@@ -141,9 +158,8 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
       body: _isConverting
           ? _buildConvertingView(theme, isDark)
           : _buildMainContent(theme, isDark),
-      bottomNavigationBar: _isConverting
-          ? null
-          : _buildBottomBar(theme, isDark),
+      bottomNavigationBar:
+          _isConverting ? null : _buildBottomBar(theme, isDark),
     );
   }
 
@@ -187,9 +203,8 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
               width: 200,
               child: LinearProgressIndicator(
                 value: _progress,
-                backgroundColor: isDark
-                    ? AppTheme.darkDivider
-                    : AppTheme.lightDivider,
+                backgroundColor:
+                    isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
                 borderRadius: BorderRadius.circular(4),
               ),
             ),

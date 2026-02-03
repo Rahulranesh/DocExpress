@@ -47,7 +47,12 @@ class PrimaryButton extends StatelessWidget {
                   Icon(icon, size: 20),
                   const SizedBox(width: 8),
                 ],
-                Text(text),
+                Flexible(
+                  child: Text(
+                    text,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
     );
@@ -102,7 +107,12 @@ class SecondaryButton extends StatelessWidget {
                   Icon(icon, size: 20),
                   const SizedBox(width: 8),
                 ],
-                Text(text),
+                Flexible(
+                  child: Text(
+                    text,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
     );
@@ -331,19 +341,22 @@ class QuickActionCard extends StatelessWidget {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(height: 6),
+            Flexible(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -471,7 +484,8 @@ class SearchField extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppTheme.radiusFull),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       ),
     );
   }
@@ -649,37 +663,35 @@ class ShimmerLoading extends StatelessWidget {
         color: baseColor,
         borderRadius: BorderRadius.circular(borderRadius),
       ),
-    )
-        .animate(onPlay: (controller) => controller.repeat())
-        .shimmer(
+    ).animate(onPlay: (controller) => controller.repeat()).shimmer(
           duration: 1200.ms,
-              color: highlightColor.withOpacity(0.5),
+          color: highlightColor.withOpacity(0.5),
         );
   }
 }
 
-    /// Backwards compatible small shimmer box used across screens
-    class ShimmerBox extends StatelessWidget {
-      final double width;
-      final double height;
-      final double borderRadius;
+/// Backwards compatible small shimmer box used across screens
+class ShimmerBox extends StatelessWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
 
-      const ShimmerBox({
-        super.key,
-        this.width = double.infinity,
-        this.height = 16,
-        this.borderRadius = 8,
-      });
+  const ShimmerBox({
+    super.key,
+    this.width = double.infinity,
+    this.height = 16,
+    this.borderRadius = 8,
+  });
 
-      @override
-      Widget build(BuildContext context) {
-        return ShimmerLoading(
-          width: width,
-          height: height,
-          borderRadius: borderRadius,
-        );
-      }
-    }
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerLoading(
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+    );
+  }
+}
 
 // ==================== Status & Badges ====================
 
@@ -887,7 +899,8 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -973,6 +986,126 @@ class ProgressCard extends StatelessWidget {
               minHeight: 8,
               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================== Conversion Success Dialog ====================
+
+/// Dialog shown after successful conversion
+class ConversionSuccessDialog extends StatelessWidget {
+  final String title;
+  final String message;
+  final String? jobId;
+  final VoidCallback? onViewJob;
+  final VoidCallback? onGoToHistory;
+  final VoidCallback? onStayHere;
+
+  const ConversionSuccessDialog({
+    super.key,
+    required this.title,
+    required this.message,
+    this.jobId,
+    this.onViewJob,
+    this.onGoToHistory,
+    this.onStayHere,
+  });
+
+  static Future<String?> show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    String? jobId,
+  }) {
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ConversionSuccessDialog(
+        title: title,
+        message: message,
+        jobId: jobId,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AlertDialog(
+      backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          // Success icon
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.successColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check_circle_rounded,
+              size: 48,
+              color: AppTheme.successColor,
+            ),
+          ).animate().scale(duration: 300.ms),
+          const SizedBox(height: 20),
+          // Title
+          Text(
+            title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          // Message
+          Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark
+                  ? AppTheme.darkTextSecondary
+                  : AppTheme.lightTextSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          // Buttons
+          if (jobId != null)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context, 'view_job'),
+                icon: const Icon(Icons.visibility_rounded),
+                label: const Text('View Result'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.pop(context, 'history'),
+              icon: const Icon(Icons.history_rounded),
+              label: const Text('Go to History'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'stay'),
+            child: const Text('Convert Another'),
           ),
         ],
       ),

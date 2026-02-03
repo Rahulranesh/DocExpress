@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,20 +110,29 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
     });
 
     try {
-      final pageOrder = _pages.map((p) => p.originalIndex).toList();
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      await ref.read(conversionRepositoryProvider).reorderPdfPages(
-            fileId: _selectedFilePath!,
-            pageOrder: pageOrder,
-          );
+      // Step 1: Upload the file
+      final file = File(_selectedFilePath!);
+      final uploadedFile = await filesRepo.uploadFile(file);
 
-      _showSnackBar('PDF pages reordered successfully!', isSuccess: true);
+      // Step 2: Reorder using server file ID
+      // Backend expects 1-indexed page numbers, so add 1 to each index
+      final pageOrder = _pages.map((p) => p.originalIndex + 1).toList();
+      await conversionRepo.reorderPdfPages(
+        fileId: uploadedFile.id,
+        pageOrder: pageOrder,
+      );
+
+      _showSnackBar('PDF pages reordering started!', isSuccess: true);
 
       if (mounted) {
         context.go('/jobs');
       }
-    } catch (e) {
-      _showSnackBar('Failed to reorder PDF: $e', isSuccess: false);
+    } on Exception catch (e) {
+      _showSnackBar('Failed to reorder PDF: ${_getErrorMessage(e)}',
+          isSuccess: false);
     } finally {
       if (mounted) {
         setState(() {
@@ -131,11 +142,28 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
     }
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
+  }
+
   void _showSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -209,9 +237,8 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _pages.isNotEmpty
-          ? _buildBottomBar(theme, isDark)
-          : null,
+      bottomNavigationBar:
+          _pages.isNotEmpty ? _buildBottomBar(theme, isDark) : null,
     );
   }
 
@@ -414,8 +441,8 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
               return AnimatedBuilder(
                 animation: animation,
                 builder: (context, child) {
-                  final double elevation = Tween<double>(begin: 0, end: 8)
-                      .evaluate(animation);
+                  final double elevation =
+                      Tween<double>(begin: 0, end: 8).evaluate(animation);
                   return Material(
                     elevation: elevation,
                     borderRadius: BorderRadius.circular(12),
@@ -427,12 +454,14 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
             },
             itemBuilder: (context, index) {
               final page = _pages[index];
-              return _PageItem(
-                key: ValueKey('page_${page.originalIndex}'),
-                page: page,
-                index: index,
-                isDark: isDark,
-              ).animate().fadeIn(delay: (index * 50).ms, duration: 200.ms);
+              return Container(
+                key: ValueKey('page_$index\_${page.originalIndex}'),
+                child: _PageItem(
+                  page: page,
+                  index: index,
+                  isDark: isDark,
+                ),
+              );
             },
           ),
         ),

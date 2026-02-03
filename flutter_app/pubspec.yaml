@@ -37,7 +37,7 @@ dependencies:
 
   # File Handling
   image_picker: ^1.0.5
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
   path_provider: ^2.1.1
   path: ^1.8.3
   share_plus: ^7.2.1
@@ -49,7 +49,7 @@ dependencies:
   crop_your_image: ^1.0.2
 
   # Camera
-  camera: ^0.10.5+7
+  camera: ^0.11.0
   permission_handler: ^11.1.0
 
   # Utilities
@@ -58,6 +58,7 @@ dependencies:
   equatable: ^2.0.5
   json_annotation: ^4.8.1
   freezed_annotation: ^2.4.1
+  url_launcher: ^6.2.4
   flutter_hooks: ^0.20.4
   hooks_riverpod: ^2.4.9
 
@@ -76,6 +77,15 @@ dev_dependencies:
   json_serializable: ^6.7.1
   freezed: ^2.4.6
   riverpod_generator: ^2.3.9
+  flutter_launcher_icons: ^0.13.1
+
+# App icon configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
 
 flutter:
   uses-material-design: true

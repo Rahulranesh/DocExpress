@@ -215,13 +215,6 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
             onTap: () => context.openPdfReorder(),
           ),
           _ConversionTool(
-            title: 'Extract Text',
-            description: 'Get text content from PDF',
-            icon: Icons.text_snippet_rounded,
-            color: Colors.teal,
-            onTap: () => context.openPdfExtractText(),
-          ),
-          _ConversionTool(
             title: 'Extract Images',
             description: 'Get images from PDF',
             icon: Icons.photo_library_rounded,
@@ -243,16 +236,6 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
             onTap: () => context.openDocumentConvert(
               type: 'DOCX_TO_PDF',
               title: 'DOCX to PDF',
-            ),
-          ),
-          _ConversionTool(
-            title: 'PDF to DOCX',
-            description: 'Convert PDF to Word document',
-            icon: Icons.description_rounded,
-            color: Colors.blue,
-            onTap: () => context.openDocumentConvert(
-              type: 'PDF_TO_DOCX',
-              title: 'PDF to DOCX',
             ),
           ),
           _ConversionTool(
@@ -288,13 +271,6 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
             icon: Icons.photo_size_select_small_rounded,
             color: Colors.blue,
             onTap: () => context.openCompressImage(),
-          ),
-          _ConversionTool(
-            title: 'Compress Video',
-            description: 'Reduce video file size',
-            icon: Icons.video_settings_rounded,
-            color: Colors.purple,
-            onTap: () => context.openCompressVideo(),
           ),
           _ConversionTool(
             title: 'Compress PDF',
@@ -425,9 +401,8 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppTheme.darkSurface
-                      : AppTheme.lightBackground,
+                  color:
+                      isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -460,10 +435,13 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
             return _ToolCard(
               tool: tool,
               isDark: isDark,
-            ).animate().fadeIn(
+            )
+                .animate()
+                .fadeIn(
                   delay: (250 + index * 100 + toolIndex * 50).ms,
                   duration: 300.ms,
-                ).scale(
+                )
+                .scale(
                   begin: const Offset(0.95, 0.95),
                   duration: 300.ms,
                 );

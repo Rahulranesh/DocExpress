@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/storage_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -16,15 +18,21 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _notificationsEnabled = true;
-  bool _autoDeleteCompleted = false;
-  String _defaultQuality = 'medium';
-  String _storageLocation = 'internal';
+  @override
+  void initState() {
+    super.initState();
+    // Load settings on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appSettingsNotifierProvider.notifier).loadSettings();
+    });
+  }
 
-  void _showSnackBar(String message) {
+  void _showSnackBar(String message, {bool isSuccess = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -57,7 +65,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 24),
 
                   // Appearance
-                  _buildSectionTitle('Appearance', Icons.palette_rounded, theme),
+                  _buildSectionTitle(
+                      'Appearance', Icons.palette_rounded, theme),
                   const SizedBox(height: 12),
                   _buildAppearanceSection(theme, isDark, themeMode),
                   const SizedBox(height: 24),
@@ -81,7 +90,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 24),
 
                   // Danger zone
-                  _buildSectionTitle('Danger Zone', Icons.warning_rounded, theme, color: AppTheme.errorColor),
+                  _buildSectionTitle(
+                      'Danger Zone', Icons.warning_rounded, theme,
+                      color: AppTheme.errorColor),
                   const SizedBox(height: 12),
                   _buildDangerSection(theme, isDark),
 
@@ -194,7 +205,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ).animate().fadeIn(delay: 100.ms, duration: 300.ms);
   }
 
-  Widget _buildSectionTitle(String title, IconData icon, ThemeData theme, {Color? color}) {
+  Widget _buildSectionTitle(String title, IconData icon, ThemeData theme,
+      {Color? color}) {
     return Row(
       children: [
         Icon(
@@ -214,7 +226,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildAppearanceSection(ThemeData theme, bool isDark, ThemeMode themeMode) {
+  Widget _buildAppearanceSection(
+      ThemeData theme, bool isDark, ThemeMode themeMode) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
@@ -239,6 +252,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildGeneralSection(ThemeData theme, bool isDark) {
+    final settings = ref.watch(appSettingsNotifierProvider);
+    final qualityLabel = _getQualityLabel(settings.defaultImageQuality);
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
@@ -254,11 +270,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: Icons.notifications_rounded,
             title: 'Notifications',
             subtitle: 'Get notified when jobs complete',
-            value: _notificationsEnabled,
+            value: settings.notificationsEnabled,
             onChanged: (value) {
-              setState(() {
-                _notificationsEnabled = value;
-              });
+              ref
+                  .read(appSettingsNotifierProvider.notifier)
+                  .setNotificationsEnabled(value);
+              _showSnackBar(
+                  value ? 'Notifications enabled' : 'Notifications disabled');
             },
             isDark: isDark,
           ),
@@ -268,7 +286,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _SettingsTile(
             icon: Icons.high_quality_rounded,
             title: 'Default Quality',
-            subtitle: _defaultQuality[0].toUpperCase() + _defaultQuality.substring(1),
+            subtitle: qualityLabel,
             onTap: () => _showQualitySelector(theme, isDark),
             isDark: isDark,
           ),
@@ -279,11 +297,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: Icons.auto_delete_rounded,
             title: 'Auto-delete Completed',
             subtitle: 'Remove completed jobs after 7 days',
-            value: _autoDeleteCompleted,
+            value: settings.autoDeleteCompleted,
             onChanged: (value) {
-              setState(() {
-                _autoDeleteCompleted = value;
-              });
+              ref
+                  .read(appSettingsNotifierProvider.notifier)
+                  .setAutoDeleteCompleted(value);
+              _showSnackBar(
+                  value ? 'Auto-delete enabled' : 'Auto-delete disabled');
             },
             isDark: isDark,
           ),
@@ -292,7 +312,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ).animate().fadeIn(delay: 250.ms, duration: 300.ms);
   }
 
+  String _getQualityLabel(int quality) {
+    if (quality >= 80) return 'High';
+    if (quality >= 50) return 'Medium';
+    return 'Low';
+  }
+
   Widget _buildStorageSection(ThemeData theme, bool isDark) {
+    final settings = ref.watch(appSettingsNotifierProvider);
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
@@ -307,7 +335,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _SettingsTile(
             icon: Icons.folder_rounded,
             title: 'Storage Location',
-            subtitle: _storageLocation == 'internal' ? 'Internal Storage' : 'External Storage',
+            subtitle: settings.storageLocation == 'internal'
+                ? 'Internal Storage'
+                : 'External Storage',
             onTap: () => _showStorageSelector(theme, isDark),
             isDark: isDark,
           ),
@@ -355,35 +385,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             isDark: isDark,
           ),
           _buildDivider(isDark),
-
           _SettingsTile(
             icon: Icons.description_rounded,
             title: 'Terms of Service',
-            onTap: () {},
+            onTap: () => _launchUrl('https://docxpress.app/terms'),
             isDark: isDark,
           ),
           _buildDivider(isDark),
-
           _SettingsTile(
             icon: Icons.privacy_tip_rounded,
             title: 'Privacy Policy',
-            onTap: () {},
+            onTap: () => _launchUrl('https://docxpress.app/privacy'),
             isDark: isDark,
           ),
           _buildDivider(isDark),
-
           _SettingsTile(
             icon: Icons.star_rounded,
             title: 'Rate the App',
-            onTap: () {},
+            onTap: () => _showRateAppDialog(theme, isDark),
             isDark: isDark,
           ),
           _buildDivider(isDark),
-
           _SettingsTile(
             icon: Icons.help_outline_rounded,
             title: 'Help & Support',
-            onTap: () {},
+            onTap: () => _showHelpDialog(theme, isDark),
             isDark: isDark,
           ),
         ],
@@ -412,7 +438,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             titleColor: AppTheme.errorColor,
           ),
           _buildDivider(isDark),
-
           _SettingsTile(
             icon: Icons.logout_rounded,
             title: 'Sign Out',
@@ -431,6 +456,119 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       height: 1,
       thickness: 1,
       color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showSnackBar('Could not open URL', isSuccess: false);
+      }
+    } catch (e) {
+      _showSnackBar('Could not open URL: $e', isSuccess: false);
+    }
+  }
+
+  void _showRateAppDialog(ThemeData theme, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Rate DocXpress'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                  'If you enjoy using DocXpress, please take a moment to rate it. Your feedback helps us improve!'),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  5,
+                  (index) => IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showSnackBar(
+                          'Thank you for your ${index + 1}-star rating!');
+                    },
+                    icon: Icon(
+                      Icons.star_rounded,
+                      color: Colors.amber,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Maybe Later'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showHelpDialog(ThemeData theme, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Help & Support'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.email_rounded),
+                title: const Text('Email Support'),
+                subtitle: const Text('support@docxpress.app'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('mailto:support@docxpress.app');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.bug_report_rounded),
+                title: const Text('Report a Bug'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl('mailto:bugs@docxpress.app?subject=Bug%20Report');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.lightbulb_rounded),
+                title: const Text('Feature Request'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchUrl(
+                      'mailto:feedback@docxpress.app?subject=Feature%20Request');
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -480,7 +618,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'System default',
                 isSelected: currentMode == ThemeMode.system,
                 onTap: () {
-                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeModeSetting.system);
+                  ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(ThemeModeSetting.system);
                   Navigator.pop(context);
                 },
               ),
@@ -489,7 +629,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Light',
                 isSelected: currentMode == ThemeMode.light,
                 onTap: () {
-                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeModeSetting.light);
+                  ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(ThemeModeSetting.light);
                   Navigator.pop(context);
                 },
               ),
@@ -498,7 +640,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: 'Dark',
                 isSelected: currentMode == ThemeMode.dark,
                 onTap: () {
-                  ref.read(themeModeProvider.notifier).setThemeMode(ThemeModeSetting.dark);
+                  ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(ThemeModeSetting.dark);
                   Navigator.pop(context);
                 },
               ),
@@ -511,6 +655,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showQualitySelector(ThemeData theme, bool isDark) {
+    final settings = ref.read(appSettingsNotifierProvider);
+    final currentQuality = settings.defaultImageQuality;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
@@ -541,39 +688,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.high_quality_rounded, color: Colors.green),
+                leading:
+                    const Icon(Icons.high_quality_rounded, color: Colors.green),
                 title: const Text('High'),
                 subtitle: const Text('Best quality, larger file size'),
-                trailing: _defaultQuality == 'high'
-                    ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                trailing: currentQuality >= 80
+                    ? Icon(Icons.check_circle_rounded,
+                        color: theme.colorScheme.primary)
                     : null,
                 onTap: () {
-                  setState(() => _defaultQuality = 'high');
+                  ref
+                      .read(appSettingsNotifierProvider.notifier)
+                      .setDefaultQuality(90);
                   Navigator.pop(context);
+                  _showSnackBar('Quality set to High');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.tune_rounded, color: Colors.orange),
                 title: const Text('Medium'),
                 subtitle: const Text('Balanced quality and size'),
-                trailing: _defaultQuality == 'medium'
-                    ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                trailing: currentQuality >= 50 && currentQuality < 80
+                    ? Icon(Icons.check_circle_rounded,
+                        color: theme.colorScheme.primary)
                     : null,
                 onTap: () {
-                  setState(() => _defaultQuality = 'medium');
+                  ref
+                      .read(appSettingsNotifierProvider.notifier)
+                      .setDefaultQuality(60);
                   Navigator.pop(context);
+                  _showSnackBar('Quality set to Medium');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.compress_rounded, color: Colors.red),
                 title: const Text('Low'),
                 subtitle: const Text('Smallest file size'),
-                trailing: _defaultQuality == 'low'
-                    ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                trailing: currentQuality < 50
+                    ? Icon(Icons.check_circle_rounded,
+                        color: theme.colorScheme.primary)
                     : null,
                 onTap: () {
-                  setState(() => _defaultQuality = 'low');
+                  ref
+                      .read(appSettingsNotifierProvider.notifier)
+                      .setDefaultQuality(30);
                   Navigator.pop(context);
+                  _showSnackBar('Quality set to Low');
                 },
               ),
               const SizedBox(height: 16),
@@ -585,6 +745,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showStorageSelector(ThemeData theme, bool isDark) {
+    final settings = ref.read(appSettingsNotifierProvider);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
@@ -617,23 +779,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.phone_android_rounded),
                 title: const Text('Internal Storage'),
-                trailing: _storageLocation == 'internal'
-                    ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                trailing: settings.storageLocation == 'internal'
+                    ? Icon(Icons.check_circle_rounded,
+                        color: theme.colorScheme.primary)
                     : null,
                 onTap: () {
-                  setState(() => _storageLocation = 'internal');
+                  ref
+                      .read(appSettingsNotifierProvider.notifier)
+                      .setStorageLocation('internal');
                   Navigator.pop(context);
+                  _showSnackBar('Storage set to Internal');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.sd_card_rounded),
                 title: const Text('External Storage'),
-                trailing: _storageLocation == 'external'
-                    ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                trailing: settings.storageLocation == 'external'
+                    ? Icon(Icons.check_circle_rounded,
+                        color: theme.colorScheme.primary)
                     : null,
                 onTap: () {
-                  setState(() => _storageLocation = 'external');
+                  ref
+                      .read(appSettingsNotifierProvider.notifier)
+                      .setStorageLocation('external');
                   Navigator.pop(context);
+                  _showSnackBar('Storage set to External');
                 },
               ),
               const SizedBox(height: 16),
@@ -663,7 +833,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                    color:
+                        isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -718,19 +889,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Clear Cache'),
-          content: const Text('This will clear 12.5 MB of cached data. Continue?'),
+          content: const Text('This will clear all cached data. Continue?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                _showSnackBar('Cache cleared successfully');
+                try {
+                  final storageService = ref.read(storageServiceProvider);
+                  await storageService.clearLocalStorage();
+                  _showSnackBar('Cache cleared successfully');
+                } catch (e) {
+                  _showSnackBar('Failed to clear cache', isSuccess: false);
+                }
               },
               child: const Text('Clear'),
             ),
@@ -745,11 +924,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Delete All Data'),
           content: const Text(
-            'This will permanently delete all your files, history, and settings. This action cannot be undone.',
+            'This will permanently delete all your local data, settings, and log you out. This action cannot be undone.',
           ),
           actions: [
             TextButton(
@@ -757,9 +938,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                _showSnackBar('All data deleted');
+                try {
+                  final storageService = ref.read(storageServiceProvider);
+                  await storageService.clearAll();
+                  _showSnackBar('All data deleted');
+                  // Log out the user after clearing data
+                  if (mounted) {
+                    await ref.read(authStateProvider.notifier).logout();
+                    context.goToLogin();
+                  }
+                } catch (e) {
+                  _showSnackBar('Failed to delete data', isSuccess: false);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
@@ -777,8 +969,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Sign Out'),
           content: const Text('Are you sure you want to sign out?'),
           actions: [
@@ -832,7 +1026,8 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: iconColor ?? (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary),
+        color: iconColor ??
+            (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary),
       ),
       title: Text(
         title,
@@ -889,7 +1084,8 @@ class _SettingsSwitch extends StatelessWidget {
     return SwitchListTile(
       secondary: Icon(
         icon,
-        color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+        color:
+            isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
       ),
       title: Text(
         title,
@@ -900,9 +1096,8 @@ class _SettingsSwitch extends StatelessWidget {
       subtitle: Text(
         subtitle,
         style: theme.textTheme.bodySmall?.copyWith(
-          color: isDark
-              ? AppTheme.darkTextSecondary
-              : AppTheme.lightTextSecondary,
+          color:
+              isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
         ),
       ),
       value: value,

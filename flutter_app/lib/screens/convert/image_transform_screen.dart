@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,7 +66,7 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
     try {
       // For now, use a simple approach - create transform operations
       final operations = <TransformOperation>[];
-      
+
       switch (_transformType) {
         case 'resize':
           operations.add(TransformOperation(
@@ -95,8 +97,13 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
           break;
       }
 
+      // Upload file first to get server file ID
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final file = File(_selectedFilePath!);
+      final uploadedFile = await filesRepo.uploadFile(file);
+
       await ref.read(conversionRepositoryProvider).transformImage(
-            fileId: _selectedFilePath!,
+            fileId: uploadedFile.id,
             operations: operations,
           );
 
@@ -105,7 +112,8 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
         context.pop();
       }
     } catch (e) {
-      _showSnackBar('Failed to transform image: $e', isSuccess: false);
+      _showSnackBar('Failed to transform image: ${_getErrorMessage(e)}',
+          isSuccess: false);
     } finally {
       if (mounted) {
         setState(() {
@@ -113,6 +121,13 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
         });
       }
     }
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error is Exception) {
+      return error.toString().replaceAll('Exception: ', '');
+    }
+    return error.toString();
   }
 
   void _showSnackBar(String message, {required bool isSuccess}) {
@@ -150,14 +165,12 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // File selection area
+            // File selection
             _buildFileSelectionArea(theme, isDark),
-
             const SizedBox(height: 24),
 
-            // Transform type selection
+            // Transform type selector
             _buildTransformTypeSelector(theme, isDark),
-
             const SizedBox(height: 24),
 
             // Options based on transform type
@@ -183,7 +196,7 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
       onTap: _pickImage,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
           borderRadius: BorderRadius.circular(16),
@@ -199,20 +212,45 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
+            // Show actual image preview when selected
+            if (_selectedFilePath != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  constraints: const BoxConstraints(
+                    maxHeight: 200,
+                    maxWidth: double.infinity,
+                  ),
+                  child: Image.file(
+                    File(_selectedFilePath!),
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 150,
+                        color: Colors.grey.withOpacity(0.2),
+                        child: Icon(
+                          Icons.broken_image_rounded,
+                          size: 48,
+                          color: theme.colorScheme.error,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.add_photo_alternate_rounded,
+                  size: 48,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-              child: Icon(
-                _selectedFilePath != null
-                    ? Icons.image_rounded
-                    : Icons.add_photo_alternate_rounded,
-                size: 48,
-                color: theme.colorScheme.primary,
-              ),
-            ),
             const SizedBox(height: 16),
             Text(
               _selectedFileName ?? 'Select an Image',
@@ -220,11 +258,13 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
             Text(
               _selectedFilePath != null
-                  ? 'Tap to change'
+                  ? 'Tap to change image'
                   : 'Tap to select an image file',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isDark

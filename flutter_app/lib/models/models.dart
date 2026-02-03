@@ -154,9 +154,7 @@ class Note extends Equatable {
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      tags: json['tags'] != null
-          ? List<String>.from(json['tags'])
-          : const [],
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : const [],
       pinned: json['pinned'] ?? false,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
@@ -254,11 +252,10 @@ class FileModel extends Equatable {
       metadata: json['metadata'] != null
           ? FileMetadata.fromJson(json['metadata'])
           : null,
-    isDeleted: json['isDeleted'] ?? false,
-    isFavorite: json['isFavorite'] ?? json['favorite'] ?? false,
-      deletedAt: json['deletedAt'] != null
-          ? DateTime.parse(json['deletedAt'])
-          : null,
+      isDeleted: json['isDeleted'] ?? false,
+      isFavorite: json['isFavorite'] ?? json['favorite'] ?? false,
+      deletedAt:
+          json['deletedAt'] != null ? DateTime.parse(json['deletedAt']) : null,
       sourceJob: json['sourceJob'],
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
@@ -315,9 +312,9 @@ class FileModel extends Equatable {
         mimeType,
         size,
         fileType,
-    isDeleted,
-    isFavorite,
-    createdAt
+        isDeleted,
+        isFavorite,
+        createdAt
       ];
 }
 
@@ -392,6 +389,8 @@ class Job extends Equatable {
       status: JobStatus.fromString(json['status'] ?? 'PENDING'),
       inputFiles: json['inputFiles'] != null
           ? (json['inputFiles'] as List)
+              .where(
+                  (f) => f != null) // Filter out null entries (deleted files)
               .map((f) => f is Map<String, dynamic>
                   ? FileModel.fromJson(f)
                   : FileModel(
@@ -410,6 +409,8 @@ class Job extends Equatable {
           : const [],
       outputFiles: json['outputFiles'] != null
           ? (json['outputFiles'] as List)
+              .where(
+                  (f) => f != null) // Filter out null entries (deleted files)
               .map((f) => f is Map<String, dynamic>
                   ? FileModel.fromJson(f)
                   : FileModel(
@@ -488,9 +489,13 @@ class Job extends Equatable {
   }
 
   /// Compatibility getters used by some UI screens
-  List<String> get inputs => inputFiles.map((f) => f.originalName.isNotEmpty ? f.originalName : f.filename).toList();
+  List<String> get inputs => inputFiles
+      .map((f) => f.originalName.isNotEmpty ? f.originalName : f.filename)
+      .toList();
 
-  List<String> get outputs => outputFiles.map((f) => f.originalName.isNotEmpty ? f.originalName : f.filename).toList();
+  List<String> get outputs => outputFiles
+      .map((f) => f.originalName.isNotEmpty ? f.originalName : f.filename)
+      .toList();
 
   double? get progress {
     final val = options['progress'];
@@ -871,6 +876,9 @@ class AppSettings {
   final String defaultOutputFormat;
   final String baseUrl;
   final bool onboardingCompleted;
+  final bool notificationsEnabled;
+  final bool autoDeleteCompleted;
+  final String storageLocation;
 
   const AppSettings({
     this.themeMode = ThemeModeSetting.system,
@@ -878,6 +886,9 @@ class AppSettings {
     this.defaultOutputFormat = 'pdf',
     this.baseUrl = 'http://localhost:3000/api',
     this.onboardingCompleted = false,
+    this.notificationsEnabled = true,
+    this.autoDeleteCompleted = false,
+    this.storageLocation = 'internal',
   });
 
   AppSettings copyWith({
@@ -886,6 +897,9 @@ class AppSettings {
     String? defaultOutputFormat,
     String? baseUrl,
     bool? onboardingCompleted,
+    bool? notificationsEnabled,
+    bool? autoDeleteCompleted,
+    String? storageLocation,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -893,6 +907,9 @@ class AppSettings {
       defaultOutputFormat: defaultOutputFormat ?? this.defaultOutputFormat,
       baseUrl: baseUrl ?? this.baseUrl,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      autoDeleteCompleted: autoDeleteCompleted ?? this.autoDeleteCompleted,
+      storageLocation: storageLocation ?? this.storageLocation,
     );
   }
 }

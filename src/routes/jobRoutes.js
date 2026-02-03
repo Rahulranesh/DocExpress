@@ -35,6 +35,9 @@ router.get('/:id', validateJobId, jobController.getJob);
 // Cancel a pending job
 router.post('/:id/cancel', validateJobId, jobController.cancelJob);
 
+// Delete a job
+router.delete('/:id', validateJobId, jobController.deleteJob);
+
 // Retry a failed job
 router.post('/:id/retry', validateJobId, jobController.retryJob);
 

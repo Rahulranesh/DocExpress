@@ -151,51 +151,63 @@ class _MainShellState extends ConsumerState<MainShell> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _NavBarItem(
-                  icon: Icons.home_outlined,
-                  selectedIcon: Icons.home,
-                  label: 'Home',
-                  isSelected: selectedIndex == 0,
-                  onTap: () => _onDestinationSelected(0),
+                Expanded(
+                  child: _NavBarItem(
+                    icon: Icons.home_outlined,
+                    selectedIcon: Icons.home,
+                    label: 'Home',
+                    isSelected: selectedIndex == 0,
+                    onTap: () => _onDestinationSelected(0),
+                  ),
                 ),
-                _NavBarItem(
-                  icon: Icons.note_outlined,
-                  selectedIcon: Icons.note,
-                  label: 'Notes',
-                  isSelected: selectedIndex == 1,
-                  onTap: () => _onDestinationSelected(1),
+                Expanded(
+                  child: _NavBarItem(
+                    icon: Icons.note_outlined,
+                    selectedIcon: Icons.note,
+                    label: 'Notes',
+                    isSelected: selectedIndex == 1,
+                    onTap: () => _onDestinationSelected(1),
+                  ),
                 ),
-                _NavBarItem(
-                  icon: Icons.folder_outlined,
-                  selectedIcon: Icons.folder,
-                  label: 'Files',
-                  isSelected: selectedIndex == 2,
-                  onTap: () => _onDestinationSelected(2),
+                Expanded(
+                  child: _NavBarItem(
+                    icon: Icons.folder_outlined,
+                    selectedIcon: Icons.folder,
+                    label: 'Files',
+                    isSelected: selectedIndex == 2,
+                    onTap: () => _onDestinationSelected(2),
+                  ),
                 ),
-                _NavBarItem(
-                  icon: Icons.transform_outlined,
-                  selectedIcon: Icons.transform,
-                  label: 'Convert',
-                  isSelected: selectedIndex == 3,
-                  onTap: () => _onDestinationSelected(3),
+                Expanded(
+                  child: _NavBarItem(
+                    icon: Icons.transform_outlined,
+                    selectedIcon: Icons.transform,
+                    label: 'Convert',
+                    isSelected: selectedIndex == 3,
+                    onTap: () => _onDestinationSelected(3),
+                  ),
                 ),
-                _NavBarItem(
-                  icon: Icons.history_outlined,
-                  selectedIcon: Icons.history,
-                  label: 'History',
-                  isSelected: selectedIndex == 4,
-                  onTap: () => _onDestinationSelected(4),
+                Expanded(
+                  child: _NavBarItem(
+                    icon: Icons.history_outlined,
+                    selectedIcon: Icons.history,
+                    label: 'History',
+                    isSelected: selectedIndex == 4,
+                    onTap: () => _onDestinationSelected(4),
+                  ),
                 ),
-                _NavBarItem(
-                  icon: Icons.settings_outlined,
-                  selectedIcon: Icons.settings,
-                  label: 'Settings',
-                  isSelected: selectedIndex == 5,
-                  onTap: () => _onDestinationSelected(5),
+                Expanded(
+                  child: _NavBarItem(
+                    icon: Icons.settings_outlined,
+                    selectedIcon: Icons.settings,
+                    label: 'Settings',
+                    isSelected: selectedIndex == 5,
+                    onTap: () => _onDestinationSelected(5),
+                  ),
                 ),
               ],
             ),
@@ -225,15 +237,18 @@ class _NavBarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = isSelected
-        ? theme.colorScheme.primary
-        : theme.textTheme.bodySmall?.color?.withOpacity(0.6);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Ensure icons and text are always visible - use solid colors
+    final selectedColor = theme.colorScheme.primary;
+    final unselectedColor = isDark ? Colors.white70 : Colors.grey.shade700;
+    final color = isSelected ? selectedColor : unselectedColor;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary.withOpacity(0.1)
@@ -245,11 +260,9 @@ class _NavBarItem extends StatelessWidget {
           children: [
             Icon(
               isSelected ? selectedIcon : icon,
-              size: 24,
+              size: 22,
               color: color,
-            )
-                .animate(target: isSelected ? 1 : 0)
-                .scale(
+            ).animate(target: isSelected ? 1 : 0).scale(
                   begin: const Offset(1, 1),
                   end: const Offset(1.1, 1.1),
                   duration: 150.ms,
@@ -258,16 +271,15 @@ class _NavBarItem extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: color,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
-      )
-          .animate(target: isSelected ? 1 : 0)
-          .fadeIn(duration: 200.ms),
+      ),
     );
   }
 }

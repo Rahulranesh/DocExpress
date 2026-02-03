@@ -125,12 +125,14 @@ const downloadByKey = catchAsync(async (req, res) => {
 });
 
 /**
- * Soft delete file
+ * Delete file (hard delete)
  * DELETE /api/files/:id
  */
 const deleteFile = catchAsync(async (req, res) => {
-  const file = await fileService.softDeleteFile(req.params.id, req.userId);
-  successResponse(res, { file }, 'File deleted successfully');
+  console.log('🗑️ Delete file request for:', req.params.id, 'by user:', req.userId);
+  const result = await fileService.hardDeleteFile(req.params.id, req.userId);
+  console.log('🗑️ Delete file result:', result);
+  successResponse(res, result, 'File deleted successfully');
 });
 
 /**
@@ -166,6 +168,36 @@ const getFilesByIds = catchAsync(async (req, res) => {
   successResponse(res, { files });
 });
 
+/**
+ * Rename file
+ * PATCH /api/files/:id/rename
+ */
+const renameFile = catchAsync(async (req, res) => {
+  const { newName } = req.body;
+
+  if (!newName || typeof newName !== 'string' || newName.trim().length === 0) {
+    throw AppError.badRequest('New name is required');
+  }
+
+  const file = await fileService.updateFileMeta(req.params.id, req.userId, {
+    originalName: newName.trim(),
+  });
+
+  successResponse(res, { file }, 'File renamed successfully');
+});
+
+/**
+ * Toggle favorite status
+ * PATCH /api/files/:id/favorite
+ */
+const toggleFavorite = catchAsync(async (req, res) => {
+  const file = await fileService.getFileById(req.params.id, req.userId);
+  file.isFavorite = !file.isFavorite;
+  await file.save();
+
+  successResponse(res, { file }, file.isFavorite ? 'Added to favorites' : 'Removed from favorites');
+});
+
 module.exports = {
   uploadSingle,
   uploadMultiple,
@@ -177,4 +209,6 @@ module.exports = {
   permanentDeleteFile,
   getFileStats,
   getFilesByIds,
+  renameFile,
+  toggleFavorite,
 };

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -178,6 +180,85 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
     });
   }
 
+  void _editOutputName(int index) async {
+    final file = _selectedFiles[index];
+    final info = _conversionInfo;
+
+    // Get the base name without extension
+    final originalName = file.outputName;
+    final extension = _getOutputExtension(info.targetType);
+    final baseName = originalName.replaceAll(RegExp(r'\.[^.]+$'), '');
+
+    final controller = TextEditingController(text: baseName);
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Output File'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Original: ${file.name}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.lightTextSecondary,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Output filename',
+                suffixText: '.$extension',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onSubmitted: (value) => Navigator.of(context).pop(value),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && mounted) {
+      setState(() {
+        _selectedFiles[index].outputName = '$result.$extension';
+      });
+    }
+  }
+
+  String _getOutputExtension(String targetType) {
+    switch (targetType.toUpperCase()) {
+      case 'PDF':
+        return 'pdf';
+      case 'DOCX':
+        return 'docx';
+      case 'PPTX':
+        return 'pptx';
+      case 'TEXT':
+        return 'txt';
+      case 'IMAGE':
+        return 'png';
+      default:
+        return 'file';
+    }
+  }
+
   void _clearAllFiles() {
     setState(() {
       _selectedFiles.clear();
@@ -196,30 +277,85 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
     });
 
     try {
-      final paths = _selectedFiles.map((f) => f.path).toList();
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final conversionRepo = ref.read(conversionRepositoryProvider);
+      final totalSteps = _selectedFiles.length * 2; // Upload + Convert
+      int currentStep = 0;
+      final info = _conversionInfo;
 
-      // Simulate progress
+      // Upload files first and get their IDs
+      final List<String> uploadedFileIds = [];
       for (int i = 0; i < _selectedFiles.length; i++) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        setState(() {
-          _progress = (i + 1) / _selectedFiles.length;
-        });
+        final file = File(_selectedFiles[i].path);
+        final uploadedFile = await filesRepo.uploadFile(
+          file,
+          onProgress: (sent, total) {
+            if (mounted) {
+              setState(() {
+                _progress = (currentStep + (sent / total) * 0.5) / totalSteps;
+              });
+            }
+          },
+        );
+        uploadedFileIds.add(uploadedFile.id);
+        currentStep++;
+        if (mounted) {
+          setState(() {
+            _progress = currentStep / totalSteps;
+          });
+        }
       }
 
-      // Call actual conversion
-      await ref.read(conversionRepositoryProvider).convertDocument(
-            fileIds: paths,
-            conversionType: widget.conversionType,
-          );
+      // Get output name from first file (for single-file conversions)
+      final outputExt = _getOutputExtension(info.targetType);
+      final firstFile = _selectedFiles.first;
+      final outputName = firstFile.outputName.replaceAll(
+        RegExp(r'\.[^.]+$'),
+        '.$outputExt',
+      );
 
-      _showSnackBar('Conversion completed successfully!', isSuccess: true);
+      // Call actual conversion with server file IDs and output name
+      final job = await conversionRepo.convertDocument(
+        fileIds: uploadedFileIds,
+        conversionType: widget.conversionType,
+        outputName: outputName,
+      );
 
       if (mounted) {
-        context.go(AppRoutes.jobs);
+        setState(() {
+          _progress = 1.0;
+          _isProcessing = false;
+        });
+
+        // Show success dialog with options
+        final result = await ConversionSuccessDialog.show(
+          context,
+          title: 'Conversion Started!',
+          message:
+              'Your files are being converted. You can view the progress or convert more files.',
+          jobId: job.id,
+        );
+
+        if (!mounted) return;
+
+        switch (result) {
+          case 'view_job':
+            context.openJobDetail(job.id);
+            break;
+          case 'history':
+            context.go(AppRoutes.jobs);
+            break;
+          case 'stay':
+            // Clear selection for next conversion
+            setState(() {
+              _selectedFiles.clear();
+            });
+            break;
+        }
       }
-    } catch (e) {
-      _showSnackBar('Conversion failed: $e', isSuccess: false);
-    } finally {
+    } on Exception catch (e) {
+      _showSnackBar('Conversion failed: ${_getErrorMessage(e)}',
+          isSuccess: false);
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -228,11 +364,28 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
     }
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
+  }
+
   void _showSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -278,7 +431,8 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
       body: _isProcessing
           ? _buildProcessingView(theme, isDark, info)
           : _buildMainContent(theme, isDark, info),
-      bottomNavigationBar: !_isProcessing ? _buildBottomBar(theme, isDark, info) : null,
+      bottomNavigationBar:
+          !_isProcessing ? _buildBottomBar(theme, isDark, info) : null,
     );
   }
 
@@ -344,8 +498,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
     );
   }
 
-  Widget _buildMainContent(
-      ThemeData theme, bool isDark, _ConversionInfo info) {
+  Widget _buildMainContent(ThemeData theme, bool isDark, _ConversionInfo info) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -476,7 +629,6 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           ),
         ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
         const SizedBox(height: 12),
-
         if (_selectedFiles.isEmpty)
           _buildDropZone(theme, isDark, info)
         else
@@ -552,6 +704,11 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
               ..._selectedFiles.asMap().entries.map((entry) {
                 final index = entry.key;
                 final file = entry.value;
+                final outputExt = _getOutputExtension(info.targetType);
+                final expectedOutputName = file.outputName.replaceAll(
+                  RegExp(r'\.[^.]+$'),
+                  '.$outputExt',
+                );
                 return Column(
                   children: [
                     ListTile(
@@ -572,27 +729,69 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
-                      subtitle: Text(
-                        _formatFileSize(file.size),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isDark
-                              ? AppTheme.darkTextSecondary
-                              : AppTheme.lightTextSecondary,
-                        ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formatFileSize(file.size),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.lightTextSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 12,
+                                color: info.color,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  expectedOutputName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: info.color,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      trailing: IconButton(
-                        onPressed: () => _removeFile(index),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: AppTheme.errorColor,
-                        ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () => _editOutputName(index),
+                            icon: Icon(
+                              Icons.edit_rounded,
+                              color: info.color,
+                              size: 20,
+                            ),
+                            tooltip: 'Rename output',
+                          ),
+                          IconButton(
+                            onPressed: () => _removeFile(index),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: AppTheme.errorColor,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (index < _selectedFiles.length - 1)
                       Divider(
                         height: 1,
-                        color:
-                            isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                        color: isDark
+                            ? AppTheme.darkDivider
+                            : AppTheme.lightDivider,
                       ),
                   ],
                 );
@@ -720,12 +919,14 @@ class _SelectedFile {
   final String path;
   final String name;
   final int size;
+  String outputName; // Editable output name
 
-  const _SelectedFile({
+  _SelectedFile({
     required this.path,
     required this.name,
     required this.size,
-  });
+    String? outputName,
+  }) : outputName = outputName ?? name;
 }
 
 class _SummaryItem extends StatelessWidget {

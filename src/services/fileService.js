@@ -148,18 +148,22 @@ class FileService {
    * Hard delete a file (removes from DB and disk)
    */
   async hardDeleteFile(fileId, userId) {
+    console.log('🔧 hardDeleteFile called with fileId:', fileId, 'userId:', userId);
     const file = await this.getFileById(fileId, userId, true);
+    console.log('🔧 File found:', file._id, file.originalName);
 
     // Remove from disk
     try {
       await fs.unlink(file.storagePath);
+      console.log('🔧 File removed from disk:', file.storagePath);
     } catch (err) {
       // Log but don't throw if file doesn't exist on disk
       console.warn(`Failed to delete file from disk: ${file.storagePath}`, err.message);
     }
 
     // Remove from database
-    await File.deleteOne({ _id: fileId });
+    const deleteResult = await File.deleteOne({ _id: fileId });
+    console.log('🔧 Database delete result:', deleteResult);
 
     return { deleted: true, fileId };
   }

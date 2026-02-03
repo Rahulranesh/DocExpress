@@ -20,12 +20,19 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isSearching = false;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    _loadNotes();
     _scrollController.addListener(_onScroll);
+    // Load on next frame to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasLoadedOnce) {
+        _loadNotes();
+        _hasLoadedOnce = true;
+      }
+    });
   }
 
   @override
@@ -60,7 +67,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     );
 
     if (confirmed == true) {
-      final success = await ref.read(notesListProvider.notifier).deleteNote(note.id);
+      final success =
+          await ref.read(notesListProvider.notifier).deleteNote(note.id);
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -88,9 +96,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                   hintText: 'Search notes...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(
-                    color: isDark
-                        ? AppTheme.darkTextHint
-                        : AppTheme.lightTextHint,
+                    color:
+                        isDark ? AppTheme.darkTextHint : AppTheme.lightTextHint,
                   ),
                 ),
                 style: theme.textTheme.bodyLarge,
@@ -207,7 +214,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             sliver: SliverToBoxAdapter(
               child: Row(
                 children: [
-                  const Icon(Icons.push_pin, size: 16, color: AppTheme.primaryColor),
+                  const Icon(Icons.push_pin,
+                      size: 16, color: AppTheme.primaryColor),
                   const SizedBox(width: 8),
                   Text(
                     'Pinned',
@@ -235,7 +243,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       onTogglePin: () {
                         ref.read(notesListProvider.notifier).togglePin(note.id);
                       },
-                    ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.1),
+                    )
+                        .animate()
+                        .fadeIn(delay: (50 * index).ms)
+                        .slideX(begin: 0.1),
                   );
                 },
                 childCount: pinnedNotes.length,
@@ -278,7 +289,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       onTogglePin: () {
                         ref.read(notesListProvider.notifier).togglePin(note.id);
                       },
-                    ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.1),
+                    )
+                        .animate()
+                        .fadeIn(delay: (50 * index).ms)
+                        .slideX(begin: 0.1),
                   );
                 },
                 childCount: unpinnedNotes.length,
@@ -374,9 +388,8 @@ class _NoteCard extends StatelessWidget {
                 ),
                 Icon(
                   Icons.chevron_right,
-                  color: isDark
-                      ? AppTheme.darkTextHint
-                      : AppTheme.lightTextHint,
+                  color:
+                      isDark ? AppTheme.darkTextHint : AppTheme.lightTextHint,
                 ),
               ],
             ),
@@ -435,9 +448,8 @@ class _NoteCard extends StatelessWidget {
                 Text(
                   _formatDate(note.updatedAt),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: isDark
-                        ? AppTheme.darkTextHint
-                        : AppTheme.lightTextHint,
+                    color:
+                        isDark ? AppTheme.darkTextHint : AppTheme.lightTextHint,
                   ),
                 ),
               ],

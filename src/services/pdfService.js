@@ -4,6 +4,7 @@
  */
 
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+const pdfParse = require('pdf-parse');
 const fs = require('fs').promises;
 const path = require('path');
 const sharp = require('sharp');
@@ -142,35 +143,24 @@ class PdfService {
    */
   async extractText(inputPath, outputPath) {
     try {
-      // NOTE: pdf-lib doesn't support text extraction
-      // This is a stub implementation that returns page info
-      // For full text extraction, consider using pdf-parse or similar
-      // TODO: Implement proper text extraction with pdf-parse library
-
-      const pdfBytes = await fs.readFile(inputPath);
-      const pdf = await PDFDocument.load(pdfBytes);
-      const pageCount = pdf.getPageCount();
-
-      // Stub: Generate placeholder text
-      let extractedText = `PDF Text Extraction\n`;
-      extractedText += `===================\n`;
-      extractedText += `Total Pages: ${pageCount}\n\n`;
-      extractedText += `[Note: Full text extraction requires pdf-parse library]\n`;
-      extractedText += `[TODO: Implement proper OCR/text extraction]\n`;
-
-      // For each page, add placeholder
-      for (let i = 0; i < pageCount; i++) {
-        const page = pdf.getPage(i);
-        const { width, height } = page.getSize();
-        extractedText += `\n--- Page ${i + 1} (${Math.round(width)}x${Math.round(height)}) ---\n`;
-        extractedText += `[Page content placeholder]\n`;
+      const pdfBuffer = await fs.readFile(inputPath);
+      
+      // Use pdf-parse to extract text
+      const pdfData = await pdfParse(pdfBuffer);
+      const extractedText = pdfData.text || '';
+      const pageCount = pdfData.numpages || 0;
+      
+      // If no text was extracted, provide a message
+      let finalText = extractedText.trim();
+      if (!finalText) {
+        finalText = 'No text could be extracted from this PDF. The PDF may contain only images or scanned content.';
       }
 
-      await fs.writeFile(outputPath, extractedText, 'utf8');
+      await fs.writeFile(outputPath, finalText, 'utf8');
 
       return {
         path: outputPath,
-        text: extractedText,
+        text: finalText,
         pageCount,
       };
     } catch (error) {

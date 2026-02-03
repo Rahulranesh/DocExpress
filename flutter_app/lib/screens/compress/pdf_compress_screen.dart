@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,27 +104,75 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
     });
 
     try {
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final compressionRepo = ref.read(compressionRepositoryProvider);
+      final totalSteps = _selectedFiles.length * 2; // Upload + Compress
+      int currentStep = 0;
+      String? lastJobId;
+
       for (int i = 0; i < _selectedFiles.length; i++) {
-        await Future.delayed(const Duration(milliseconds: 800));
+        // Step 1: Upload the file
+        final file = File(_selectedFiles[i].path);
+        final uploadedFile = await filesRepo.uploadFile(
+          file,
+          onProgress: (sent, total) {
+            if (mounted) {
+              setState(() {
+                _progress = (currentStep + (sent / total) * 0.5) / totalSteps;
+              });
+            }
+          },
+        );
+        currentStep++;
 
-        await ref.read(compressionRepositoryProvider).compressPdf(
-              fileId: _selectedFiles[i].path,
-              quality: _compressionLevel,
-            );
+        // Step 2: Compress using the server file ID
+        final job = await compressionRepo.compressPdf(
+          fileId: uploadedFile.id,
+          quality: _compressionLevel,
+        );
+        lastJobId = job.id;
+        currentStep++;
 
-        setState(() {
-          _progress = (i + 1) / _selectedFiles.length;
-        });
+        if (mounted) {
+          setState(() {
+            _progress = currentStep / totalSteps;
+          });
+        }
       }
-
-      _showSnackBar('Compression completed successfully!', isSuccess: true);
 
       if (mounted) {
-        context.go(AppRoutes.jobs);
+        setState(() {
+          _isCompressing = false;
+        });
+
+        // Show success dialog with options
+        final result = await ConversionSuccessDialog.show(
+          context,
+          title: 'Compression Started!',
+          message:
+              'Your PDFs are being compressed. View the result when complete.',
+          jobId: lastJobId,
+        );
+
+        if (!mounted) return;
+
+        switch (result) {
+          case 'view_job':
+            if (lastJobId != null) context.openJobDetail(lastJobId);
+            break;
+          case 'history':
+            context.go(AppRoutes.jobs);
+            break;
+          case 'stay':
+            setState(() {
+              _selectedFiles.clear();
+            });
+            break;
+        }
       }
-    } catch (e) {
-      _showSnackBar('Compression failed: $e', isSuccess: false);
-    } finally {
+    } on Exception catch (e) {
+      _showSnackBar('Compression failed: ${_getErrorMessage(e)}',
+          isSuccess: false);
       if (mounted) {
         setState(() {
           _isCompressing = false;
@@ -131,11 +181,28 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
     }
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
+  }
+
   void _showSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -273,7 +340,8 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withOpacity(0.1),
+                                color:
+                                    theme.colorScheme.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -367,7 +435,8 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
       body: _isCompressing
           ? _buildCompressingView(theme, isDark)
           : _buildMainContent(theme, isDark),
-      bottomNavigationBar: !_isCompressing ? _buildBottomBar(theme, isDark) : null,
+      bottomNavigationBar:
+          !_isCompressing ? _buildBottomBar(theme, isDark) : null,
     );
   }
 
@@ -545,7 +614,6 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
           ],
         ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
         const SizedBox(height: 12),
-
         if (_selectedFiles.isEmpty)
           _buildDropZone(theme, isDark)
         else
@@ -660,8 +728,9 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                     if (index < _selectedFiles.length - 1)
                       Divider(
                         height: 1,
-                        color:
-                            isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                        color: isDark
+                            ? AppTheme.darkDivider
+                            : AppTheme.lightDivider,
                       ),
                   ],
                 );

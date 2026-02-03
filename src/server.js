@@ -86,14 +86,17 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Database connection and server startup
-const connectDB = async () => {
+const connectDB = async (retries = 3) => {
   try {
     const options = {
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     };
 
+    console.log('🔄 Connecting to MongoDB...');
+    console.log(`📍 URI: ${MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}`);
+    
     await mongoose.connect(MONGODB_URI, options);
     console.log('✅ MongoDB connected successfully');
 
@@ -102,9 +105,31 @@ const connectDB = async () => {
       console.log(`🚀 DocXpress API server running on port ${PORT}`);
       console.log(`📍 Environment: ${NODE_ENV}`);
       console.log(`📍 API Base URL: http://localhost:${PORT}/api`);
+      console.log('\n📋 Available endpoints:');
+      console.log('   GET  /api/health - Health check');
+      console.log('   POST /api/auth/register - Register user');
+      console.log('   POST /api/auth/login - Login user');
+      console.log('   GET  /api/notes - List notes');
+      console.log('   ... and more (see README.md)');
     });
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
+    
+    if (error.message.includes('whitelist')) {
+      console.error('\n🔒 IP WHITELIST ISSUE DETECTED!');
+      console.error('   Please add your IP to MongoDB Atlas whitelist:');
+      console.error('   1. Go to https://cloud.mongodb.com');
+      console.error('   2. Click "Network Access" in left sidebar');
+      console.error('   3. Click "Add IP Address"');
+      console.error('   4. Click "Add Current IP Address" or use 0.0.0.0/0 for development\n');
+    }
+    
+    if (retries > 0) {
+      console.log(`⏳ Retrying connection in 5 seconds... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      return connectDB(retries - 1);
+    }
+    
     process.exit(1);
   }
 };

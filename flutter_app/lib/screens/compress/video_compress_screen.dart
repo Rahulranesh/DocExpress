@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,32 +95,71 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
     });
 
     try {
-      // Simulate compression progress
-      for (int i = 0; i <= 100; i += 5) {
-        await Future.delayed(const Duration(milliseconds: 200));
-        if (mounted) {
-          setState(() {
-            _progress = i / 100;
-          });
-        }
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final compressionRepo = ref.read(compressionRepositoryProvider);
+
+      // Step 1: Upload the video file (50% of progress)
+      final file = File(_selectedFilePath!);
+      final uploadedFile = await filesRepo.uploadFile(
+        file,
+        onProgress: (sent, total) {
+          if (mounted) {
+            setState(() {
+              _progress = (sent / total) * 0.5;
+            });
+          }
+        },
+      );
+
+      // Step 2: Compress using the server file ID (remaining 50%)
+      if (mounted) {
+        setState(() {
+          _progress = 0.5;
+        });
       }
 
-      // Call actual compression API
-      await ref.read(compressionRepositoryProvider).compressVideo(
-        fileId: _selectedFilePath!,
+      final job = await compressionRepo.compressVideo(
+        fileId: uploadedFile.id,
         preset: _quality,
-        resolution: _resolution,
+        resolution: _resolution == 'original' ? null : _resolution,
         customBitrate: _bitrate.toString(),
       );
 
-      _showSnackBar('Video compressed successfully!', isSuccess: true);
-
       if (mounted) {
-        context.go(AppRoutes.jobs);
+        setState(() {
+          _progress = 1.0;
+          _isProcessing = false;
+        });
+
+        // Show success dialog with options
+        final result = await ConversionSuccessDialog.show(
+          context,
+          title: 'Compression Started!',
+          message:
+              'Your video is being compressed. View the result when complete.',
+          jobId: job.id,
+        );
+
+        if (!mounted) return;
+
+        switch (result) {
+          case 'view_job':
+            context.openJobDetail(job.id);
+            break;
+          case 'history':
+            context.go(AppRoutes.jobs);
+            break;
+          case 'stay':
+            setState(() {
+              _selectedFilePath = null;
+              _selectedFileName = null;
+            });
+            break;
+        }
       }
-    } catch (e) {
-      _showSnackBar('Compression failed: $e', isSuccess: false);
-    } finally {
+    } on Exception catch (e) {
+      _showSnackBar('Compression failed: ${_getErrorMessage(e)}',
+          isSuccess: false);
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -127,11 +168,33 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
     }
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    if (error.toString().contains('FFmpeg') ||
+        error.toString().contains('not available') ||
+        error.toString().contains('not installed')) {
+      return 'Video compression is not available on this server. Please contact support.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
+  }
+
   void _showSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -174,7 +237,8 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
       body: _isProcessing
           ? _buildProcessingView(theme, isDark)
           : _buildMainContent(theme, isDark),
-      bottomNavigationBar: !_isProcessing ? _buildBottomBar(theme, isDark) : null,
+      bottomNavigationBar:
+          !_isProcessing ? _buildBottomBar(theme, isDark) : null,
     );
   }
 

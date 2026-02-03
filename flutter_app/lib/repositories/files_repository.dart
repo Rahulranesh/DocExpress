@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import '../core/constants/app_constants.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -85,11 +87,38 @@ class FilesRepository {
       queryParameters: queryParams,
     );
 
+    debugPrint('📥 Files Response status: ${response.statusCode}');
+    debugPrint('📦 Files Response data: ${response.data}');
+
     if (response.statusCode == 200) {
-      final data = response.data;
-      return PaginatedResponse<FileModel>.fromJson(
-        data,
-        (json) => FileModel.fromJson(json),
+      final responseData = response.data;
+
+      // Handle different response formats
+      List<dynamic> filesList;
+      Map<String, dynamic> paginationData;
+
+      if (responseData['data'] is List) {
+        // Direct array format
+        filesList = responseData['data'] as List;
+        paginationData = responseData['pagination'] ?? {};
+      } else if (responseData['data'] is Map) {
+        // Nested format with 'files' key
+        final dataMap = responseData['data'] as Map<String, dynamic>;
+        filesList = dataMap['files'] as List? ?? [];
+        paginationData =
+            dataMap['pagination'] ?? responseData['pagination'] ?? {};
+      } else {
+        filesList = [];
+        paginationData = {};
+      }
+
+      debugPrint('📊 Parsed ${filesList.length} files');
+
+      return PaginatedResponse<FileModel>(
+        data: filesList
+            .map((json) => FileModel.fromJson(json as Map<String, dynamic>))
+            .toList(),
+        pagination: PaginationInfo.fromJson(paginationData),
       );
     }
 
@@ -183,9 +212,12 @@ class FilesRepository {
     );
   }
 
-  /// Delete file (soft delete)
+  /// Delete file (hard delete)
   Future<void> deleteFile(String id) async {
+    debugPrint('📤 DELETE request to: ${ApiEndpoints.file(id)}');
     final response = await _apiService.delete(ApiEndpoints.file(id));
+    debugPrint('📥 DELETE response status: ${response.statusCode}');
+    debugPrint('📥 DELETE response data: ${response.data}');
 
     if (response.statusCode == 200) {
       return;
@@ -198,9 +230,48 @@ class FilesRepository {
     );
   }
 
+  /// Rename file
+  Future<FileModel> renameFile(String id, String newName) async {
+    final response = await _apiService.patch(
+      '${ApiEndpoints.file(id)}/rename',
+      data: {'newName': newName},
+    );
+
+    if (response.statusCode == 200) {
+      final data = response.data['data'] ?? response.data;
+      return FileModel.fromJson(data['file'] ?? data);
+    }
+
+    throw ApiException(
+      message: response.data?['error']?['message'] ?? 'Failed to rename file',
+      code: response.data?['error']?['code'],
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// Toggle favorite status
+  Future<FileModel> toggleFavorite(String id) async {
+    final response = await _apiService.patch(
+      '${ApiEndpoints.file(id)}/favorite',
+    );
+
+    if (response.statusCode == 200) {
+      final data = response.data['data'] ?? response.data;
+      return FileModel.fromJson(data['file'] ?? data);
+    }
+
+    throw ApiException(
+      message:
+          response.data?['error']?['message'] ?? 'Failed to toggle favorite',
+      code: response.data?['error']?['code'],
+      statusCode: response.statusCode,
+    );
+  }
+
   /// Permanently delete file
   Future<void> permanentlyDeleteFile(String id) async {
-    final response = await _apiService.delete('${ApiEndpoints.file(id)}/permanent');
+    final response =
+        await _apiService.delete('${ApiEndpoints.file(id)}/permanent');
 
     if (response.statusCode == 200) {
       return;

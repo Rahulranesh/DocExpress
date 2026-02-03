@@ -64,6 +64,12 @@ const fileSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Favorite support
+    isFavorite: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     // Reference to job that created this file (if output)
     sourceJob: {
       type: mongoose.Schema.Types.ObjectId,

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../core/constants/app_constants.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -34,11 +36,38 @@ class NotesRepository {
       queryParameters: queryParams,
     );
 
+    debugPrint('📥 Notes Response status: ${response.statusCode}');
+    debugPrint('📦 Notes Response data: ${response.data}');
+
     if (response.statusCode == 200) {
-      final data = response.data;
-      return PaginatedResponse<Note>.fromJson(
-        data,
-        (json) => Note.fromJson(json),
+      final responseData = response.data;
+
+      // Handle different response formats
+      List<dynamic> notesList;
+      Map<String, dynamic> paginationData;
+
+      if (responseData['data'] is List) {
+        // Direct array format
+        notesList = responseData['data'] as List;
+        paginationData = responseData['pagination'] ?? {};
+      } else if (responseData['data'] is Map) {
+        // Nested format with 'notes' key
+        final dataMap = responseData['data'] as Map<String, dynamic>;
+        notesList = dataMap['notes'] as List? ?? [];
+        paginationData =
+            dataMap['pagination'] ?? responseData['pagination'] ?? {};
+      } else {
+        notesList = [];
+        paginationData = {};
+      }
+
+      debugPrint('📊 Parsed ${notesList.length} notes');
+
+      return PaginatedResponse<Note>(
+        data: notesList
+            .map((json) => Note.fromJson(json as Map<String, dynamic>))
+            .toList(),
+        pagination: PaginationInfo.fromJson(paginationData),
       );
     }
 

@@ -361,7 +361,7 @@ const mergeImages = catchAsync(async (req, res) => {
  * POST /api/convert/pdf-to-docx
  */
 const pdfToDocx = catchAsync(async (req, res) => {
-  const { fileId } = req.body;
+  const { fileId, outputName } = req.body;
 
   if (!fileId) {
     throw AppError.badRequest('PDF file ID is required');
@@ -372,7 +372,7 @@ const pdfToDocx = catchAsync(async (req, res) => {
       userId: req.userId,
       type: JOB_TYPES.PDF_TO_DOCX,
       inputFileIds: [fileId],
-      options: {},
+      options: { outputName },
     },
     async (job) => {
       const inputFile = await fileService.getFileById(fileId, req.userId);
@@ -385,10 +385,13 @@ const pdfToDocx = catchAsync(async (req, res) => {
       const outputPath = storageService.getTempPath('.docx');
       const result = await documentService.pdfToDocx(inputPath, outputPath);
 
+      // Use custom output name if provided, otherwise generate from input
+      const finalOutputName = outputName || `${path.basename(inputFile.originalName, '.pdf')}.docx`;
+
       const outputFile = await fileService.createOutputFile(
         {
           filePath: result.path,
-          originalName: `${path.basename(inputFile.originalName, '.pdf')}.docx`,
+          originalName: finalOutputName,
           mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         },
         req.userId,
@@ -407,7 +410,7 @@ const pdfToDocx = catchAsync(async (req, res) => {
  * POST /api/convert/pdf-to-pptx
  */
 const pdfToPptx = catchAsync(async (req, res) => {
-  const { fileId } = req.body;
+  const { fileId, outputName } = req.body;
 
   if (!fileId) {
     throw AppError.badRequest('PDF file ID is required');
@@ -418,7 +421,7 @@ const pdfToPptx = catchAsync(async (req, res) => {
       userId: req.userId,
       type: JOB_TYPES.PDF_TO_PPTX,
       inputFileIds: [fileId],
-      options: {},
+      options: { outputName },
     },
     async (job) => {
       const inputFile = await fileService.getFileById(fileId, req.userId);
@@ -431,10 +434,12 @@ const pdfToPptx = catchAsync(async (req, res) => {
       const outputPath = storageService.getTempPath('.pptx');
       const result = await documentService.pdfToPptx(inputPath, outputPath);
 
+      const finalOutputName = outputName || `${path.basename(inputFile.originalName, '.pdf')}.pptx`;
+
       const outputFile = await fileService.createOutputFile(
         {
           filePath: result.path,
-          originalName: `${path.basename(inputFile.originalName, '.pdf')}.pptx`,
+          originalName: finalOutputName,
           mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
         },
         req.userId,
@@ -453,7 +458,7 @@ const pdfToPptx = catchAsync(async (req, res) => {
  * POST /api/convert/pdf-to-text
  */
 const pdfToText = catchAsync(async (req, res) => {
-  const { fileId } = req.body;
+  const { fileId, outputName } = req.body;
 
   if (!fileId) {
     throw AppError.badRequest('PDF file ID is required');
@@ -464,7 +469,7 @@ const pdfToText = catchAsync(async (req, res) => {
       userId: req.userId,
       type: JOB_TYPES.PDF_TO_TXT,
       inputFileIds: [fileId],
-      options: {},
+      options: { outputName },
     },
     async (job) => {
       const inputFile = await fileService.getFileById(fileId, req.userId);
@@ -477,10 +482,12 @@ const pdfToText = catchAsync(async (req, res) => {
       const outputPath = storageService.getTempPath('.txt');
       const result = await pdfService.extractText(inputPath, outputPath);
 
+      const finalOutputName = outputName || `${path.basename(inputFile.originalName, '.pdf')}.txt`;
+
       const outputFile = await fileService.createOutputFile(
         {
           filePath: result.path,
-          originalName: `${path.basename(inputFile.originalName, '.pdf')}.txt`,
+          originalName: finalOutputName,
           mimeType: 'text/plain',
         },
         req.userId,
@@ -499,7 +506,7 @@ const pdfToText = catchAsync(async (req, res) => {
  * POST /api/convert/docx-to-pdf
  */
 const docxToPdf = catchAsync(async (req, res) => {
-  const { fileId } = req.body;
+  const { fileId, outputName } = req.body;
 
   if (!fileId) {
     throw AppError.badRequest('DOCX file ID is required');
@@ -510,7 +517,7 @@ const docxToPdf = catchAsync(async (req, res) => {
       userId: req.userId,
       type: JOB_TYPES.DOCX_TO_PDF,
       inputFileIds: [fileId],
-      options: {},
+      options: { outputName },
     },
     async (job) => {
       const inputFile = await fileService.getFileById(fileId, req.userId);
@@ -523,10 +530,12 @@ const docxToPdf = catchAsync(async (req, res) => {
       const outputPath = storageService.getTempPath('.pdf');
       const result = await documentService.docxToPdf(inputPath, outputPath);
 
+      const finalOutputName = outputName || `${path.basename(inputFile.originalName, path.extname(inputFile.originalName))}.pdf`;
+
       const outputFile = await fileService.createOutputFile(
         {
           filePath: result.path,
-          originalName: `${path.basename(inputFile.originalName, path.extname(inputFile.originalName))}.pdf`,
+          originalName: finalOutputName,
           mimeType: 'application/pdf',
         },
         req.userId,
@@ -545,7 +554,7 @@ const docxToPdf = catchAsync(async (req, res) => {
  * POST /api/convert/pptx-to-pdf
  */
 const pptxToPdf = catchAsync(async (req, res) => {
-  const { fileId } = req.body;
+  const { fileId, outputName } = req.body;
 
   if (!fileId) {
     throw AppError.badRequest('PPTX file ID is required');
@@ -556,7 +565,7 @@ const pptxToPdf = catchAsync(async (req, res) => {
       userId: req.userId,
       type: JOB_TYPES.PPTX_TO_PDF,
       inputFileIds: [fileId],
-      options: {},
+      options: { outputName },
     },
     async (job) => {
       const inputFile = await fileService.getFileById(fileId, req.userId);
@@ -569,10 +578,12 @@ const pptxToPdf = catchAsync(async (req, res) => {
       const outputPath = storageService.getTempPath('.pdf');
       const result = await documentService.pptxToPdf(inputPath, outputPath);
 
+      const finalOutputName = outputName || `${path.basename(inputFile.originalName, path.extname(inputFile.originalName))}.pdf`;
+
       const outputFile = await fileService.createOutputFile(
         {
           filePath: result.path,
-          originalName: `${path.basename(inputFile.originalName, path.extname(inputFile.originalName))}.pdf`,
+          originalName: finalOutputName,
           mimeType: 'application/pdf',
         },
         req.userId,

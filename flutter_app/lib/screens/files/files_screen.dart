@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
-import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -24,6 +28,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
   String _searchQuery = '';
   String _selectedFilter = 'all';
   bool _isGridView = true;
+  bool _hasLoadedOnce = false;
 
   final List<String> _filterOptions = [
     'all',
@@ -38,7 +43,13 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadFiles();
+    // Load on next frame to avoid calling during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasLoadedOnce) {
+        _loadFiles();
+        _hasLoadedOnce = true;
+      }
+    });
   }
 
   @override
@@ -49,7 +60,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
   }
 
   Future<void> _loadFiles() async {
-    ref.read(filesListProvider.notifier).loadFiles(refresh: true);
+    debugPrint('📂 FilesScreen: Loading files...');
+    await ref.read(filesListProvider.notifier).loadFiles(refresh: true);
+    debugPrint('📂 FilesScreen: Files load complete');
   }
 
   Future<void> _uploadFiles() async {
@@ -76,7 +89,8 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -111,8 +125,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
         break;
       case 'others':
         filtered = filtered
-            .where(
-                (f) => !f.isImage && !f.isDocument && !f.isPdf && !f.isVideo)
+            .where((f) => !f.isImage && !f.isDocument && !f.isPdf && !f.isVideo)
             .toList();
         break;
     }
@@ -207,9 +220,8 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                       : Icons.grid_view_rounded,
                 ),
                 style: IconButton.styleFrom(
-                  backgroundColor: isDark
-                      ? AppTheme.darkSurface
-                      : AppTheme.lightBackground,
+                  backgroundColor:
+                      isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
                   foregroundColor: theme.colorScheme.primary,
                 ),
               ),
@@ -220,9 +232,8 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                 },
                 icon: const Icon(Icons.sort_rounded),
                 style: IconButton.styleFrom(
-                  backgroundColor: isDark
-                      ? AppTheme.darkSurface
-                      : AppTheme.lightBackground,
+                  backgroundColor:
+                      isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
                   foregroundColor: theme.colorScheme.primary,
                 ),
               ),
@@ -321,7 +332,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                             ? AppTheme.darkDivider
                             : AppTheme.lightDivider,
                   ),
-                ).animate().fadeIn(delay: (100 + index * 50).ms, duration: 300.ms);
+                )
+                    .animate()
+                    .fadeIn(delay: (100 + index * 50).ms, duration: 300.ms);
               },
             ),
           ),
@@ -358,7 +371,8 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     ).animate().fadeIn(delay: 200.ms, duration: 300.ms);
   }
 
-  Widget _buildFileContent(FilesListState filesState, ThemeData theme, bool isDark) {
+  Widget _buildFileContent(
+      FilesListState filesState, ThemeData theme, bool isDark) {
     if (filesState.isLoading && filesState.files.isEmpty) {
       return _buildLoadingState(isDark);
     }
@@ -374,12 +388,12 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     }
 
     return TabBarView(
+      key: const PageStorageKey<String>('files_tab_view'),
       controller: _tabController,
       children: [
         _buildFileListOrGrid(filteredFiles, theme, isDark),
         _buildFileListOrGrid(
-          filteredFiles
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+          filteredFiles..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
           theme,
           isDark,
         ),
@@ -661,131 +675,220 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      isScrollControlled: true,
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color:
+                        isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _getFileTypeColor(file).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _getFileTypeColor(file).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _getFileTypeIcon(file),
+                          color: _getFileTypeColor(file),
+                          size: 28,
+                        ),
                       ),
-                      child: Icon(
-                        _getFileTypeIcon(file),
-                        color: _getFileTypeColor(file),
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            file.originalName,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              file.originalName,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${_formatFileSize(file.size)} • ${DateFormat('MMM dd, yyyy').format(file.createdAt)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: isDark
-                                  ? AppTheme.darkTextSecondary
-                                  : AppTheme.lightTextSecondary,
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_formatFileSize(file.size)} • ${DateFormat('MMM dd, yyyy').format(file.createdAt)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.lightTextSecondary,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.open_in_new_rounded),
-                title: const Text('Open'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Open file
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.download_rounded),
-                title: const Text('Download'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Download file
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share_rounded),
-                title: const Text('Share'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Share file
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  file.isFavorite
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.open_in_new_rounded),
+                  title: const Text('Open'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _openFile(file);
+                  },
                 ),
-                title: Text(file.isFavorite
-                    ? 'Remove from favorites'
-                    : 'Add to favorites'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Toggle favorite
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.edit_rounded),
-                title: const Text('Rename'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showRenameDialog(file);
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  Icons.delete_rounded,
-                  color: AppTheme.errorColor,
+                ListTile(
+                  leading: const Icon(Icons.download_rounded),
+                  title: const Text('Download'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _downloadFile(file);
+                  },
                 ),
-                title: Text(
-                  'Delete',
-                  style: TextStyle(color: AppTheme.errorColor),
+                ListTile(
+                  leading: const Icon(Icons.share_rounded),
+                  title: const Text('Share'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _shareFile(file);
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation(file);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
+                ListTile(
+                  leading: Icon(
+                    file.isFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                  ),
+                  title: Text(file.isFavorite
+                      ? 'Remove from favorites'
+                      : 'Add to favorites'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _toggleFavorite(file);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.edit_rounded),
+                  title: const Text('Rename'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showRenameDialog(file);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_rounded,
+                    color: AppTheme.errorColor,
+                  ),
+                  title: Text(
+                    'Delete',
+                    style: TextStyle(color: AppTheme.errorColor),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showDeleteConfirmation(file);
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _openFile(FileModel file) async {
+    try {
+      _showSnackBar('Downloading file...', isSuccess: true);
+      final dir = await getTemporaryDirectory();
+      final savePath = '${dir.path}/${file.originalName}';
+
+      final repository = ref.read(filesRepositoryProvider);
+      await repository.downloadFile(file.id, savePath);
+
+      final result = await OpenFilex.open(savePath);
+      if (result.type != ResultType.done) {
+        _showSnackBar('Could not open file: ${result.message}',
+            isSuccess: false);
+      }
+    } catch (e) {
+      _showSnackBar('Failed to open file: $e', isSuccess: false);
+    }
+  }
+
+  Future<void> _downloadFile(FileModel file) async {
+    try {
+      _showSnackBar('Downloading...', isSuccess: true);
+
+      // Get downloads directory - use app documents for reliability
+      Directory dir;
+      if (Platform.isAndroid) {
+        // Use external storage directory on Android
+        final extDir = await getExternalStorageDirectory();
+        if (extDir != null) {
+          // Create a Downloads folder in the app's external directory
+          dir = Directory('${extDir.path}/Downloads');
+          if (!await dir.exists()) {
+            await dir.create(recursive: true);
+          }
+        } else {
+          dir = await getApplicationDocumentsDirectory();
+        }
+      } else if (Platform.isIOS) {
+        dir = await getApplicationDocumentsDirectory();
+      } else {
+        final downloadsDir = await getDownloadsDirectory();
+        dir = downloadsDir ?? await getApplicationDocumentsDirectory();
+      }
+
+      final savePath = '${dir.path}/${file.originalName}';
+      final repository = ref.read(filesRepositoryProvider);
+      await repository.downloadFile(file.id, savePath);
+
+      _showSnackBar('File saved to Downloads', isSuccess: true);
+    } catch (e) {
+      _showSnackBar('Failed to download: $e', isSuccess: false);
+    }
+  }
+
+  Future<void> _shareFile(FileModel file) async {
+    try {
+      _showSnackBar('Preparing file...', isSuccess: true);
+      final dir = await getTemporaryDirectory();
+      final savePath = '${dir.path}/${file.originalName}';
+
+      final repository = ref.read(filesRepositoryProvider);
+      await repository.downloadFile(file.id, savePath);
+
+      await Share.shareXFiles(
+        [XFile(savePath)],
+        text: 'Sharing ${file.originalName}',
+      );
+    } catch (e) {
+      _showSnackBar('Failed to share: $e', isSuccess: false);
+    }
+  }
+
+  Future<void> _toggleFavorite(FileModel file) async {
+    final success =
+        await ref.read(filesListProvider.notifier).toggleFavorite(file.id);
+    if (success) {
+      _showSnackBar(
+        file.isFavorite ? 'Removed from favorites' : 'Added to favorites',
+        isSuccess: true,
+      );
+    } else {
+      _showSnackBar('Failed to update favorite', isSuccess: false);
+    }
   }
 
   void _showRenameDialog(FileModel file) {
@@ -797,8 +900,10 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Rename File'),
           content: TextField(
             controller: controller,
@@ -816,9 +921,20 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                final newName = controller.text.trim();
+                if (newName.isEmpty) {
+                  return;
+                }
                 Navigator.pop(context);
-                // Rename file
+                final success = await ref
+                    .read(filesListProvider.notifier)
+                    .renameFile(file.id, newName);
+                if (success) {
+                  _showSnackBar('File renamed successfully', isSuccess: true);
+                } else {
+                  _showSnackBar('Failed to rename file', isSuccess: false);
+                }
               },
               child: const Text('Rename'),
             ),
@@ -836,8 +952,10 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Delete File'),
           content: Text(
             'Are you sure you want to delete "${file.originalName}"? This action cannot be undone.',
@@ -850,10 +968,14 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
-                await ref
+                final success = await ref
                     .read(filesListProvider.notifier)
                     .deleteFile(file.id);
-                _showSnackBar('File deleted successfully', isSuccess: true);
+                if (success) {
+                  _showSnackBar('File deleted successfully', isSuccess: true);
+                } else {
+                  _showSnackBar('Failed to delete file', isSuccess: false);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,

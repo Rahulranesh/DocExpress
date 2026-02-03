@@ -5,69 +5,128 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = require('docx');
 const PptxGenJS = require('pptxgenjs');
-const { PDFDocument } = require('pdf-lib');
+const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+const JSZip = require('jszip');
 const storageService = require('./storageService');
 const AppError = require('../utils/AppError');
 
 class DocumentService {
   /**
    * Convert DOCX to PDF
-   * NOTE: Full DOCX to PDF requires LibreOffice or similar
-   * This is a stub that creates a basic PDF from extracted text
+   * Extracts content from DOCX and creates a properly formatted PDF
    * @param {string} inputPath - Path to DOCX file
    * @param {string} outputPath - Path for PDF output
    * @returns {Promise<{path: string, pageCount: number}>}
    */
   async docxToPdf(inputPath, outputPath) {
     try {
-      // TODO: Implement proper DOCX to PDF using LibreOffice/unoconv
-      // For now, create a placeholder PDF
-      // In production, use: child_process.exec('libreoffice --convert-to pdf ...')
-
-      console.warn('DOCX to PDF using stub - implement with LibreOffice for production');
+      const buffer = await fs.readFile(inputPath);
+      
+      // Extract text from DOCX using mammoth
+      const result = await mammoth.extractRawText({ buffer });
+      const text = result.value;
+      const lines = text.split('\n');
 
       const pdf = await PDFDocument.create();
-      const page = pdf.addPage([595, 842]); // A4 size
-      const font = await pdf.embedFont('Helvetica');
+      const font = await pdf.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+      
+      const fontSize = 11;
+      const lineHeight = fontSize * 1.4;
+      const margin = 50;
+      const pageWidth = 595; // A4
+      const pageHeight = 842;
+      const contentWidth = pageWidth - (margin * 2);
+      const linesPerPage = Math.floor((pageHeight - (margin * 2)) / lineHeight);
 
-      // Add placeholder text
-      page.drawText('DOCX to PDF Conversion', {
-        x: 50,
-        y: 800,
+      let pageCount = 0;
+      let currentPage = null;
+      let currentY = pageHeight - margin;
+      let lineIndex = 0;
+
+      const addPage = () => {
+        currentPage = pdf.addPage([pageWidth, pageHeight]);
+        currentY = pageHeight - margin;
+        pageCount++;
+        return currentPage;
+      };
+
+      // Create first page
+      addPage();
+
+      // Add title
+      const title = path.basename(inputPath, '.docx');
+      currentPage.drawText(title, {
+        x: margin,
+        y: currentY,
         size: 18,
-        font,
+        font: boldFont,
+        color: rgb(0.1, 0.1, 0.1),
       });
+      currentY -= 30;
 
-      page.drawText(`Source: ${path.basename(inputPath)}`, {
-        x: 50,
-        y: 770,
-        size: 12,
-        font,
-      });
+      // Process lines
+      for (const line of lines) {
+        if (!line.trim()) {
+          currentY -= lineHeight / 2;
+          continue;
+        }
 
-      page.drawText('[Full conversion requires LibreOffice integration]', {
-        x: 50,
-        y: 740,
-        size: 10,
-        font,
-      });
-
-      page.drawText('TODO: Implement proper DOCX parsing and rendering', {
-        x: 50,
-        y: 710,
-        size: 10,
-        font,
-      });
+        // Word wrap
+        const words = line.split(' ');
+        let currentLine = '';
+        
+        for (const word of words) {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+          
+          if (textWidth > contentWidth && currentLine) {
+            // Draw current line and start new one
+            if (currentY < margin + lineHeight) {
+              addPage();
+            }
+            
+            currentPage.drawText(currentLine, {
+              x: margin,
+              y: currentY,
+              size: fontSize,
+              font,
+              color: rgb(0, 0, 0),
+            });
+            currentY -= lineHeight;
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        
+        // Draw remaining text
+        if (currentLine) {
+          if (currentY < margin + lineHeight) {
+            addPage();
+          }
+          
+          currentPage.drawText(currentLine, {
+            x: margin,
+            y: currentY,
+            size: fontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+          currentY -= lineHeight;
+        }
+      }
 
       const pdfBytes = await pdf.save();
       await fs.writeFile(outputPath, pdfBytes);
 
       return {
         path: outputPath,
-        pageCount: 1,
-        stub: true,
+        pageCount,
       };
     } catch (error) {
       throw AppError.internal(`DOCX to PDF conversion failed: ${error.message}`);
@@ -76,79 +135,50 @@ class DocumentService {
 
   /**
    * Convert PDF to DOCX
-   * NOTE: Full PDF to DOCX requires complex parsing
-   * This creates a basic DOCX with extracted structure
+   * Extracts text from PDF and creates a properly formatted DOCX
    * @param {string} inputPath - Path to PDF file
    * @param {string} outputPath - Path for DOCX output
    * @returns {Promise<{path: string}>}
    */
   async pdfToDocx(inputPath, outputPath) {
     try {
-      // TODO: Implement proper PDF to DOCX using pdf-parse or pdf.js
-      // For now, create a placeholder DOCX
+      const pdfBuffer = await fs.readFile(inputPath);
+      
+      // Extract text from PDF using pdf-parse
+      const pdfData = await pdfParse(pdfBuffer);
+      const extractedText = pdfData.text || '';
+      const pageCount = pdfData.numpages || 1;
+      const metadata = pdfData.info || {};
 
-      console.warn('PDF to DOCX using stub - implement with pdf-parse for production');
-
-      const pdfBytes = await fs.readFile(inputPath);
-      const pdf = await PDFDocument.load(pdfBytes);
-      const pageCount = pdf.getPageCount();
-
+      // Split text into paragraphs
+      const textLines = extractedText.split('\n').filter(line => line.trim());
+      
       const children = [
         new Paragraph({
-          text: 'PDF to DOCX Conversion',
+          text: metadata.Title || path.basename(inputPath, '.pdf'),
           heading: HeadingLevel.HEADING_1,
         }),
         new Paragraph({
           children: [
             new TextRun({
-              text: `Source file: ${path.basename(inputPath)}`,
+              text: `Converted from PDF - ${pageCount} pages`,
               italics: true,
-            }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `Total pages: ${pageCount}`,
+              size: 20,
+              color: '666666',
             }),
           ],
         }),
         new Paragraph({ text: '' }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: '[Note: Full PDF text extraction requires pdf-parse library]',
-              color: '888888',
-            }),
-          ],
-        }),
       ];
 
-      // Add page placeholders
-      for (let i = 0; i < pageCount; i++) {
-        const page = pdf.getPage(i);
-        const { width, height } = page.getSize();
-
+      // Add content paragraphs
+      for (const line of textLines) {
         children.push(
-          new Paragraph({ text: '' }),
-          new Paragraph({
-            text: `Page ${i + 1}`,
-            heading: HeadingLevel.HEADING_2,
-          }),
           new Paragraph({
             children: [
               new TextRun({
-                text: `Dimensions: ${Math.round(width)} x ${Math.round(height)} points`,
-                size: 20,
-              }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '[Page content would be extracted here]',
-                color: '999999',
-                italics: true,
+                text: line,
+                size: 24,
               }),
             ],
           })
@@ -156,7 +186,10 @@ class DocumentService {
       }
 
       const doc = new Document({
-        sections: [{ children }],
+        sections: [{
+          properties: {},
+          children,
+        }],
       });
 
       const buffer = await Packer.toBuffer(doc);
@@ -165,7 +198,7 @@ class DocumentService {
       return {
         path: outputPath,
         pageCount,
-        stub: true,
+        textLength: extractedText.length,
       };
     } catch (error) {
       throw AppError.internal(`PDF to DOCX conversion failed: ${error.message}`);
@@ -286,69 +319,158 @@ class DocumentService {
 
   /**
    * Convert PPTX to PDF
-   * NOTE: Full PPTX to PDF requires LibreOffice or similar
+   * Extracts text content from PPTX slides and creates a PDF
    * @param {string} inputPath - Path to PPTX file
    * @param {string} outputPath - Path for PDF output
    * @returns {Promise<{path: string, pageCount: number}>}
    */
   async pptxToPdf(inputPath, outputPath) {
     try {
-      // TODO: Implement proper PPTX to PDF using LibreOffice
-      // For now, create a placeholder PDF
+      const pptxBuffer = await fs.readFile(inputPath);
+      const zip = await JSZip.loadAsync(pptxBuffer);
+      
+      // Extract slide content from PPTX
+      const slides = [];
+      const slideFiles = Object.keys(zip.files)
+        .filter(name => name.match(/ppt\/slides\/slide\d+\.xml/))
+        .sort((a, b) => {
+          const numA = parseInt(a.match(/slide(\d+)\.xml/)[1]);
+          const numB = parseInt(b.match(/slide(\d+)\.xml/)[1]);
+          return numA - numB;
+        });
 
-      console.warn('PPTX to PDF using stub - implement with LibreOffice for production');
+      for (const slideFile of slideFiles) {
+        const content = await zip.file(slideFile).async('string');
+        // Extract text from XML
+        const textMatches = content.match(/<a:t>([^<]*)<\/a:t>/g) || [];
+        const slideText = textMatches
+          .map(match => match.replace(/<a:t>|<\/a:t>/g, ''))
+          .filter(text => text.trim())
+          .join('\n');
+        slides.push(slideText);
+      }
 
+      // Create PDF with slide content
       const pdf = await PDFDocument.create();
+      const font = await pdf.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-      // Create landscape page (typical slide dimensions)
-      const page = pdf.addPage([842, 595]); // A4 landscape
-      const font = await pdf.embedFont('Helvetica');
+      const pageWidth = 842; // A4 landscape
+      const pageHeight = 595;
+      const margin = 50;
+      const contentWidth = pageWidth - (margin * 2);
+      const fontSize = 12;
+      const titleFontSize = 20;
+      const lineHeight = fontSize * 1.5;
 
-      page.drawText('PPTX to PDF Conversion', {
-        x: 50,
-        y: 550,
-        size: 24,
-        font,
+      // Title page
+      const titlePage = pdf.addPage([pageWidth, pageHeight]);
+      const title = path.basename(inputPath, path.extname(inputPath));
+      titlePage.drawText(title, {
+        x: margin,
+        y: pageHeight - 100,
+        size: 28,
+        font: boldFont,
+        color: rgb(0.1, 0.1, 0.1),
       });
-
-      page.drawText(`Source: ${path.basename(inputPath)}`, {
-        x: 50,
-        y: 510,
-        size: 14,
+      titlePage.drawText(`${slides.length} slides`, {
+        x: margin,
+        y: pageHeight - 140,
+        size: 16,
         font,
+        color: rgb(0.5, 0.5, 0.5),
       });
-
-      page.drawText('[Full PPTX to PDF conversion requires LibreOffice integration]', {
-        x: 50,
-        y: 470,
+      titlePage.drawText('Converted from PowerPoint', {
+        x: margin,
+        y: pageHeight - 170,
         size: 12,
         font,
+        color: rgb(0.5, 0.5, 0.5),
       });
 
-      page.drawText('TODO: Implement proper PPTX parsing and rendering', {
-        x: 50,
-        y: 440,
-        size: 10,
-        font,
-      });
+      // Create a page for each slide
+      for (let i = 0; i < slides.length; i++) {
+        const page = pdf.addPage([pageWidth, pageHeight]);
+        const slideText = slides[i];
+        
+        // Draw slide number
+        page.drawText(`Slide ${i + 1}`, {
+          x: margin,
+          y: pageHeight - margin,
+          size: titleFontSize,
+          font: boldFont,
+          color: rgb(0.2, 0.2, 0.2),
+        });
 
-      // Add border to simulate slide
-      page.drawRectangle({
-        x: 30,
-        y: 30,
-        width: 782,
-        height: 535,
-        borderColor: { red: 0.8, green: 0.8, blue: 0.8 },
-        borderWidth: 1,
-      });
+        // Draw slide border
+        page.drawRectangle({
+          x: margin - 10,
+          y: 30,
+          width: contentWidth + 20,
+          height: pageHeight - 80,
+          borderColor: rgb(0.85, 0.85, 0.85),
+          borderWidth: 1,
+        });
+
+        // Draw slide content
+        if (slideText) {
+          const lines = slideText.split('\n');
+          let currentY = pageHeight - margin - 40;
+
+          for (const line of lines) {
+            if (currentY < margin + lineHeight) break;
+
+            // Word wrap long lines
+            const words = line.split(' ');
+            let currentLine = '';
+
+            for (const word of words) {
+              const testLine = currentLine ? `${currentLine} ${word}` : word;
+              const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+              if (textWidth > contentWidth && currentLine) {
+                page.drawText(currentLine, {
+                  x: margin,
+                  y: currentY,
+                  size: fontSize,
+                  font,
+                  color: rgb(0, 0, 0),
+                });
+                currentY -= lineHeight;
+                currentLine = word;
+              } else {
+                currentLine = testLine;
+              }
+            }
+
+            if (currentLine) {
+              page.drawText(currentLine, {
+                x: margin,
+                y: currentY,
+                size: fontSize,
+                font,
+                color: rgb(0, 0, 0),
+              });
+              currentY -= lineHeight;
+            }
+          }
+        } else {
+          page.drawText('[No text content on this slide]', {
+            x: margin,
+            y: pageHeight / 2,
+            size: fontSize,
+            font,
+            color: rgb(0.6, 0.6, 0.6),
+          });
+        }
+      }
 
       const pdfBytes = await pdf.save();
       await fs.writeFile(outputPath, pdfBytes);
 
       return {
         path: outputPath,
-        pageCount: 1,
-        stub: true,
+        pageCount: slides.length + 1, // Including title page
       };
     } catch (error) {
       throw AppError.internal(`PPTX to PDF conversion failed: ${error.message}`);
@@ -477,22 +599,66 @@ class DocumentService {
    */
   async extractTextFromDocx(inputPath, outputPath) {
     try {
-      // TODO: Implement proper DOCX text extraction using mammoth or similar
-      // For now, return a stub
+      const buffer = await fs.readFile(inputPath);
+      
+      // Use mammoth to extract text from DOCX
+      const result = await mammoth.extractRawText({ buffer });
+      const text = result.value;
+      const warnings = result.messages;
 
-      console.warn('DOCX text extraction using stub - implement with mammoth for production');
-
-      const text = `[DOCX Text Extraction Stub]\n\nSource: ${path.basename(inputPath)}\n\n[Full text extraction requires mammoth.js or similar library]\n\nTODO: Implement proper DOCX parsing`;
+      if (warnings.length > 0) {
+        console.log('DOCX extraction warnings:', warnings);
+      }
 
       await fs.writeFile(outputPath, text, 'utf8');
 
       return {
         path: outputPath,
         text,
-        stub: true,
+        charCount: text.length,
+        wordCount: text.split(/\s+/).filter(w => w).length,
       };
     } catch (error) {
       throw AppError.internal(`DOCX text extraction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Convert DOCX to HTML
+   * @param {string} inputPath - Path to DOCX file
+   * @param {string} outputPath - Path for HTML output
+   * @returns {Promise<{path: string, html: string}>}
+   */
+  async docxToHtml(inputPath, outputPath) {
+    try {
+      const buffer = await fs.readFile(inputPath);
+      
+      // Use mammoth to convert DOCX to HTML
+      const result = await mammoth.convertToHtml({ buffer });
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${path.basename(inputPath, '.docx')}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1, h2, h3 { color: #333; }
+    p { margin: 1em 0; }
+  </style>
+</head>
+<body>
+${result.value}
+</body>
+</html>`;
+
+      await fs.writeFile(outputPath, html, 'utf8');
+
+      return {
+        path: outputPath,
+        html: result.value,
+      };
+    } catch (error) {
+      throw AppError.internal(`DOCX to HTML conversion failed: ${error.message}`);
     }
   }
 

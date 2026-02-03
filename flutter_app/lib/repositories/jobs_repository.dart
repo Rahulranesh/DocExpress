@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../core/constants/app_constants.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -27,16 +29,49 @@ class JobsRepository {
     if (type != null && type.isNotEmpty) queryParams['type'] = type;
     if (status != null && status.isNotEmpty) queryParams['status'] = status;
 
+    debugPrint('📡 JobsRepository.getJobs() - calling API');
+    debugPrint('📍 Endpoint: ${ApiEndpoints.jobs}');
+    debugPrint('📋 Query: $queryParams');
+
     final response = await _apiService.get(
       ApiEndpoints.jobs,
       queryParameters: queryParams,
     );
 
+    debugPrint('📥 Response status: ${response.statusCode}');
+    debugPrint('📦 Response data: ${response.data}');
+
     if (response.statusCode == 200) {
-      final data = response.data;
-      return PaginatedResponse<Job>.fromJson(
-        data,
-        (json) => Job.fromJson(json),
+      final responseData = response.data;
+
+      // Handle different response formats
+      // Format 1: {success: true, data: [...jobs...], pagination: {...}}
+      // Format 2: {success: true, data: {jobs: [...], pagination: {...}}}
+      List<dynamic> jobsList;
+      Map<String, dynamic> paginationData;
+
+      if (responseData['data'] is List) {
+        // Direct array format
+        jobsList = responseData['data'] as List;
+        paginationData = responseData['pagination'] ?? {};
+      } else if (responseData['data'] is Map) {
+        // Nested format with 'jobs' key
+        final dataMap = responseData['data'] as Map<String, dynamic>;
+        jobsList = dataMap['jobs'] as List? ?? [];
+        paginationData =
+            dataMap['pagination'] ?? responseData['pagination'] ?? {};
+      } else {
+        jobsList = [];
+        paginationData = {};
+      }
+
+      debugPrint('📊 Parsed ${jobsList.length} jobs');
+
+      return PaginatedResponse<Job>(
+        data: jobsList
+            .map((json) => Job.fromJson(json as Map<String, dynamic>))
+            .toList(),
+        pagination: PaginationInfo.fromJson(paginationData),
       );
     }
 
@@ -79,7 +114,8 @@ class JobsRepository {
     }
 
     throw ApiException(
-      message: response.data?['error']?['message'] ?? 'Failed to fetch recent jobs',
+      message:
+          response.data?['error']?['message'] ?? 'Failed to fetch recent jobs',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );
@@ -95,7 +131,8 @@ class JobsRepository {
     }
 
     throw ApiException(
-      message: response.data?['error']?['message'] ?? 'Failed to fetch job stats',
+      message:
+          response.data?['error']?['message'] ?? 'Failed to fetch job stats',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );
@@ -114,7 +151,8 @@ class JobsRepository {
     }
 
     throw ApiException(
-      message: response.data?['error']?['message'] ?? 'Failed to fetch job types',
+      message:
+          response.data?['error']?['message'] ?? 'Failed to fetch job types',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );
@@ -130,7 +168,8 @@ class JobsRepository {
     }
 
     throw ApiException(
-      message: response.data?['error']?['message'] ?? 'Failed to fetch pending count',
+      message: response.data?['error']?['message'] ??
+          'Failed to fetch pending count',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );
@@ -149,7 +188,8 @@ class JobsRepository {
     }
 
     throw ApiException(
-      message: response.data?['error']?['message'] ?? 'Failed to check job limit',
+      message:
+          response.data?['error']?['message'] ?? 'Failed to check job limit',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );
@@ -166,6 +206,24 @@ class JobsRepository {
 
     throw ApiException(
       message: response.data?['error']?['message'] ?? 'Failed to cancel job',
+      code: response.data?['error']?['code'],
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// Delete a job
+  Future<void> deleteJob(String id) async {
+    debugPrint('📤 DELETE request to: /jobs/$id');
+    final response = await _apiService.delete('/jobs/$id');
+    debugPrint('📥 DELETE response status: ${response.statusCode}');
+    debugPrint('📥 DELETE response data: ${response.data}');
+
+    if (response.statusCode == 200) {
+      return;
+    }
+
+    throw ApiException(
+      message: response.data?['error']?['message'] ?? 'Failed to delete job',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );

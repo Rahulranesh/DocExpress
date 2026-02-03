@@ -39,6 +39,8 @@ router.post('/batch', fileController.getFilesByIds);
 // Single file operations
 router.get('/:id', validateFileId, fileController.getFile);
 router.get('/:id/download', validateFileId, fileController.downloadFile);
+router.patch('/:id/rename', validateFileId, fileController.renameFile);
+router.patch('/:id/favorite', validateFileId, fileController.toggleFavorite);
 router.delete('/:id', validateFileId, fileController.deleteFile);
 router.delete('/:id/permanent', validateFileId, fileController.permanentDeleteFile);
 

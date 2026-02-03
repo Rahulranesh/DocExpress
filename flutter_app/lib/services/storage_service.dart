@@ -161,6 +161,42 @@ class StorageService {
     return _settingsBox.get(AppConstants.onboardingKey, defaultValue: false);
   }
 
+  /// Save notifications enabled status
+  Future<void> saveNotificationsEnabled(bool enabled) async {
+    await _ensureInitialized();
+    await _settingsBox.put('notifications_enabled', enabled);
+  }
+
+  /// Get notifications enabled status
+  Future<bool> getNotificationsEnabled() async {
+    await _ensureInitialized();
+    return _settingsBox.get('notifications_enabled', defaultValue: true);
+  }
+
+  /// Save auto-delete completed status
+  Future<void> saveAutoDeleteCompleted(bool enabled) async {
+    await _ensureInitialized();
+    await _settingsBox.put('auto_delete_completed', enabled);
+  }
+
+  /// Get auto-delete completed status
+  Future<bool> getAutoDeleteCompleted() async {
+    await _ensureInitialized();
+    return _settingsBox.get('auto_delete_completed', defaultValue: false);
+  }
+
+  /// Save storage location
+  Future<void> saveStorageLocation(String location) async {
+    await _ensureInitialized();
+    await _settingsBox.put('storage_location', location);
+  }
+
+  /// Get storage location
+  Future<String> getStorageLocation() async {
+    await _ensureInitialized();
+    return _settingsBox.get('storage_location', defaultValue: 'internal');
+  }
+
   /// Get all app settings
   Future<AppSettings> getAppSettings() async {
     await _ensureInitialized();
@@ -171,6 +207,9 @@ class StorageService {
       defaultOutputFormat: await getDefaultFormat(),
       baseUrl: await getBaseUrl(),
       onboardingCompleted: await getOnboardingCompleted(),
+      notificationsEnabled: await getNotificationsEnabled(),
+      autoDeleteCompleted: await getAutoDeleteCompleted(),
+      storageLocation: await getStorageLocation(),
     );
   }
 
@@ -183,6 +222,9 @@ class StorageService {
     await saveDefaultFormat(settings.defaultOutputFormat);
     await saveBaseUrl(settings.baseUrl);
     await saveOnboardingCompleted(settings.onboardingCompleted);
+    await saveNotificationsEnabled(settings.notificationsEnabled);
+    await saveAutoDeleteCompleted(settings.autoDeleteCompleted);
+    await saveStorageLocation(settings.storageLocation);
   }
 
   // ==================== Generic Key-Value Storage ====================
@@ -255,7 +297,8 @@ class StorageService {
   Future<void> saveCache(String key, dynamic data) async {
     await _ensureInitialized();
     await _settingsBox.put('${key}_data', jsonEncode(data));
-    await _settingsBox.put('${key}_timestamp', DateTime.now().millisecondsSinceEpoch);
+    await _settingsBox.put(
+        '${key}_timestamp', DateTime.now().millisecondsSinceEpoch);
   }
 
   /// Get cached data if not expired

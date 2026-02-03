@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -18,7 +19,8 @@ import '../repositories/compression_repository.dart';
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   return const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
+    iOptions: IOSOptions(
+        accessibility: KeychainAccessibility.first_unlock_this_device),
   );
 });
 
@@ -125,13 +127,24 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     try {
       final isAuthenticated = await _authRepository.isAuthenticated();
       if (isAuthenticated) {
-        final isValid = await _authRepository.validateToken();
-        if (isValid) {
-          final user = await _authRepository.getStoredUser();
-          if (user != null) {
-            state = AuthState.authenticated(user);
-            return;
+        // First try to get stored user for offline access
+        final user = await _authRepository.getStoredUser();
+        if (user != null) {
+          // Immediately authenticate with cached user
+          state = AuthState.authenticated(user);
+
+          // Then try to validate token in background and refresh user data
+          try {
+            final isValid = await _authRepository.validateToken();
+            if (!isValid) {
+              // Token expired, force re-login
+              state = AuthState.unauthenticated();
+            }
+          } catch (_) {
+            // Network error - keep user logged in with cached data
+            // They can continue using the app offline
           }
+          return;
         }
       }
       state = AuthState.unauthenticated();
@@ -532,8 +545,13 @@ class FilesListNotifier extends StateNotifier<FilesListState> {
 
   /// Load files
   Future<void> loadFiles({bool refresh = false}) async {
-    if (state.isLoading) return;
+    // Only skip if already loading the same type of request
+    if (state.isLoading && !refresh) {
+      debugPrint('📂 FilesListNotifier: Already loading, skipping...');
+      return;
+    }
 
+    debugPrint('📂 FilesListNotifier: Loading files (refresh: $refresh)...');
     state = state.copyWith(
       isLoading: true,
       error: null,
@@ -546,12 +564,14 @@ class FilesListNotifier extends StateNotifier<FilesListState> {
         fileType: state.fileTypeFilter,
       );
 
+      debugPrint('📂 FilesListNotifier: Loaded ${result.data.length} files');
       state = state.copyWith(
         files: result.data,
         pagination: result.pagination,
         isLoading: false,
       );
     } catch (e) {
+      debugPrint('📂 FilesListNotifier: Error loading files: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -619,9 +639,39 @@ class FilesListNotifier extends StateNotifier<FilesListState> {
   /// Delete file
   Future<bool> deleteFile(String id) async {
     try {
+      debugPrint('🗑️ Deleting file with id: $id');
       await _repository.deleteFile(id);
+      debugPrint('🗑️ File deleted from server, reloading files from server');
+      // Reload files from server to get correct pagination
+      // This ensures the list stays in sync with the database
+      await loadFiles(refresh: true);
+      debugPrint('🗑️ Files reloaded, current count: ${state.files.length}');
+      return true;
+    } catch (e) {
+      debugPrint('🗑️ Delete failed: $e');
+      return false;
+    }
+  }
+
+  /// Rename file
+  Future<bool> renameFile(String id, String newName) async {
+    try {
+      final updatedFile = await _repository.renameFile(id, newName);
       state = state.copyWith(
-        files: state.files.where((f) => f.id != id).toList(),
+        files: state.files.map((f) => f.id == id ? updatedFile : f).toList(),
+      );
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Toggle favorite status
+  Future<bool> toggleFavorite(String id) async {
+    try {
+      final updatedFile = await _repository.toggleFavorite(id);
+      state = state.copyWith(
+        files: state.files.map((f) => f.id == id ? updatedFile : f).toList(),
       );
       return true;
     } catch (e) {
@@ -703,27 +753,38 @@ class JobsListNotifier extends StateNotifier<JobsListState> {
 
   /// Load jobs
   Future<void> loadJobs({bool refresh = false}) async {
-    if (state.isLoading) return;
+    // Only skip if already loading and not a forced refresh
+    if (state.isLoading && !refresh) {
+      debugPrint('📋 JobsListNotifier: Already loading, skipping...');
+      return;
+    }
 
+    // Don't clear jobs immediately on refresh - keep showing old data while loading
     state = state.copyWith(
       isLoading: true,
       error: null,
-      jobs: refresh ? [] : state.jobs,
     );
 
     try {
+      debugPrint('🔄 Loading jobs... refresh=$refresh');
       final result = await _repository.getJobs(
         page: 1,
         type: state.typeFilter,
         status: state.statusFilter,
       );
 
+      debugPrint('✅ Jobs loaded: ${result.data.length} jobs');
+      debugPrint(
+          '📊 Pagination: page=${result.pagination.page}, total=${result.pagination.total}');
+
       state = state.copyWith(
         jobs: result.data,
         pagination: result.pagination,
         isLoading: false,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error loading jobs: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -781,13 +842,19 @@ class JobsListNotifier extends StateNotifier<JobsListState> {
     }
   }
 
-  /// Delete a job (cancel/remove from list)
-  Future<void> deleteJob(String id) async {
+  /// Delete a job (remove from database)
+  Future<bool> deleteJob(String id) async {
     try {
-      await _repository.cancelJob(id);
-      state = state.copyWith(jobs: state.jobs.where((j) => j.id != id).toList());
-    } catch (_) {
-      rethrow;
+      debugPrint('🗑️ Deleting job with id: $id');
+      await _repository.deleteJob(id);
+      debugPrint('🗑️ Job deleted from server, reloading jobs from server');
+      // Reload jobs from server to get correct pagination
+      await loadJobs(refresh: true);
+      debugPrint('🗑️ Jobs reloaded, current count: ${state.jobs.length}');
+      return true;
+    } catch (e) {
+      debugPrint('🗑️ Delete job failed: $e');
+      return false;
     }
   }
 
@@ -852,7 +919,8 @@ class JobDetailNotifier extends StateNotifier<JobDetailState> {
   final JobsRepository _repository;
   final String jobId;
 
-  JobDetailNotifier(this._repository, this.jobId) : super(const JobDetailState());
+  JobDetailNotifier(this._repository, this.jobId)
+      : super(const JobDetailState());
 
   Future<void> loadJob() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -874,7 +942,9 @@ class JobDetailNotifier extends StateNotifier<JobDetailState> {
   }
 }
 
-final jobDetailProvider = StateNotifierProvider.family<JobDetailNotifier, JobDetailState, String>((ref, jobId) {
+final jobDetailProvider =
+    StateNotifierProvider.family<JobDetailNotifier, JobDetailState, String>(
+        (ref, jobId) {
   return JobDetailNotifier(ref.watch(jobsRepositoryProvider), jobId);
 });
 
@@ -928,7 +998,48 @@ final selectedFilesProvider =
 
 // ==================== App Settings ====================
 
-/// App settings provider
+/// App settings notifier for managing settings state
+class AppSettingsNotifier extends StateNotifier<AppSettings> {
+  final StorageService _storageService;
+
+  AppSettingsNotifier(this._storageService) : super(const AppSettings());
+
+  Future<void> loadSettings() async {
+    state = await _storageService.getAppSettings();
+  }
+
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    await _storageService.saveNotificationsEnabled(enabled);
+    state = state.copyWith(notificationsEnabled: enabled);
+  }
+
+  Future<void> setAutoDeleteCompleted(bool enabled) async {
+    await _storageService.saveAutoDeleteCompleted(enabled);
+    state = state.copyWith(autoDeleteCompleted: enabled);
+  }
+
+  Future<void> setDefaultQuality(int quality) async {
+    await _storageService.saveDefaultQuality(quality);
+    state = state.copyWith(defaultImageQuality: quality);
+  }
+
+  Future<void> setStorageLocation(String location) async {
+    await _storageService.saveStorageLocation(location);
+    state = state.copyWith(storageLocation: location);
+  }
+}
+
+/// App settings provider (StateNotifier version for real-time updates)
+final appSettingsNotifierProvider =
+    StateNotifierProvider<AppSettingsNotifier, AppSettings>((ref) {
+  final storageService = ref.watch(storageServiceProvider);
+  final notifier = AppSettingsNotifier(storageService);
+  // Load settings on creation
+  notifier.loadSettings();
+  return notifier;
+});
+
+/// App settings provider (legacy FutureProvider)
 final appSettingsProvider = FutureProvider<AppSettings>((ref) async {
   final storageService = ref.watch(storageServiceProvider);
   return storageService.getAppSettings();
@@ -959,20 +1070,24 @@ class ConversionController extends StateNotifier<void> {
 
   ConversionController(this._repository) : super(null);
 
-  Future<Job> convertImagesToPdf(List<String> pathsOrIds, [Map<String, dynamic>? options]) async {
+  Future<Job> convertImagesToPdf(List<String> pathsOrIds,
+      [Map<String, dynamic>? options]) async {
     // If pathsOrIds look like ids (no path separators), assume they are ids
-    final looksLikeId = pathsOrIds.isNotEmpty && !pathsOrIds.first.contains('/');
+    final looksLikeId =
+        pathsOrIds.isNotEmpty && !pathsOrIds.first.contains('/');
     if (looksLikeId) {
       return _repository.imagesToPdf(fileIds: pathsOrIds);
     }
 
     // For local paths, we would need to upload first, but this is handled in the UI layer
     // This method is kept for backwards compatibility
-    throw UnimplementedError('Use the UI layer to handle file uploads before conversion');
+    throw UnimplementedError(
+        'Use the UI layer to handle file uploads before conversion');
   }
 }
 
-final conversionProvider = StateNotifierProvider<ConversionController, void>((ref) {
+final conversionProvider =
+    StateNotifierProvider<ConversionController, void>((ref) {
   return ConversionController(ref.watch(conversionRepositoryProvider));
 });
 

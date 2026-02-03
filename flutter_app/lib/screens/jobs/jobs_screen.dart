@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,11 +23,29 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
+  bool _hasAttemptedLoad = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _loadJobs();
+    // Load jobs when screen is first created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadJobsIfNeeded();
+    });
+  }
+
+  void _loadJobsIfNeeded() {
+    // Always load on first attempt, or if there was an error
+    final jobsState = ref.read(jobsListProvider);
+    if (!_hasAttemptedLoad || jobsState.error != null) {
+      debugPrint('🔄 JobsScreen: Loading jobs...');
+      _hasAttemptedLoad = true;
+      _loadJobs();
+    } else {
+      debugPrint(
+          '📋 JobsScreen: Jobs already loaded: ${jobsState.jobs.length} jobs');
+    }
   }
 
   @override
@@ -37,10 +56,11 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   }
 
   Future<void> _loadJobs() async {
-    ref.read(jobsListProvider.notifier).loadJobs(refresh: true);
+    debugPrint('🚀 JobsScreen: _loadJobs() called');
+    await ref.read(jobsListProvider.notifier).loadJobs(refresh: true);
   }
 
-  List<Job> _filterJobs(List<Job> jobs, String? statusFilter) {
+  List<Job> _filterJobs(List<Job> jobs, JobStatus? statusFilter) {
     var filtered = jobs;
 
     // Apply search filter
@@ -48,13 +68,19 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       filtered = filtered
           .where((j) =>
               j.type.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              j.typeLabel.toLowerCase().contains(_searchQuery.toLowerCase()) ||
               j.id.toLowerCase().contains(_searchQuery.toLowerCase()))
           .toList();
     }
 
-    // Apply status filter
-    if (statusFilter != null && statusFilter != 'all') {
-      filtered = filtered.where((j) => j.status == statusFilter).toList();
+    // Apply status filter using JobStatus enum
+    if (statusFilter != null) {
+      // For 'processing' tab, include both pending and running
+      if (statusFilter == JobStatus.running) {
+        filtered = filtered.where((j) => j.status.isInProgress).toList();
+      } else {
+        filtered = filtered.where((j) => j.status == statusFilter).toList();
+      }
     }
 
     // Sort by date (newest first)
@@ -117,13 +143,29 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 builder: (context, ref, child) {
                   final jobsState = ref.watch(jobsListProvider);
                   final count = jobsState.jobs.length;
-                  return Text(
-                    '$count jobs',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark
-                          ? AppTheme.darkTextSecondary
-                          : AppTheme.lightTextSecondary,
-                    ),
+                  final isLoading = jobsState.isLoading;
+                  return Row(
+                    children: [
+                      Text(
+                        '$count jobs',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.lightTextSecondary,
+                        ),
+                      ),
+                      if (isLoading) ...[
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 },
               ),
@@ -131,14 +173,29 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           ),
           Row(
             children: [
-              IconButton(
-                onPressed: _loadJobs,
-                icon: const Icon(Icons.refresh_rounded),
-                style: IconButton.styleFrom(
-                  backgroundColor:
-                      isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
-                  foregroundColor: theme.colorScheme.primary,
-                ),
+              Consumer(
+                builder: (context, ref, child) {
+                  final isLoading = ref.watch(jobsListProvider).isLoading;
+                  return IconButton(
+                    onPressed: isLoading ? null : _loadJobs,
+                    icon: isLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: theme.colorScheme.primary,
+                            ),
+                          )
+                        : const Icon(Icons.refresh_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: isDark
+                          ? AppTheme.darkSurface
+                          : AppTheme.lightBackground,
+                      foregroundColor: theme.colorScheme.primary,
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 8),
               IconButton(
@@ -237,26 +294,64 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     ).animate().fadeIn(delay: 200.ms, duration: 300.ms);
   }
 
-  Widget _buildJobContent(JobsListState jobsState, ThemeData theme, bool isDark) {
+  Widget _buildJobContent(
+      JobsListState jobsState, ThemeData theme, bool isDark) {
+    // Initial loading state - show shimmer
     if (jobsState.isLoading && jobsState.jobs.isEmpty) {
       return _buildLoadingState(isDark);
     }
 
+    // Error with no cached data
     if (jobsState.error != null && jobsState.jobs.isEmpty) {
       return _buildErrorState(jobsState.error!, theme);
     }
 
-    return TabBarView(
+    // Show error banner if there's an error but we have cached data
+    Widget content = TabBarView(
+      key: const PageStorageKey<String>('jobs_tab_view'),
       controller: _tabController,
       children: [
         _buildJobList(_filterJobs(jobsState.jobs, null), theme, isDark),
         _buildJobList(
-            _filterJobs(jobsState.jobs, 'completed'), theme, isDark),
+            _filterJobs(jobsState.jobs, JobStatus.completed), theme, isDark),
         _buildJobList(
-            _filterJobs(jobsState.jobs, 'processing'), theme, isDark),
-        _buildJobList(_filterJobs(jobsState.jobs, 'failed'), theme, isDark),
+            _filterJobs(jobsState.jobs, JobStatus.running), theme, isDark),
+        _buildJobList(
+            _filterJobs(jobsState.jobs, JobStatus.failed), theme, isDark),
       ],
     );
+
+    // Show error banner if refresh failed
+    if (jobsState.error != null) {
+      return Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            color: AppTheme.errorColor.withOpacity(0.1),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: AppTheme.errorColor, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to refresh: ${jobsState.error}',
+                    style: TextStyle(color: AppTheme.errorColor, fontSize: 12),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loadJobs,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: content),
+        ],
+      );
+    }
+
+    return content;
   }
 
   Widget _buildJobList(List<Job> jobs, ThemeData theme, bool isDark) {
@@ -274,12 +369,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           job: job,
           isDark: isDark,
           onTap: () => context.openJobDetail(job.id),
-          onRetry: job.status == 'failed'
-              ? () => _retryJob(job)
-              : null,
-          onDownload: job.status == 'completed'
-              ? () => _downloadJobResult(job)
-              : null,
+          onRetry: job.status.isFailed ? () => _retryJob(job) : null,
+          onDownload:
+              job.status.isCompleted ? () => _downloadJobResult(job) : null,
         ).animate().fadeIn(delay: (index * 50).ms, duration: 200.ms).slideX(
               begin: 0.1,
               duration: 200.ms,
@@ -421,7 +513,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -434,8 +527,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Clear History'),
           content: const Text(
             'Are you sure you want to clear all job history? This action cannot be undone.',
@@ -546,12 +641,12 @@ class _JobCard extends StatelessWidget {
                 ),
 
                 // Status badge
-                _StatusBadge(status: job.status.toString()),
+                _StatusBadge(status: job.status),
               ],
             ),
 
             // Progress bar for processing jobs
-            if (job.status.toString().contains('processing')) ...[
+            if (job.status.isInProgress) ...[
               const SizedBox(height: 12),
               LinearProgressIndicator(
                 value: job.progress ?? 0.0,
@@ -571,7 +666,7 @@ class _JobCard extends StatelessWidget {
             ],
 
             // Action buttons
-            if (job.status == 'completed' || job.status == 'failed') ...[
+            if (job.status.isCompleted || job.status.isFailed) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -712,7 +807,7 @@ class _JobCard extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  final String status;
+  final JobStatus status;
 
   const _StatusBadge({required this.status});
 
@@ -723,31 +818,27 @@ class _StatusBadge extends StatelessWidget {
     IconData icon;
     String label;
 
-    switch (status.toLowerCase()) {
-      case 'completed':
+    switch (status) {
+      case JobStatus.completed:
         color = AppTheme.successColor;
         icon = Icons.check_circle_rounded;
         label = 'Completed';
         break;
-      case 'processing':
+      case JobStatus.running:
         color = Colors.blue;
         icon = Icons.pending_rounded;
         label = 'Processing';
         break;
-      case 'failed':
+      case JobStatus.failed:
         color = AppTheme.errorColor;
         icon = Icons.error_rounded;
         label = 'Failed';
         break;
-      case 'pending':
+      case JobStatus.pending:
         color = Colors.orange;
         icon = Icons.schedule_rounded;
         label = 'Pending';
         break;
-      default:
-        color = Colors.grey;
-        icon = Icons.help_rounded;
-        label = status;
     }
 
     return Container(

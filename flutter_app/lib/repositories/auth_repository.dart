@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../core/constants/app_constants.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -51,6 +53,8 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
+    debugPrint('🔐 AuthRepository.login() - Attempting login for: $email');
+
     final response = await _apiService.post(
       ApiEndpoints.login,
       data: LoginRequest(
@@ -59,16 +63,25 @@ class AuthRepository {
       ).toJson(),
     );
 
+    debugPrint('📥 Login Response status: ${response.statusCode}');
+    debugPrint('📦 Login Response data: ${response.data}');
+
     if (response.statusCode == 200) {
       final authResponse = AuthResponse.fromJson(response.data);
+      debugPrint(
+          '✅ Login successful! Token: ${authResponse.token.substring(0, 20)}...');
+      debugPrint(
+          '👤 User: ${authResponse.user.name} (${authResponse.user.email})');
 
       // Save token and user
       await _storageService.saveToken(authResponse.token);
       await _storageService.saveUser(authResponse.user);
+      debugPrint('💾 Token and user saved to storage');
 
       return authResponse;
     }
 
+    debugPrint('❌ Login failed with status: ${response.statusCode}');
     throw ApiException(
       message: response.data?['error']?['message'] ?? 'Login failed',
       code: response.data?['error']?['code'],
@@ -117,7 +130,8 @@ class AuthRepository {
     }
 
     throw ApiException(
-      message: response.data?['error']?['message'] ?? 'Failed to update profile',
+      message:
+          response.data?['error']?['message'] ?? 'Failed to update profile',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );
@@ -146,7 +160,8 @@ class AuthRepository {
     }
 
     throw ApiException(
-      message: response.data?['error']?['message'] ?? 'Failed to change password',
+      message:
+          response.data?['error']?['message'] ?? 'Failed to change password',
       code: response.data?['error']?['code'],
       statusCode: response.statusCode,
     );

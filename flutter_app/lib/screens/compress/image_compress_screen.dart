@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,32 +81,78 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
     });
 
     try {
-      // Simulate progress
-      for (int i = 0; i < _selectedImages.length; i++) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        setState(() {
-          _progress = (i + 1) / _selectedImages.length;
-        });
-      }
+      final filesRepo = ref.read(filesRepositoryProvider);
+      final compressionRepo = ref.read(compressionRepositoryProvider);
+      final totalSteps = _selectedImages.length * 2; // Upload + Compress
+      int currentStep = 0;
+      String? lastJobId;
 
-      // For now, compress images one by one
+      // Upload and compress each image
       for (final image in _selectedImages) {
-        await ref.read(compressionRepositoryProvider).compressImage(
-              fileId: image.path,
-              quality: _quality,
-              maxWidth: _maxWidth,
-              maxHeight: _maxHeight,
-            );
-      }
+        // Step 1: Upload the file
+        final file = File(image.path);
+        final uploadedFile = await filesRepo.uploadFile(
+          file,
+          onProgress: (sent, total) {
+            // Update progress during upload
+            if (mounted) {
+              setState(() {
+                _progress = (currentStep + (sent / total) * 0.5) / totalSteps;
+              });
+            }
+          },
+        );
+        currentStep++;
 
-      _showSnackBar('Images compressed successfully!', isSuccess: true);
+        // Step 2: Compress using the server file ID
+        final job = await compressionRepo.compressImage(
+          fileId: uploadedFile.id,
+          quality: _quality,
+          maxWidth: _resizeIfLarger ? _maxWidth : null,
+          maxHeight: _resizeIfLarger ? _maxHeight : null,
+        );
+        lastJobId = job.id;
+        currentStep++;
+
+        if (mounted) {
+          setState(() {
+            _progress = currentStep / totalSteps;
+          });
+        }
+      }
 
       if (mounted) {
-        context.go(AppRoutes.jobs);
+        setState(() {
+          _isProcessing = false;
+        });
+
+        // Show success dialog with options
+        final result = await ConversionSuccessDialog.show(
+          context,
+          title: 'Compression Complete!',
+          message: 'Your images have been compressed successfully.',
+          jobId: lastJobId,
+        );
+
+        if (!mounted) return;
+
+        switch (result) {
+          case 'view_job':
+            if (lastJobId != null) context.openJobDetail(lastJobId);
+            break;
+          case 'history':
+            context.go(AppRoutes.jobs);
+            break;
+          case 'stay':
+            setState(() {
+              _selectedImages.clear();
+            });
+            break;
+        }
       }
-    } catch (e) {
-      _showSnackBar('Compression failed: $e', isSuccess: false);
-    } finally {
+    } on Exception catch (e) {
+      _showSnackBar('Compression failed: ${_getErrorMessage(e)}',
+          isSuccess: false);
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -113,11 +161,28 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
     }
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('No internet')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (error.toString().contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (error.toString().contains('401')) {
+      return 'Session expired. Please login again.';
+    }
+    return error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('ApiException: ', '');
+  }
+
   void _showSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -185,7 +250,8 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
       body: _isProcessing
           ? _buildProcessingView(theme, isDark)
           : _buildMainContent(theme, isDark),
-      bottomNavigationBar: !_isProcessing ? _buildBottomBar(theme, isDark) : null,
+      bottomNavigationBar:
+          !_isProcessing ? _buildBottomBar(theme, isDark) : null,
     );
   }
 
@@ -366,7 +432,6 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
           ],
         ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
         const SizedBox(height: 12),
-
         if (_selectedImages.isEmpty)
           _buildDropZone(theme, isDark)
         else
@@ -612,7 +677,8 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -967,7 +1033,11 @@ class _ResizePreset extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+            Text(label,
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
             Text(value, style: Theme.of(context).textTheme.bodySmall),
           ],
@@ -1004,11 +1074,15 @@ class _CompressionLevelOption extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? (color ?? Colors.blue) : Colors.grey.withOpacity(0.3),
+            color: isSelected
+                ? (color ?? Colors.blue)
+                : Colors.grey.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
-          color: isSelected ? (color ?? Colors.blue).withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? (color ?? Colors.blue).withOpacity(0.1)
+              : Colors.transparent,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1017,7 +1091,11 @@ class _CompressionLevelOption extends StatelessWidget {
               Icon(icon, color: color, size: 24),
               const SizedBox(height: 8),
             ],
-            Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+            Text(title,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(description, style: Theme.of(context).textTheme.bodySmall),
           ],

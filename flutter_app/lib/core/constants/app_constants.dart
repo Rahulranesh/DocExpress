@@ -8,7 +8,11 @@ class AppConstants {
   static const String appBuildNumber = '1';
 
   // API Configuration
-  static const String defaultBaseUrl = 'http://localhost:3000/api';
+  // For Android emulator: use 10.0.2.2 (special IP that maps to host's localhost)
+  // For iOS simulator: use localhost
+  // For physical device: use your computer's actual IP address (e.g., 192.168.x.x)
+  // For Windows desktop: use localhost or 127.0.0.1
+  static const String defaultBaseUrl = 'http://10.200.175.180:3000/api';
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 60);
   static const Duration uploadTimeout = Duration(minutes: 5);
@@ -144,7 +148,12 @@ class AppConstants {
     'gif'
   ];
 
-  static const List<String> documentOutputFormats = ['pdf', 'docx', 'pptx', 'txt'];
+  static const List<String> documentOutputFormats = [
+    'pdf',
+    'docx',
+    'pptx',
+    'txt'
+  ];
 
   // PDF Page Sizes
   static const List<String> pdfPageSizes = ['A4', 'Letter', 'Legal', 'A3'];

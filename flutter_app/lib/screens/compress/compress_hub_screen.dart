@@ -43,25 +43,17 @@ class CompressHubScreen extends ConsumerWidget {
                   // Image compression
                   _CompressionCard(
                     title: 'Compress Images',
-                    description: 'Reduce image file size while maintaining quality',
+                    description:
+                        'Reduce image file size while maintaining quality',
                     icon: Icons.photo_size_select_small_rounded,
                     color: Colors.blue,
                     stats: 'Supports JPG, PNG, WebP',
                     onTap: () => context.openCompressImage(),
                     isDark: isDark,
-                  ).animate().fadeIn(delay: 250.ms, duration: 300.ms).slideX(begin: 0.1),
-                  const SizedBox(height: 12),
-
-                  // Video compression
-                  _CompressionCard(
-                    title: 'Compress Videos',
-                    description: 'Shrink video files without losing quality',
-                    icon: Icons.video_settings_rounded,
-                    color: Colors.purple,
-                    stats: 'Supports MP4, MOV, AVI',
-                    onTap: () => context.openCompressVideo(),
-                    isDark: isDark,
-                  ).animate().fadeIn(delay: 300.ms, duration: 300.ms).slideX(begin: 0.1),
+                  )
+                      .animate()
+                      .fadeIn(delay: 250.ms, duration: 300.ms)
+                      .slideX(begin: 0.1),
                   const SizedBox(height: 12),
 
                   // PDF compression
@@ -73,7 +65,10 @@ class CompressHubScreen extends ConsumerWidget {
                     stats: 'Reduce up to 80% file size',
                     onTap: () => context.openCompressPdf(),
                     isDark: isDark,
-                  ).animate().fadeIn(delay: 350.ms, duration: 300.ms).slideX(begin: 0.1),
+                  )
+                      .animate()
+                      .fadeIn(delay: 350.ms, duration: 300.ms)
+                      .slideX(begin: 0.1),
 
                   const SizedBox(height: 32),
 

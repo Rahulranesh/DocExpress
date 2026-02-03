@@ -140,10 +140,14 @@ class ConversionRepository {
   /// Convert PDF to DOCX
   Future<Job> pdfToDocx({
     required String fileId,
+    String? outputName,
   }) async {
     final response = await _apiService.post(
       ApiEndpoints.pdfToDocx,
-      data: {'fileId': fileId},
+      data: {
+        'fileId': fileId,
+        if (outputName != null) 'outputName': outputName,
+      },
     );
 
     return _parseJobResponse(response, 'Failed to convert PDF to DOCX');
@@ -152,10 +156,14 @@ class ConversionRepository {
   /// Convert PDF to PPTX
   Future<Job> pdfToPptx({
     required String fileId,
+    String? outputName,
   }) async {
     final response = await _apiService.post(
       ApiEndpoints.pdfToPptx,
-      data: {'fileId': fileId},
+      data: {
+        'fileId': fileId,
+        if (outputName != null) 'outputName': outputName,
+      },
     );
 
     return _parseJobResponse(response, 'Failed to convert PDF to PPTX');
@@ -164,10 +172,14 @@ class ConversionRepository {
   /// Convert PDF to Text
   Future<Job> pdfToText({
     required String fileId,
+    String? outputName,
   }) async {
     final response = await _apiService.post(
       ApiEndpoints.pdfToText,
-      data: {'fileId': fileId},
+      data: {
+        'fileId': fileId,
+        if (outputName != null) 'outputName': outputName,
+      },
     );
 
     return _parseJobResponse(response, 'Failed to extract text from PDF');
@@ -176,10 +188,14 @@ class ConversionRepository {
   /// Convert DOCX to PDF
   Future<Job> docxToPdf({
     required String fileId,
+    String? outputName,
   }) async {
     final response = await _apiService.post(
       ApiEndpoints.docxToPdf,
-      data: {'fileId': fileId},
+      data: {
+        'fileId': fileId,
+        if (outputName != null) 'outputName': outputName,
+      },
     );
 
     return _parseJobResponse(response, 'Failed to convert DOCX to PDF');
@@ -188,10 +204,14 @@ class ConversionRepository {
   /// Convert PPTX to PDF
   Future<Job> pptxToPdf({
     required String fileId,
+    String? outputName,
   }) async {
     final response = await _apiService.post(
       ApiEndpoints.pptxToPdf,
-      data: {'fileId': fileId},
+      data: {
+        'fileId': fileId,
+        if (outputName != null) 'outputName': outputName,
+      },
     );
 
     return _parseJobResponse(response, 'Failed to convert PPTX to PDF');
@@ -478,6 +498,7 @@ class ConversionRepository {
   Future<Job> convertDocument({
     required List<String> fileIds,
     required String conversionType,
+    String? outputName,
   }) async {
     // Route to appropriate conversion method based on type
     switch (conversionType.toUpperCase()) {
@@ -488,17 +509,44 @@ class ConversionRepository {
       case 'IMAGE_TO_DOCX':
         return imagesToDocx(fileIds: fileIds);
       case 'PDF_TO_PPTX':
-        if (fileIds.length != 1) throw ArgumentError('PDF to PPTX requires exactly one file');
-        return pdfToPptx(fileId: fileIds.first);
+        if (fileIds.length != 1)
+          throw ArgumentError('PDF to PPTX requires exactly one file');
+        return pdfToPptx(fileId: fileIds.first, outputName: outputName);
       case 'PDF_TO_DOCX':
-        if (fileIds.length != 1) throw ArgumentError('PDF to DOCX requires exactly one file');
-        return pdfToDocx(fileId: fileIds.first);
+        if (fileIds.length != 1)
+          throw ArgumentError('PDF to DOCX requires exactly one file');
+        return pdfToDocx(fileId: fileIds.first, outputName: outputName);
       case 'DOCX_TO_PDF':
-        if (fileIds.length != 1) throw ArgumentError('DOCX to PDF requires exactly one file');
-        return docxToPdf(fileId: fileIds.first);
+        if (fileIds.length != 1)
+          throw ArgumentError('DOCX to PDF requires exactly one file');
+        return docxToPdf(fileId: fileIds.first, outputName: outputName);
       case 'PPTX_TO_PDF':
-        if (fileIds.length != 1) throw ArgumentError('PPTX to PDF requires exactly one file');
-        return pptxToPdf(fileId: fileIds.first);
+        if (fileIds.length != 1)
+          throw ArgumentError('PPTX to PDF requires exactly one file');
+        return pptxToPdf(fileId: fileIds.first, outputName: outputName);
+      case 'IMAGE_TO_TXT':
+      case 'IMAGE_TO_TEXT':
+      case 'OCR':
+        if (fileIds.length != 1)
+          throw ArgumentError('Image to Text requires exactly one file');
+        return imageToText(fileId: fileIds.first);
+      case 'IMAGE_MERGE':
+      case 'MERGE_IMAGES':
+        if (fileIds.length < 2)
+          throw ArgumentError('Merge images requires at least 2 images');
+        return mergeImages(fileIds: fileIds);
+      case 'PDF_TO_TXT':
+      case 'PDF_TO_TEXT':
+      case 'PDF_EXTRACT_TEXT':
+        if (fileIds.length != 1)
+          throw ArgumentError(
+              'Extract text from PDF requires exactly one file');
+        return extractTextFromPdf(fileId: fileIds.first);
+      case 'PDF_EXTRACT_IMAGES':
+        if (fileIds.length != 1)
+          throw ArgumentError(
+              'Extract images from PDF requires exactly one file');
+        return extractImagesFromPdf(fileId: fileIds.first);
       default:
         throw ArgumentError('Unknown conversion type: $conversionType');
     }

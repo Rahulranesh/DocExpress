@@ -48,7 +48,12 @@ class JobService {
       throw AppError.forbidden('Access denied to this job');
     }
 
-    return job;
+    // Filter out null files (deleted files that were referenced)
+    const jobObj = job.toObject();
+    jobObj.inputFiles = (jobObj.inputFiles || []).filter(f => f !== null);
+    jobObj.outputFiles = (jobObj.outputFiles || []).filter(f => f !== null);
+
+    return jobObj;
   }
 
   /**
@@ -146,8 +151,16 @@ class JobService {
       Job.countDocuments(query),
     ]);
 
+    // Filter out null files (deleted files that were referenced)
+    const cleanedJobs = jobs.map(job => {
+      const jobObj = job.toObject();
+      jobObj.inputFiles = (jobObj.inputFiles || []).filter(f => f !== null);
+      jobObj.outputFiles = (jobObj.outputFiles || []).filter(f => f !== null);
+      return jobObj;
+    });
+
     return {
-      jobs,
+      jobs: cleanedJobs,
       pagination: {
         page,
         limit: actualLimit,
@@ -192,8 +205,16 @@ class JobService {
       Job.countDocuments(query),
     ]);
 
+    // Filter out null files (deleted files that were referenced)
+    const cleanedJobs = jobs.map(job => {
+      const jobObj = job.toObject();
+      jobObj.inputFiles = (jobObj.inputFiles || []).filter(f => f !== null);
+      jobObj.outputFiles = (jobObj.outputFiles || []).filter(f => f !== null);
+      return jobObj;
+    });
+
     return {
-      jobs,
+      jobs: cleanedJobs,
       pagination: {
         page,
         limit: actualLimit,
@@ -286,6 +307,26 @@ class JobService {
   }
 
   /**
+   * Delete a job
+   * @param {string} jobId - Job ID
+   * @param {string} userId - User ID
+   * @returns {Promise<void>}
+   */
+  async deleteJob(jobId, userId) {
+    console.log('🔧 deleteJob called with jobId:', jobId, 'userId:', userId);
+    const job = await Job.findOne({ _id: jobId, userId });
+
+    if (!job) {
+      console.log('🔧 Job not found');
+      throw AppError.notFound('Job not found');
+    }
+
+    console.log('🔧 Job found:', job._id, job.type);
+    const deleteResult = await Job.deleteOne({ _id: jobId });
+    console.log('🔧 Database delete result:', deleteResult);
+  }
+
+  /**
    * Retry a failed job
    * @param {string} jobId - Job ID
    * @param {string} userId - User ID
@@ -350,11 +391,19 @@ class JobService {
    * @returns {Promise<Job[]>}
    */
   async getRecentJobs(userId, limit = 10) {
-    return Job.find({ userId })
+    const jobs = await Job.find({ userId })
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate('inputFiles', 'originalName mimeType')
       .populate('outputFiles', 'originalName mimeType storageKey');
+
+    // Filter out null files (deleted files that were referenced)
+    return jobs.map(job => {
+      const jobObj = job.toObject();
+      jobObj.inputFiles = (jobObj.inputFiles || []).filter(f => f !== null);
+      jobObj.outputFiles = (jobObj.outputFiles || []).filter(f => f !== null);
+      return jobObj;
+    });
   }
 
   /**
