@@ -36,7 +36,7 @@ class FilesRepository {
     );
   }
 
-  /// Upload multiple files
+  /// Upload multiple filess
   Future<List<FileModel>> uploadMultipleFiles(
     List<File> files, {
     void Function(int sent, int total)? onProgress,
