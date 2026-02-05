@@ -11,10 +11,22 @@ const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const JSZip = require('jszip');
-const storageService = require('./storageService');
 const AppError = require('../utils/AppError');
 
 class DocumentService {
+  /**
+   * Sanitize text for pdf-lib (remove characters it can't encode)
+   * @param {string} text - Text to sanitize
+   * @returns {string} - Sanitized text
+   */
+  sanitizeTextForPdf(text) {
+    if (!text) return '';
+    return text
+      .replace(/\t/g, '    ') // Replace tabs with 4 spaces
+      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, '') // Remove control characters
+      .replace(/[^\x20-\x7E\xA0-\xFF\n\r]/g, ''); // Keep only printable characters
+  }
+
   /**
    * Convert DOCX to PDF
    * Extracts content from DOCX and creates a properly formatted PDF
@@ -28,7 +40,7 @@ class DocumentService {
       
       // Extract text from DOCX using mammoth
       const result = await mammoth.extractRawText({ buffer });
-      const text = result.value;
+      const text = this.sanitizeTextForPdf(result.value);
       const lines = text.split('\n');
 
       const pdf = await PDFDocument.create();
@@ -59,7 +71,7 @@ class DocumentService {
       addPage();
 
       // Add title
-      const title = path.basename(inputPath, '.docx');
+      const title = this.sanitizeTextForPdf(path.basename(inputPath, '.docx'));
       currentPage.drawText(title, {
         x: margin,
         y: currentY,
@@ -90,7 +102,10 @@ class DocumentService {
               addPage();
             }
             
-            currentPage.drawText(currentLine, {
+            // Sanitize before drawing
+            const sanitizedLine = this.sanitizeTextForPdf(currentLine);
+            
+            currentPage.drawText(sanitizedLine, {
               x: margin,
               y: currentY,
               size: fontSize,
@@ -110,7 +125,10 @@ class DocumentService {
             addPage();
           }
           
-          currentPage.drawText(currentLine, {
+          // Sanitize before drawing
+          const sanitizedLine = this.sanitizeTextForPdf(currentLine);
+          
+          currentPage.drawText(sanitizedLine, {
             x: margin,
             y: currentY,
             size: fontSize,
@@ -206,112 +224,180 @@ class DocumentService {
   }
 
   /**
-   * Convert PDF to PPTX
-   * Each page becomes a slide
+   * Convert PDF to PPTX (without canvas - text-based conversion)
+   * Each page becomes a slide with extracted text
    * @param {string} inputPath - Path to PDF file
    * @param {string} outputPath - Path for PPTX output
    * @returns {Promise<{path: string, slideCount: number}>}
    */
   async pdfToPptx(inputPath, outputPath) {
     try {
-      // TODO: Implement proper PDF to PPTX with page rendering
-      // Would need pdf-poppler or similar to render pages as images
+      // Try canvas-based approach first (renders pages as images)
+      try {
+        const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+        const Canvas = require('canvas');
+        
+        const pdfBytes = await fs.readFile(inputPath);
+        
+        const loadingTask = pdfjsLib.getDocument({
+          data: new Uint8Array(pdfBytes),
+          verbosity: 0,
+        });
+        
+        const pdfDocument = await loadingTask.promise;
+        const numPages = pdfDocument.numPages;
 
-      console.warn('PDF to PPTX using stub - implement with pdf-poppler for production');
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_16x9';
+        pptx.title = path.basename(inputPath, '.pdf');
 
-      const pdfBytes = await fs.readFile(inputPath);
-      const pdf = await PDFDocument.load(pdfBytes);
-      const pageCount = pdf.getPageCount();
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+          const page = await pdfDocument.getPage(pageNum);
+          
+          const scale = 2.0;
+          const viewport = page.getViewport({ scale });
+          
+          const canvas = Canvas.createCanvas(viewport.width, viewport.height);
+          const context = canvas.getContext('2d');
+          
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport,
+          };
+          
+          await page.render(renderContext).promise;
+          
+          const imageBuffer = canvas.toBuffer('image/png');
+          const base64Image = `data:image/png;base64,${imageBuffer.toString('base64')}`;
+          
+          const slide = pptx.addSlide();
+          
+          const slideWidth = 10;
+          const slideHeight = 5.625;
+          
+          const imgAspectRatio = viewport.width / viewport.height;
+          const slideAspectRatio = slideWidth / slideHeight;
+          
+          let imgWidth, imgHeight, imgX, imgY;
+          
+          if (imgAspectRatio > slideAspectRatio) {
+            imgWidth = slideWidth;
+            imgHeight = slideWidth / imgAspectRatio;
+            imgX = 0;
+            imgY = (slideHeight - imgHeight) / 2;
+          } else {
+            imgHeight = slideHeight;
+            imgWidth = slideHeight * imgAspectRatio;
+            imgX = (slideWidth - imgWidth) / 2;
+            imgY = 0;
+          }
+          
+          slide.addImage({
+            data: base64Image,
+            x: imgX,
+            y: imgY,
+            w: imgWidth,
+            h: imgHeight,
+          });
+        }
 
-      const pptx = new PptxGenJS();
-      pptx.layout = 'LAYOUT_WIDE';
-      pptx.title = path.basename(inputPath, '.pdf');
+        await pptx.writeFile({ fileName: outputPath });
 
-      // Title slide
-      const titleSlide = pptx.addSlide();
-      titleSlide.addText('PDF to PPTX Conversion', {
-        x: 0.5,
-        y: 2,
-        w: '90%',
-        h: 1.5,
-        fontSize: 36,
-        bold: true,
-        align: 'center',
-      });
-      titleSlide.addText(`Source: ${path.basename(inputPath)}`, {
-        x: 0.5,
-        y: 4,
-        w: '90%',
-        h: 0.5,
-        fontSize: 18,
-        align: 'center',
-        color: '666666',
-      });
-      titleSlide.addText(`${pageCount} pages`, {
-        x: 0.5,
-        y: 4.7,
-        w: '90%',
-        h: 0.5,
-        fontSize: 14,
-        align: 'center',
-        color: '888888',
-      });
+        return {
+          path: outputPath,
+          slideCount: numPages,
+        };
+      } catch (canvasError) {
+        console.log('⚠️ Canvas not available, using text-based conversion (no page images)');
+        
+        // Fallback: Text-based conversion (no canvas needed)
+        const pdfBuffer = await fs.readFile(inputPath);
+        const pdfData = await pdfParse(pdfBuffer);
+        const extractedText = pdfData.text || '';
+        const pageCount = pdfData.numpages || 1;
 
-      // Create a slide for each page
-      for (let i = 0; i < pageCount; i++) {
-        const page = pdf.getPage(i);
-        const { width, height } = page.getSize();
+        // Split text into pages (approximate)
+        const lines = extractedText.split('\n').filter(line => line.trim());
+        const linesPerSlide = Math.ceil(lines.length / pageCount) || 10;
+        
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_16x9';
+        pptx.title = path.basename(inputPath, '.pdf');
 
-        const slide = pptx.addSlide();
-
-        slide.addText(`Page ${i + 1}`, {
-          x: 0.3,
-          y: 0.2,
-          w: 3,
-          h: 0.4,
-          fontSize: 14,
+        // Create title slide
+        const titleSlide = pptx.addSlide();
+        titleSlide.addText(path.basename(inputPath, '.pdf'), {
+          x: 0.5,
+          y: 2,
+          w: '90%',
+          h: 1.5,
+          fontSize: 32,
+          bold: true,
+          align: 'center',
+          color: '363636',
+        });
+        titleSlide.addText(`Converted from PDF - ${pageCount} pages`, {
+          x: 0.5,
+          y: 3.5,
+          w: '90%',
+          h: 0.5,
+          fontSize: 16,
+          align: 'center',
           color: '666666',
         });
 
-        // Placeholder for page content
-        slide.addShape('rect', {
-          x: 0.5,
-          y: 0.8,
-          w: 12.3,
-          h: 6.2,
-          fill: { color: 'F5F5F5' },
-          line: { color: 'CCCCCC', width: 1 },
-        });
+        // Create content slides
+        for (let i = 0; i < pageCount; i++) {
+          const slide = pptx.addSlide();
+          
+          // Add slide number
+          slide.addText(`Page ${i + 1}`, {
+            x: 0.5,
+            y: 0.3,
+            w: '90%',
+            h: 0.5,
+            fontSize: 18,
+            bold: true,
+            color: '363636',
+          });
 
-        slide.addText(`[PDF Page ${i + 1} - ${Math.round(width)}x${Math.round(height)}]`, {
-          x: 0.5,
-          y: 3.5,
-          w: 12.3,
-          h: 0.5,
-          fontSize: 14,
-          align: 'center',
-          color: '999999',
-        });
+          // Add content
+          const startLine = i * linesPerSlide;
+          const endLine = Math.min((i + 1) * linesPerSlide, lines.length);
+          const slideText = lines.slice(startLine, endLine).join('\n');
 
-        slide.addText('[Full rendering requires pdf-poppler integration]', {
-          x: 0.5,
-          y: 4.2,
-          w: 12.3,
-          h: 0.4,
-          fontSize: 11,
-          align: 'center',
-          color: 'AAAAAA',
-          italic: true,
-        });
+          if (slideText) {
+            slide.addText(slideText, {
+              x: 0.5,
+              y: 1,
+              w: '90%',
+              h: 4.5,
+              fontSize: 12,
+              valign: 'top',
+              color: '000000',
+            });
+          } else {
+            slide.addText('[No text content on this page]', {
+              x: 0.5,
+              y: 2.5,
+              w: '90%',
+              h: 0.5,
+              fontSize: 14,
+              align: 'center',
+              color: '999999',
+              italic: true,
+            });
+          }
+        }
+
+        await pptx.writeFile({ fileName: outputPath });
+
+        return {
+          path: outputPath,
+          slideCount: pageCount + 1, // Including title slide
+          note: 'Text-based conversion (canvas not available for page rendering)',
+        };
       }
-
-      await pptx.writeFile({ fileName: outputPath });
-
-      return {
-        path: outputPath,
-        slideCount: pageCount + 1, // Including title slide
-        stub: true,
-      };
     } catch (error) {
       throw AppError.internal(`PDF to PPTX conversion failed: ${error.message}`);
     }

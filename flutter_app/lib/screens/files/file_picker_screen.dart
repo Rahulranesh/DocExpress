@@ -339,7 +339,7 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
       itemCount: 6,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
-        return ShimmerBox(
+        return const ShimmerBox(
           width: double.infinity,
           height: 72,
           borderRadius: 12,
@@ -355,7 +355,7 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline_rounded,
               size: 64,
               color: AppTheme.errorColor,

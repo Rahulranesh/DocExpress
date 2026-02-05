@@ -465,7 +465,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
               ),
               itemCount: 6,
               itemBuilder: (context, index) {
-                return ShimmerBox(
+                return const ShimmerBox(
                   width: double.infinity,
                   height: double.infinity,
                   borderRadius: 16,
@@ -476,7 +476,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
               itemCount: 6,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                return ShimmerBox(
+                return const ShimmerBox(
                   width: double.infinity,
                   height: 80,
                   borderRadius: 12,
@@ -499,7 +499,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                 color: AppTheme.errorColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.error_outline_rounded,
                 size: 64,
                 color: AppTheme.errorColor,
@@ -784,11 +784,11 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                   },
                 ),
                 ListTile(
-                  leading: Icon(
+                  leading: const Icon(
                     Icons.delete_rounded,
                     color: AppTheme.errorColor,
                   ),
-                  title: Text(
+                  title: const Text(
                     'Delete',
                     style: TextStyle(color: AppTheme.errorColor),
                   ),
@@ -1111,7 +1111,7 @@ class _FileGridItem extends StatelessWidget {
                       ),
                     ),
                     if (file.isFavorite)
-                      Positioned(
+                      const Positioned(
                         top: 8,
                         left: 8,
                         child: Icon(
@@ -1251,8 +1251,8 @@ class _FileListItem extends StatelessWidget {
                         ),
                       ),
                       if (file.isFavorite)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
+                        const Padding(
+                          padding: EdgeInsets.only(left: 8),
                           child: Icon(
                             Icons.favorite_rounded,
                             size: 16,

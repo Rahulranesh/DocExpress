@@ -884,7 +884,7 @@ class AppSettings {
     this.themeMode = ThemeModeSetting.system,
     this.defaultImageQuality = 80,
     this.defaultOutputFormat = 'pdf',
-    this.baseUrl = 'http://localhost:3000/api',
+    this.baseUrl = 'http://192.168.1.145:3000/api',
     this.onboardingCompleted = false,
     this.notificationsEnabled = true,
     this.autoDeleteCompleted = false,

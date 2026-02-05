@@ -1,12 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
@@ -33,21 +30,21 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
   bool _removeAudio = false;
 
   final Map<String, _QualityPreset> _qualityPresets = {
-    'high': _QualityPreset(
+    'high': const _QualityPreset(
       label: 'High',
       description: 'Best quality, larger file',
       icon: Icons.high_quality_rounded,
       color: Colors.green,
       compressionRatio: 0.8,
     ),
-    'medium': _QualityPreset(
+    'medium': const _QualityPreset(
       label: 'Medium',
       description: 'Balanced quality and size',
       icon: Icons.hd_rounded,
       color: Colors.blue,
       compressionRatio: 0.5,
     ),
-    'low': _QualityPreset(
+    'low': const _QualityPreset(
       label: 'Low',
       description: 'Smallest file, lower quality',
       icon: Icons.sd_rounded,
@@ -89,40 +86,26 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
       return;
     }
 
+    final compressionRepo = ref.read(compressionRepositoryProvider);
+    
+    // Check if video compression is available offline
+    if (!compressionRepo.isVideoCompressionAvailable) {
+      _showVideoCompressionUnavailableDialog();
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
       _progress = 0.0;
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
-      final compressionRepo = ref.read(compressionRepositoryProvider);
-
-      // Step 1: Upload the video file (50% of progress)
-      final file = File(_selectedFilePath!);
-      final uploadedFile = await filesRepo.uploadFile(
-        file,
-        onProgress: (sent, total) {
-          if (mounted) {
-            setState(() {
-              _progress = (sent / total) * 0.5;
-            });
-          }
-        },
-      );
-
-      // Step 2: Compress using the server file ID (remaining 50%)
-      if (mounted) {
-        setState(() {
-          _progress = 0.5;
-        });
-      }
-
-      final job = await compressionRepo.compressVideo(
-        fileId: uploadedFile.id,
+      // Compress video locally
+      final result = await compressionRepo.compressVideo(
+        filePath: _selectedFilePath!,
         preset: _quality,
         resolution: _resolution == 'original' ? null : _resolution,
-        customBitrate: _bitrate.toString(),
+        bitrate: _bitrate,
       );
 
       if (mounted) {
@@ -131,30 +114,12 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
           _isProcessing = false;
         });
 
-        // Show success dialog with options
-        final result = await ConversionSuccessDialog.show(
-          context,
-          title: 'Compression Started!',
-          message:
-              'Your video is being compressed. View the result when complete.',
-          jobId: job.id,
-        );
-
-        if (!mounted) return;
-
-        switch (result) {
-          case 'view_job':
-            context.openJobDetail(job.id);
-            break;
-          case 'history':
-            context.go(AppRoutes.jobs);
-            break;
-          case 'stay':
-            setState(() {
-              _selectedFilePath = null;
-              _selectedFileName = null;
-            });
-            break;
+        if (result.success) {
+          _showSnackBar('Video compressed successfully!', isSuccess: true);
+          // Navigate to files to see result
+          context.go('/files');
+        } else {
+          _showSnackBar(result.message, isSuccess: false);
         }
       }
     } on Exception catch (e) {
@@ -166,6 +131,48 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
         });
       }
     }
+  }
+
+  void _showVideoCompressionUnavailableDialog() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            const Text('Video Compression'),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Video compression is not available in offline mode.',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'This feature requires the ffmpeg_kit_flutter package which is not currently installed. '
+              'For now, you can compress images and PDFs offline.',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _getErrorMessage(dynamic error) {
@@ -646,7 +653,7 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
               });
             },
             contentPadding: EdgeInsets.zero,
-            activeColor: Colors.purple,
+            activeTrackColor: Colors.purple,
           ),
         ],
       ),
@@ -679,7 +686,7 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.analytics_rounded,
                 color: Colors.green,
                 size: 20,
@@ -706,7 +713,7 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Icon(
+              const Icon(
                 Icons.arrow_forward_rounded,
                 color: Colors.green,
               ),
@@ -732,7 +739,7 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.savings_rounded,
                   color: Colors.green,
                   size: 18,

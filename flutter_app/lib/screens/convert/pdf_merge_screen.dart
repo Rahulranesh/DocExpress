@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,21 +80,19 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      // Upload files first and get their IDs
-      final List<String> uploadedFileIds = [];
-      for (int i = 0; i < _selectedPdfs.length; i++) {
-        final file = File(_selectedPdfs[i].path);
-        final uploadedFile = await filesRepo.uploadFile(file);
-        uploadedFileIds.add(uploadedFile.id);
-      }
+      // Get file paths for merging
+      final List<String> pdfPaths = _selectedPdfs.map((pdf) => pdf.path).toList();
 
-      // Merge using server file IDs
-      final job = await conversionRepo.mergePdfs(
-        fileIds: uploadedFileIds,
+      // Merge PDFs locally
+      final result = await conversionRepo.mergePdfs(
+        filePaths: pdfPaths,
       );
+
+      if (!result.success) {
+        throw Exception(result.message);
+      }
 
       if (mounted) {
         setState(() {
@@ -104,21 +100,19 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
         });
 
         // Show success dialog with options
-        final result = await ConversionSuccessDialog.show(
+        final dialogResult = await ConversionSuccessDialog.show(
           context,
-          title: 'PDF Merge Started!',
-          message: 'Your PDFs are being merged. View the result when complete.',
-          jobId: job.id,
+          title: 'PDF Merge Complete!',
+          message: 'Your PDFs have been merged. View the result in Files.',
+          jobId: result.fileId,
         );
 
         if (!mounted) return;
 
-        switch (result) {
+        switch (dialogResult) {
           case 'view_job':
-            context.openJobDetail(job.id);
-            break;
           case 'history':
-            context.go(AppRoutes.jobs);
+            context.go(AppRoutes.files);
             break;
           case 'stay':
             setState(() {
@@ -416,7 +410,7 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
       itemBuilder: (context, index) {
         final pdf = _selectedPdfs[index];
         return Container(
-          key: ValueKey('pdf_$index\_${pdf.path}'),
+          key: ValueKey('pdf_${index}_${pdf.path}'),
           child: _PdfListItem(
             pdf: pdf,
             index: index,
@@ -537,7 +531,6 @@ class _PdfListItem extends StatelessWidget {
   final VoidCallback onRemove;
 
   const _PdfListItem({
-    super.key,
     required this.pdf,
     required this.index,
     required this.isDark,
@@ -642,7 +635,7 @@ class _PdfListItem extends StatelessWidget {
           // Remove button
           IconButton(
             onPressed: onRemove,
-            icon: Icon(
+            icon: const Icon(
               Icons.close_rounded,
               color: AppTheme.errorColor,
             ),

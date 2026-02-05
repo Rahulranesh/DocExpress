@@ -1,15 +1,14 @@
 /**
- * DocXpress API Server
- * Main entry point for the backend application
+ * DocXpress Simple Conversion API Server
+ * Simplified backend for document conversions only
+ * No MongoDB, no authentication - just simple conversions
  */
 
 require('dotenv').config();
 
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Import routes
@@ -24,39 +23,20 @@ const app = express();
 // Environment configuration
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/docxpress';
 
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration - allow all origins for simple conversions
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
-  message: {
-    success: false,
-    error: {
-      message: 'Too many requests, please try again later.',
-      code: 'RATE_LIMIT_EXCEEDED',
-    },
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use('/api', limiter);
-
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware with larger limits for file uploads
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Request logging in development
 if (NODE_ENV === 'development') {
@@ -73,9 +53,16 @@ app.use('/api', routes);
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to DocXpress API',
-    version: '1.0.0',
-    documentation: '/api/health',
+    message: 'Welcome to DocXpress Simple Conversion API',
+    version: '2.0.0',
+    features: [
+      'DOCX → PDF',
+      'PPTX → PDF',
+      'PDF → DOCX',
+      'PDF → PPTX',
+      'Extract Images from PDF',
+    ],
+    documentation: '/api/simple-convert/health',
   });
 });
 
@@ -85,76 +72,35 @@ app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
 
-// Database connection and server startup
-const connectDB = async (retries = 3) => {
-  try {
-    const options = {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-    };
-
-    console.log('🔄 Connecting to MongoDB...');
-    console.log(`📍 URI: ${MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}`);
-    
-    await mongoose.connect(MONGODB_URI, options);
-    console.log('✅ MongoDB connected successfully');
-
-    // Start server after DB connection
-    app.listen(PORT, () => {
-      console.log(`🚀 DocXpress API server running on port ${PORT}`);
-      console.log(`📍 Environment: ${NODE_ENV}`);
-      console.log(`📍 API Base URL: http://localhost:${PORT}/api`);
-      console.log('\n📋 Available endpoints:');
-      console.log('   GET  /api/health - Health check');
-      console.log('   POST /api/auth/register - Register user');
-      console.log('   POST /api/auth/login - Login user');
-      console.log('   GET  /api/notes - List notes');
-      console.log('   ... and more (see README.md)');
-    });
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error.message);
-    
-    if (error.message.includes('whitelist')) {
-      console.error('\n🔒 IP WHITELIST ISSUE DETECTED!');
-      console.error('   Please add your IP to MongoDB Atlas whitelist:');
-      console.error('   1. Go to https://cloud.mongodb.com');
-      console.error('   2. Click "Network Access" in left sidebar');
-      console.error('   3. Click "Add IP Address"');
-      console.error('   4. Click "Add Current IP Address" or use 0.0.0.0/0 for development\n');
-    }
-    
-    if (retries > 0) {
-      console.log(`⏳ Retrying connection in 5 seconds... (${retries} attempts left)`);
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      return connectDB(retries - 1);
-    }
-    
-    process.exit(1);
-  }
-};
-
-// Handle mongoose connection events
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB disconnected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB error:', err);
+// Start server (no database needed!)
+app.listen(PORT, () => {
+  console.log('🚀 DocXpress Simple Conversion API');
+  console.log(`📍 Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${NODE_ENV}`);
+  console.log(`📍 API Base URL: http://localhost:${PORT}/api`);
+  console.log('\n✅ Available features:');
+  console.log('   • DOCX → PDF');
+  console.log('   • PPTX → PDF');
+  console.log('   • PDF → DOCX');
+  console.log('   • PDF → PPTX');
+  console.log('   • Extract Images from PDF');
+  console.log('\n📋 Endpoints:');
+  console.log('   GET  /api/health - Health check');
+  console.log('   GET  /api/simple-convert/health - Conversion service health');
+  console.log('   POST /api/simple-convert/docx-to-pdf - Convert DOCX to PDF');
+  console.log('   POST /api/simple-convert/pptx-to-pdf - Convert PPTX to PDF');
+  console.log('   POST /api/simple-convert/pdf-to-docx - Convert PDF to DOCX');
+  console.log('   POST /api/simple-convert/pdf-to-pptx - Convert PDF to PPTX');
+  console.log('   POST /api/simple-convert/pdf-extract-images - Extract images from PDF');
+  console.log('\n💡 No authentication required!');
+  console.log('💡 No database needed!');
+  console.log('💡 Just upload and convert!\n');
 });
 
 // Graceful shutdown
-const gracefulShutdown = async (signal) => {
+const gracefulShutdown = (signal) => {
   console.log(`\n${signal} received. Shutting down gracefully...`);
-
-  try {
-    await mongoose.connection.close();
-    console.log('MongoDB connection closed.');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error during shutdown:', error);
-    process.exit(1);
-  }
+  process.exit(0);
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
@@ -163,7 +109,6 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
-  // Don't exit in development, but log for debugging
   if (NODE_ENV === 'production') {
     gracefulShutdown('UNHANDLED_REJECTION');
   }
@@ -174,8 +119,5 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
-
-// Start the application
-connectDB();
 
 module.exports = app;

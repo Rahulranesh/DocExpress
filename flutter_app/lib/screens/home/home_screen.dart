@@ -99,7 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 onTap: () => context.openProfile(),
                                 child: Container(
                                   padding: const EdgeInsets.all(3),
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
                                     gradient: LinearGradient(
                                       colors: [
@@ -115,7 +115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         : Colors.white,
                                     child: Text(
                                       _getInitials(user?.name),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: AppTheme.primaryColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 18,
@@ -327,8 +327,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       loading: () => Column(
         children: List.generate(
           3,
-          (index) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+          (index) => const Padding(
+            padding: EdgeInsets.only(bottom: 8),
             child: ShimmerLoading(
               height: 72,
               borderRadius: AppTheme.radiusMd,
@@ -441,7 +441,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ).animate().fadeIn();
       },
-      loading: () => ShimmerLoading(
+      loading: () => const ShimmerLoading(
         height: 160,
         borderRadius: AppTheme.radiusMd,
       ),

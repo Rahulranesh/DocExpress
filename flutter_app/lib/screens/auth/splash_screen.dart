@@ -26,12 +26,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final storageService = ref.read(storageServiceProvider);
     await storageService.init();
 
-    // Load saved settings
-    final settings = await storageService.getAppSettings();
-
-    // Update base URL if different from default
-    final apiService = ref.read(apiServiceProvider);
-    apiService.updateBaseUrl(settings.baseUrl);
+    // Note: No API service needed - app runs fully offline
 
     // Initialize auth state
     await ref.read(authStateProvider.notifier).initialize();
@@ -84,7 +79,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [

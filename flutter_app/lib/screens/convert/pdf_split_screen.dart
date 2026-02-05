@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
-import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -83,37 +80,41 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      // Step 1: Upload the file
-      final file = File(_selectedFilePath!);
-      final uploadedFile = await filesRepo.uploadFile(file);
-
-      // Create page ranges based on split mode
-      final List<PageRange> ranges = [];
+      // Determine pages based on split mode
+      List<int>? pages;
+      int? splitStartPage;
+      int? splitEndPage;
 
       switch (_splitMode) {
         case 'range':
-          ranges.add(PageRange(start: _startPage, end: _endPage));
+          splitStartPage = _startPage;
+          splitEndPage = _endPage;
           break;
         case 'single':
-          for (int page in _selectedPages) {
-            ranges.add(PageRange(start: page, end: page));
-          }
+          pages = List<int>.from(_selectedPages);
           break;
         case 'interval':
-          for (int i = 1; i <= 100; i += _intervalPages) {
-            ranges.add(PageRange(start: i, end: (i + _intervalPages - 1)));
+          // Generate page list from interval
+          pages = [];
+          for (int i = 1; i <= _totalPages; i += _intervalPages) {
+            pages.add(i);
           }
           break;
       }
 
-      // Step 2: Split using server file ID
-      final job = await conversionRepo.splitPdf(
-        fileId: uploadedFile.id,
-        ranges: ranges,
+      // Split PDF locally
+      final result = await conversionRepo.splitPdf(
+        filePath: _selectedFilePath,
+        pages: pages,
+        startPage: splitStartPage,
+        endPage: splitEndPage,
       );
+
+      if (!result.success) {
+        throw Exception(result.message);
+      }
 
       if (mounted) {
         setState(() {
@@ -121,21 +122,19 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
         });
 
         // Show success dialog with options
-        final result = await ConversionSuccessDialog.show(
+        final dialogResult = await ConversionSuccessDialog.show(
           context,
-          title: 'PDF Split Started!',
-          message: 'Your PDF is being split. View the result when complete.',
-          jobId: job.id,
+          title: 'PDF Split Complete!',
+          message: 'Your PDF has been split. View the result in Files.',
+          jobId: result.fileId,
         );
 
         if (!mounted) return;
 
-        switch (result) {
+        switch (dialogResult) {
           case 'view_job':
-            context.openJobDetail(job.id);
-            break;
           case 'history':
-            context.go(AppRoutes.jobs);
+            context.go(AppRoutes.files);
             break;
           case 'stay':
             setState(() {

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +5,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -26,15 +23,15 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
   double _progress = 0.0;
 
   final List<_FormatOption> _formatOptions = [
-    _FormatOption('png', 'PNG', 'Lossless compression, supports transparency',
+    const _FormatOption('png', 'PNG', 'Lossless compression, supports transparency',
         Icons.image_rounded, Colors.blue),
-    _FormatOption('jpg', 'JPG', 'Best for photos, smaller file size',
+    const _FormatOption('jpg', 'JPG', 'Best for photos, smaller file size',
         Icons.photo_rounded, Colors.orange),
-    _FormatOption('webp', 'WebP', 'Modern format, excellent compression',
+    const _FormatOption('webp', 'WebP', 'Modern format, excellent compression',
         Icons.web_rounded, Colors.green),
-    _FormatOption('gif', 'GIF', 'Supports animation, limited colors',
+    const _FormatOption('gif', 'GIF', 'Supports animation, limited colors',
         Icons.gif_rounded, Colors.purple),
-    _FormatOption('tiff', 'TIFF', 'High quality, professional use',
+    const _FormatOption('tiff', 'TIFF', 'High quality, professional use',
         Icons.high_quality_rounded, Colors.teal),
   ];
 
@@ -84,31 +81,35 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
+      int successCount = 0;
 
       for (int i = 0; i < _selectedFiles.length; i++) {
-        // Upload file first to get server file ID
-        final file = File(_selectedFiles[i]);
-        final uploadedFile = await filesRepo.uploadFile(file);
-
-        // Call actual conversion API with server file ID
-        await conversionRepo.convertImageFormat(
-          fileId: uploadedFile.id,
+        // Convert image format locally using file path
+        final result = await conversionRepo.convertImageFormat(
+          filePath: _selectedFiles[i],
           targetFormat: _targetFormat,
           quality: _quality,
         );
+
+        if (result.success) {
+          successCount++;
+        }
 
         setState(() {
           _progress = (i + 1) / _selectedFiles.length;
         });
       }
 
-      _showSnackBar('Conversion completed successfully!', isError: false);
+      if (successCount > 0) {
+        _showSnackBar('$successCount of ${_selectedFiles.length} images converted successfully!', isError: false);
+      } else {
+        _showSnackBar('Conversion failed for all files', isError: true);
+      }
 
-      // Navigate to jobs to see results
+      // Navigate to files to see results
       if (mounted) {
-        context.go('/jobs');
+        context.go('/files');
       }
     } catch (e) {
       _showSnackBar('Conversion failed: ${_getErrorMessage(e)}', isError: true);
@@ -370,7 +371,7 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
                       ),
                       trailing: IconButton(
                         onPressed: () => _removeFile(index),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.close_rounded,
                           color: AppTheme.errorColor,
                         ),

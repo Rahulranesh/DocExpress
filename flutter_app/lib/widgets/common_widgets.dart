@@ -1050,7 +1050,7 @@ class ConversionSuccessDialog extends StatelessWidget {
               color: AppTheme.successColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.check_circle_rounded,
               size: 48,
               color: AppTheme.successColor,

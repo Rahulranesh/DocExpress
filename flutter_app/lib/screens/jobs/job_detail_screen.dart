@@ -261,12 +261,12 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                   ],
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
                     Icon(Icons.delete_rounded, color: AppTheme.errorColor),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text('Delete',
                         style: TextStyle(color: AppTheme.errorColor)),
                   ],
@@ -549,12 +549,12 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
               isDark: isDark,
             ),
           ],
-          if (job.options != null && job.options!.isNotEmpty) ...[
+          if (job.options.isNotEmpty) ...[
             const Divider(height: 24),
             _InfoRow(
               icon: Icons.settings_rounded,
               label: 'Options',
-              value: _formatOptions(job.options!),
+              value: _formatOptions(job.options),
               isDark: isDark,
             ),
           ],
@@ -720,7 +720,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.error_outline_rounded,
                 color: AppTheme.errorColor,
                 size: 20,
@@ -762,7 +762,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline_rounded,
               size: 64,
               color: AppTheme.errorColor,
@@ -797,28 +797,28 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   _StatusInfo _getStatusInfo(JobStatus status) {
     switch (status) {
       case JobStatus.pending:
-        return _StatusInfo(
+        return const _StatusInfo(
           label: 'Pending',
           description: 'Job is waiting to be processed',
           icon: Icons.schedule_rounded,
           color: Colors.orange,
         );
       case JobStatus.running:
-        return _StatusInfo(
+        return const _StatusInfo(
           label: 'Processing',
           description: 'Job is currently being processed',
           icon: Icons.hourglass_top_rounded,
           color: Colors.blue,
         );
       case JobStatus.completed:
-        return _StatusInfo(
+        return const _StatusInfo(
           label: 'Completed',
           description: 'Job finished successfully',
           icon: Icons.check_circle_rounded,
           color: Colors.green,
         );
       case JobStatus.failed:
-        return _StatusInfo(
+        return const _StatusInfo(
           label: 'Failed',
           description: 'Job encountered an error',
           icon: Icons.error_rounded,
@@ -915,14 +915,12 @@ class _FileItem extends StatelessWidget {
   final IconData icon;
   final Color color;
   final bool isDark;
-  final VoidCallback? onDownload;
 
   const _FileItem({
     required this.fileName,
     required this.icon,
     required this.color,
     required this.isDark,
-    this.onDownload,
   });
 
   @override
@@ -961,17 +959,6 @@ class _FileItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (onDownload != null)
-            IconButton(
-              onPressed: onDownload,
-              icon: Icon(
-                Icons.download_rounded,
-                color: color,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: color.withOpacity(0.1),
-              ),
-            ),
         ],
       ),
     );
@@ -1001,10 +988,12 @@ class _OutputFileCard extends StatelessWidget {
     if (mimeType.contains('pdf')) return Icons.picture_as_pdf_rounded;
     if (mimeType.contains('image')) return Icons.image_rounded;
     if (mimeType.contains('video')) return Icons.video_file_rounded;
-    if (mimeType.contains('word') || mimeType.contains('document'))
+    if (mimeType.contains('word') || mimeType.contains('document')) {
       return Icons.description_rounded;
-    if (mimeType.contains('presentation') || mimeType.contains('pptx'))
+    }
+    if (mimeType.contains('presentation') || mimeType.contains('pptx')) {
       return Icons.slideshow_rounded;
+    }
     if (mimeType.contains('text')) return Icons.text_snippet_rounded;
     return Icons.insert_drive_file_rounded;
   }

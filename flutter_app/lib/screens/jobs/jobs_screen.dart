@@ -331,12 +331,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             color: AppTheme.errorColor.withOpacity(0.1),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: AppTheme.errorColor, size: 20),
+                const Icon(Icons.error_outline, color: AppTheme.errorColor, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Failed to refresh: ${jobsState.error}',
-                    style: TextStyle(color: AppTheme.errorColor, fontSize: 12),
+                    style: const TextStyle(color: AppTheme.errorColor, fontSize: 12),
                   ),
                 ),
                 TextButton(
@@ -386,7 +386,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       itemCount: 5,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return ShimmerBox(
+        return const ShimmerBox(
           width: double.infinity,
           height: 100,
           borderRadius: 16,
@@ -408,7 +408,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 color: AppTheme.errorColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.error_outline_rounded,
                 size: 64,
                 color: AppTheme.errorColor,
@@ -678,7 +678,7 @@ class _JobCard extends StatelessWidget {
                         label: const Text('Download'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.successColor,
-                          side: BorderSide(color: AppTheme.successColor),
+                          side: const BorderSide(color: AppTheme.successColor),
                         ),
                       ),
                     ),
@@ -690,7 +690,7 @@ class _JobCard extends StatelessWidget {
                         label: const Text('Retry'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.errorColor,
-                          side: BorderSide(color: AppTheme.errorColor),
+                          side: const BorderSide(color: AppTheme.errorColor),
                         ),
                       ),
                     ),

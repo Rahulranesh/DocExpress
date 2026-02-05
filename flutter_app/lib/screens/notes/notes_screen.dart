@@ -187,8 +187,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       padding: const EdgeInsets.all(16),
       itemCount: 5,
       itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+        return const Padding(
+          padding: EdgeInsets.only(bottom: 12),
           child: ShimmerLoading(
             height: 100,
             borderRadius: AppTheme.radiusMd,
@@ -368,8 +368,8 @@ class _NoteCard extends StatelessWidget {
             Row(
               children: [
                 if (note.pinned)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8),
                     child: Icon(
                       Icons.push_pin,
                       size: 16,

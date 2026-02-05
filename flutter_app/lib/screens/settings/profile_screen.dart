@@ -200,7 +200,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         return AlertDialog(
           backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
+          title: const Text(
             'Delete Account',
             style: TextStyle(color: AppTheme.errorColor),
           ),
@@ -322,7 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   colors: [AppTheme.primaryColor, AppTheme.primaryDark],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -550,7 +550,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.warning_amber_rounded,
                   color: AppTheme.errorColor,
                   size: 20,

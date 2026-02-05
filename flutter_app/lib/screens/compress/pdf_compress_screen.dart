@@ -1,12 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
@@ -28,7 +25,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
   int _imageQuality = 75;
 
   final List<_CompressionOption> _compressionOptions = [
-    _CompressionOption(
+    const _CompressionOption(
       id: 'low',
       title: 'Low',
       description: 'Best quality, larger size',
@@ -36,7 +33,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
       icon: Icons.high_quality_rounded,
       color: Colors.green,
     ),
-    _CompressionOption(
+    const _CompressionOption(
       id: 'medium',
       title: 'Medium',
       description: 'Balanced quality and size',
@@ -44,7 +41,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
       icon: Icons.tune_rounded,
       color: Colors.orange,
     ),
-    _CompressionOption(
+    const _CompressionOption(
       id: 'high',
       title: 'High',
       description: 'Smallest size, lower quality',
@@ -104,38 +101,23 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final compressionRepo = ref.read(compressionRepositoryProvider);
-      final totalSteps = _selectedFiles.length * 2; // Upload + Compress
-      int currentStep = 0;
-      String? lastJobId;
+      int successCount = 0;
 
       for (int i = 0; i < _selectedFiles.length; i++) {
-        // Step 1: Upload the file
-        final file = File(_selectedFiles[i].path);
-        final uploadedFile = await filesRepo.uploadFile(
-          file,
-          onProgress: (sent, total) {
-            if (mounted) {
-              setState(() {
-                _progress = (currentStep + (sent / total) * 0.5) / totalSteps;
-              });
-            }
-          },
+        // Compress PDF locally using file path
+        final result = await compressionRepo.compressPdf(
+          filePath: _selectedFiles[i].path,
+          quality: _getQualityValue(),
         );
-        currentStep++;
 
-        // Step 2: Compress using the server file ID
-        final job = await compressionRepo.compressPdf(
-          fileId: uploadedFile.id,
-          quality: _compressionLevel,
-        );
-        lastJobId = job.id;
-        currentStep++;
+        if (result.success) {
+          successCount++;
+        }
 
         if (mounted) {
           setState(() {
-            _progress = currentStep / totalSteps;
+            _progress = (i + 1) / _selectedFiles.length;
           });
         }
       }
@@ -145,29 +127,29 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
           _isCompressing = false;
         });
 
-        // Show success dialog with options
-        final result = await ConversionSuccessDialog.show(
-          context,
-          title: 'Compression Started!',
-          message:
-              'Your PDFs are being compressed. View the result when complete.',
-          jobId: lastJobId,
-        );
+        if (successCount > 0) {
+          // Show success dialog
+          final dialogResult = await ConversionSuccessDialog.show(
+            context,
+            title: 'Compression Complete!',
+            message: '$successCount of ${_selectedFiles.length} PDFs compressed successfully.',
+          );
 
-        if (!mounted) return;
+          if (!mounted) return;
 
-        switch (result) {
-          case 'view_job':
-            if (lastJobId != null) context.openJobDetail(lastJobId);
-            break;
-          case 'history':
-            context.go(AppRoutes.jobs);
-            break;
-          case 'stay':
-            setState(() {
-              _selectedFiles.clear();
-            });
-            break;
+          switch (dialogResult) {
+            case 'view_job':
+            case 'history':
+              context.go('/files');
+              break;
+            case 'stay':
+              setState(() {
+                _selectedFiles.clear();
+              });
+              break;
+          }
+        } else {
+          _showSnackBar('Compression failed for all files', isSuccess: false);
         }
       }
     } on Exception catch (e) {
@@ -178,6 +160,18 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
           _isCompressing = false;
         });
       }
+    }
+  }
+
+  int _getQualityValue() {
+    switch (_compressionLevel) {
+      case 'low':
+        return 90;
+      case 'high':
+        return 50;
+      case 'medium':
+      default:
+        return 75;
     }
   }
 
@@ -719,7 +713,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                       ),
                       trailing: IconButton(
                         onPressed: () => _removeFile(index),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.close_rounded,
                           color: AppTheme.errorColor,
                         ),

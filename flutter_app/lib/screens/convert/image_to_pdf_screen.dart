@@ -6,9 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 
-import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
-import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -79,21 +77,13 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      // Step 1: Upload all images and collect their IDs
-      final List<String> uploadedFileIds = [];
-      for (int i = 0; i < _selectedImages.length; i++) {
-        final file = File(_selectedImages[i]);
-        final uploadedFile = await filesRepo.uploadFile(file);
-        uploadedFileIds.add(uploadedFile.id);
-      }
-
-      // Step 2: Convert using server file IDs
-      final job = await conversionRepo.imagesToPdf(
-        fileIds: uploadedFileIds,
+      // Convert images to PDF locally using file paths
+      final result = await conversionRepo.imagesToPdf(
+        filePaths: _selectedImages,
         pageSize: _pageSize,
+        title: _pdfName,
       );
 
       if (mounted) {
@@ -101,30 +91,30 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
           _isProcessing = false;
         });
 
-        // Show success dialog with options
-        final result = await ConversionSuccessDialog.show(
-          context,
-          title: 'Conversion Started!',
-          message:
-              'Your images are being converted to PDF. You can view the progress or convert more files.',
-          jobId: job.id,
-        );
+        if (result.success) {
+          // Show success dialog with options
+          final dialogResult = await ConversionSuccessDialog.show(
+            context,
+            title: 'Conversion Complete!',
+            message: result.message,
+          );
 
-        if (!mounted) return;
+          if (!mounted) return;
 
-        switch (result) {
-          case 'view_job':
-            context.openJobDetail(job.id);
-            break;
-          case 'history':
-            context.go(AppRoutes.jobs);
-            break;
-          case 'stay':
-            // Clear selection for next conversion
-            setState(() {
-              _selectedImages.clear();
-            });
-            break;
+          switch (dialogResult) {
+            case 'view_job':
+            case 'history':
+              context.go('/files');
+              break;
+            case 'stay':
+              // Clear selection for next conversion
+              setState(() {
+                _selectedImages.clear();
+              });
+              break;
+          }
+        } else {
+          _showSnackBar(result.message, isSuccess: false);
         }
       }
     } on Exception catch (e) {
@@ -563,7 +553,7 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
         final fileName = imagePath.split('/').last;
 
         return Container(
-          key: ValueKey('image_$index\_$imagePath'),
+          key: ValueKey('image_${index}_$imagePath'),
           child: _ImageListItem(
             imagePath: imagePath,
             fileName: fileName,
@@ -626,7 +616,6 @@ class _ImageListItem extends StatelessWidget {
   final VoidCallback onRemove;
 
   const _ImageListItem({
-    super.key,
     required this.imagePath,
     required this.fileName,
     required this.index,
@@ -717,7 +706,7 @@ class _ImageListItem extends StatelessWidget {
           // Remove button
           IconButton(
             onPressed: onRemove,
-            icon: Icon(
+            icon: const Icon(
               Icons.close_rounded,
               color: AppTheme.errorColor,
             ),

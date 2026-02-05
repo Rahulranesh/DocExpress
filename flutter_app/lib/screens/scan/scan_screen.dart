@@ -1,12 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
@@ -22,7 +19,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   final ImagePicker _picker = ImagePicker();
   final List<String> _capturedImages = [];
   bool _isProcessing = false;
-  bool _flashOn = false;
+  final bool _flashOn = false;
 
   Future<void> _openCamera() async {
     try {
@@ -86,9 +83,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
       _showSnackBar('Scans processed successfully!', isSuccess: true);
 
-      // Navigate to conversion options
+      // Navigate to files
       if (mounted) {
-        context.go(AppRoutes.jobs);
+        context.go('/files');
       }
     } catch (e) {
       _showSnackBar('Failed to process scans: $e', isSuccess: false);
@@ -215,48 +212,40 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   Future<void> _processToPdf() async {
     setState(() => _isProcessing = true);
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      // Step 1: Upload all images and collect their IDs
-      final List<String> uploadedFileIds = [];
-      for (final imagePath in _capturedImages) {
-        final file = File(imagePath);
-        final uploadedFile = await filesRepo.uploadFile(file);
-        uploadedFileIds.add(uploadedFile.id);
-      }
-
-      // Step 2: Convert using server file IDs
-      final job = await conversionRepo.imagesToPdf(
-        fileIds: uploadedFileIds,
+      // Convert images to PDF locally using file paths
+      final result = await conversionRepo.imagesToPdf(
+        filePaths: _capturedImages,
         pageSize: 'A4',
       );
 
       if (mounted) {
         setState(() => _isProcessing = false);
 
-        // Show success dialog with options
-        final result = await ConversionSuccessDialog.show(
-          context,
-          title: 'PDF Creation Started!',
-          message: 'Your scanned images are being converted to PDF.',
-          jobId: job.id,
-        );
+        if (result.success) {
+          // Show success dialog with options
+          final dialogResult = await ConversionSuccessDialog.show(
+            context,
+            title: 'PDF Creation Complete!',
+            message: result.message,
+          );
 
-        if (!mounted) return;
+          if (!mounted) return;
 
-        switch (result) {
-          case 'view_job':
-            context.openJobDetail(job.id);
-            break;
-          case 'history':
-            context.go(AppRoutes.jobs);
-            break;
-          case 'stay':
-            setState(() {
-              _capturedImages.clear();
-            });
-            break;
+          switch (dialogResult) {
+            case 'view_job':
+            case 'history':
+              context.go('/files');
+              break;
+            case 'stay':
+              setState(() {
+                _capturedImages.clear();
+              });
+              break;
+          }
+        } else {
+          _showSnackBar(result.message, isSuccess: false);
         }
       }
     } on Exception catch (e) {
@@ -269,41 +258,42 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   Future<void> _processOcr() async {
     setState(() => _isProcessing = true);
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
-      // Upload first image for OCR
+      // Extract text from first image locally using file path
       if (_capturedImages.isNotEmpty) {
-        final file = File(_capturedImages.first);
-        final uploadedFile = await filesRepo.uploadFile(file);
-        final job = await conversionRepo.imageToText(fileId: uploadedFile.id);
+        final result = await conversionRepo.imageToText(
+          filePath: _capturedImages.first,
+        );
 
         if (mounted) {
           setState(() => _isProcessing = false);
 
-          // Show success dialog with options
-          final result = await ConversionSuccessDialog.show(
-            context,
-            title: 'OCR Started!',
-            message:
-                'Text is being extracted from your image. View the result when complete.',
-            jobId: job.id,
-          );
+          if (result.success) {
+            // Show success dialog with extracted text preview
+            final dialogResult = await ConversionSuccessDialog.show(
+              context,
+              title: 'OCR Complete!',
+              message: result.extractedText != null 
+                  ? 'Text extracted successfully. ${result.extractedText!.length > 100 ? '${result.extractedText!.substring(0, 100)}...' : result.extractedText}'
+                  : result.message,
+            );
 
-          if (!mounted) return;
+            if (!mounted) return;
 
-          switch (result) {
-            case 'view_job':
-              context.openJobDetail(job.id);
-              break;
-            case 'history':
-              context.go(AppRoutes.jobs);
-              break;
-            case 'stay':
-              setState(() {
-                _capturedImages.clear();
-              });
-              break;
+            switch (dialogResult) {
+              case 'view_job':
+              case 'history':
+                context.go('/files');
+                break;
+              case 'stay':
+                setState(() {
+                  _capturedImages.clear();
+                });
+                break;
+            }
+          } else {
+            _showSnackBar(result.message, isSuccess: false);
           }
         }
       }
@@ -319,7 +309,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       // Apply enhancement and save
       await Future.delayed(const Duration(seconds: 2));
       _showSnackBar('Images enhanced and saved!', isSuccess: true);
-      if (mounted) context.go(AppRoutes.files);
+      if (mounted) context.go('/files');
     } catch (e) {
       _showSnackBar('Enhancement failed: $e', isSuccess: false);
     } finally {
@@ -517,14 +507,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               textAlign: TextAlign.center,
             ).animate().fadeIn(delay: 300.ms),
             const SizedBox(height: 32),
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _FeatureChip(
                   icon: Icons.auto_fix_high_rounded,
                   label: 'Auto-enhance',
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 _FeatureChip(
                   icon: Icons.crop_rounded,
                   label: 'Auto-crop',
@@ -841,7 +831,7 @@ class _ImageCard extends StatelessWidget {
               onTap: onRemove,
               child: Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppTheme.errorColor,
                   shape: BoxShape.circle,
                 ),

@@ -79,7 +79,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: [AppTheme.primaryColor, AppTheme.primaryDark],
                     ),
                     borderRadius: BorderRadius.circular(12),

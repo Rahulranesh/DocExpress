@@ -146,7 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Container(
               width: 60,
               height: 60,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppTheme.primaryColor, AppTheme.primaryDark],
                 ),
@@ -498,7 +498,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _showSnackBar(
                           'Thank you for your ${index + 1}-star rating!');
                     },
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.star_rounded,
                       color: Colors.amber,
                       size: 32,

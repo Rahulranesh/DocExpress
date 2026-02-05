@@ -214,13 +214,6 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
             color: Colors.purple,
             onTap: () => context.openPdfReorder(),
           ),
-          _ConversionTool(
-            title: 'Extract Images',
-            description: 'Get images from PDF',
-            icon: Icons.photo_library_rounded,
-            color: Colors.blue,
-            onTap: () => context.openPdfExtractImages(),
-          ),
         ],
       ),
       _ConversionCategory(
@@ -271,6 +264,13 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
             icon: Icons.photo_size_select_small_rounded,
             color: Colors.blue,
             onTap: () => context.openCompressImage(),
+          ),
+          _ConversionTool(
+            title: 'Compress Video',
+            description: 'Reduce video file size',
+            icon: Icons.video_file_rounded,
+            color: Colors.purple,
+            onTap: () => context.openCompressVideo(),
           ),
           _ConversionTool(
             title: 'Compress PDF',

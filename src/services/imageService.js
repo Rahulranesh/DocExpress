@@ -9,7 +9,7 @@ const path = require('path');
 const { PDFDocument } = require('pdf-lib');
 const PptxGenJS = require('pptxgenjs');
 const { Document, Packer, Paragraph, ImageRun } = require('docx');
-const storageService = require('./storageService');
+const { getTempPath } = require('../utils/tempPath');
 const { IMAGE_FORMATS, IMAGE_QUALITY } = require('../utils/constants');
 const AppError = require('../utils/AppError');
 
@@ -23,7 +23,7 @@ class ImageService {
    */
   async convertFormat(inputPath, targetFormat, options = {}) {
     const { quality = IMAGE_QUALITY.HIGH } = options;
-    const outputPath = storageService.getTempPath(`.${targetFormat}`);
+    const outputPath = getTempPath(`.${targetFormat}`);
 
     let pipeline = sharp(inputPath);
 
@@ -70,7 +70,7 @@ class ImageService {
       throw AppError.badRequest('Width or height required for resize');
     }
 
-    const outputPath = storageService.getTempPath(`.${format}`);
+    const outputPath = getTempPath(`.${format}`);
 
     await sharp(inputPath)
       .resize({
@@ -98,7 +98,7 @@ class ImageService {
       throw AppError.badRequest('Width and height required for crop');
     }
 
-    const outputPath = storageService.getTempPath(`.${format}`);
+    const outputPath = getTempPath(`.${format}`);
 
     await sharp(inputPath)
       .extract({
@@ -122,7 +122,7 @@ class ImageService {
    */
   async rotate(inputPath, angle, options = {}) {
     const { format = 'jpeg', quality = IMAGE_QUALITY.HIGH, background = { r: 255, g: 255, b: 255, alpha: 1 } } = options;
-    const outputPath = storageService.getTempPath(`.${format}`);
+    const outputPath = getTempPath(`.${format}`);
 
     await sharp(inputPath)
       .rotate(angle, { background })
@@ -140,7 +140,7 @@ class ImageService {
    */
   async grayscale(inputPath, options = {}) {
     const { format = 'jpeg', quality = IMAGE_QUALITY.HIGH } = options;
-    const outputPath = storageService.getTempPath(`.${format}`);
+    const outputPath = getTempPath(`.${format}`);
 
     await sharp(inputPath)
       .grayscale()
@@ -158,7 +158,7 @@ class ImageService {
    */
   async applyTransforms(inputPath, operations, outputOptions = {}) {
     const { format = 'jpeg', quality = IMAGE_QUALITY.HIGH } = outputOptions;
-    const outputPath = storageService.getTempPath(`.${format}`);
+    const outputPath = getTempPath(`.${format}`);
 
     let pipeline = sharp(inputPath);
 
@@ -229,7 +229,7 @@ class ImageService {
 
     // Determine output format
     const outputFormat = format || this.getFormatFromMime(metadata.format) || 'jpeg';
-    const outputPath = storageService.getTempPath(`.${outputFormat}`);
+    const outputPath = getTempPath(`.${outputFormat}`);
 
     let pipeline = sharp(inputPath);
 
@@ -283,7 +283,7 @@ class ImageService {
    */
   async imagesToPdf(inputPaths, options = {}) {
     const { pageSize = 'A4', margin = 20 } = options;
-    const outputPath = storageService.getTempPath('.pdf');
+    const outputPath = getTempPath('.pdf');
 
     const pdfDoc = await PDFDocument.create();
 
@@ -343,7 +343,7 @@ class ImageService {
    */
   async imagesToPptx(inputPaths, options = {}) {
     const { slideWidth = 10, slideHeight = 7.5 } = options;
-    const outputPath = storageService.getTempPath('.pptx');
+    const outputPath = getTempPath('.pptx');
 
     const pptx = new PptxGenJS();
     pptx.layout = 'LAYOUT_WIDE';
@@ -397,7 +397,7 @@ class ImageService {
    */
   async imagesToDocx(inputPaths, options = {}) {
     const { title = 'Image Document', maxWidth = 600 } = options;
-    const outputPath = storageService.getTempPath('.docx');
+    const outputPath = getTempPath('.docx');
 
     const children = [
       new Paragraph({
@@ -447,7 +447,7 @@ class ImageService {
    * @returns {Promise<{path: string, text: string}>}
    */
   async imageToText(inputPath) {
-    const outputPath = storageService.getTempPath('.txt');
+    const outputPath = getTempPath('.txt');
 
     // Preprocess image for better OCR results
     const processedBuffer = await sharp(inputPath)
@@ -495,7 +495,7 @@ class ImageService {
       quality = IMAGE_QUALITY.HIGH,
     } = options;
 
-    const outputPath = storageService.getTempPath(`.${format}`);
+    const outputPath = getTempPath(`.${format}`);
 
     // Get metadata for all images
     const metadataList = await Promise.all(
@@ -582,7 +582,7 @@ class ImageService {
    */
   async generateThumbnail(inputPath, options = {}) {
     const { width = 200, height = 200, fit = 'cover' } = options;
-    const outputPath = storageService.getTempPath('.jpg');
+    const outputPath = getTempPath('.jpg');
 
     await sharp(inputPath)
       .resize(width, height, { fit, position: 'center' })
@@ -625,3 +625,4 @@ class ImageService {
 }
 
 module.exports = new ImageService();
+

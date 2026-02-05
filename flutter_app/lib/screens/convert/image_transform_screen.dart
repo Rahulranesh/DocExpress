@@ -7,8 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../repositories/offline_conversion_repository.dart';
 import '../../widgets/common_widgets.dart';
 
 class ImageTransformScreen extends ConsumerStatefulWidget {
@@ -64,48 +64,41 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
     });
 
     try {
-      // For now, use a simple approach - create transform operations
-      final operations = <TransformOperation>[];
-
+      final conversionRepo = ref.read(conversionRepositoryProvider);
+      
+      // Handle different transform types with the new API
+      ConversionResult result;
+      
       switch (_transformType) {
         case 'resize':
-          operations.add(TransformOperation(
-            type: 'resize',
-            options: {
-              'width': _resizeWidth,
-              'height': _resizeHeight,
-              'maintainAspectRatio': _maintainAspectRatio,
-            },
-          ));
+          result = await conversionRepo.resizeImage(
+            filePath: _selectedFilePath!,
+            width: _resizeWidth,
+            height: _resizeHeight,
+          );
           break;
         case 'rotate':
-          operations.add(TransformOperation(
-            type: 'rotate',
-            options: {'angle': _rotationAngle},
-          ));
+          result = await conversionRepo.transformImage(
+            filePath: _selectedFilePath!,
+            rotate: _rotationAngle,
+          );
           break;
         case 'crop':
-          operations.add(TransformOperation(
-            type: 'crop',
-            options: {
-              'x': _cropX,
-              'y': _cropY,
-              'width': _cropWidth,
-              'height': _cropHeight,
-            },
-          ));
+          result = await conversionRepo.cropImage(
+            filePath: _selectedFilePath!,
+            x: _cropX,
+            y: _cropY,
+            width: _cropWidth,
+            height: _cropHeight,
+          );
           break;
+        default:
+          throw Exception('Unknown transform type: $_transformType');
       }
 
-      // Upload file first to get server file ID
-      final filesRepo = ref.read(filesRepositoryProvider);
-      final file = File(_selectedFilePath!);
-      final uploadedFile = await filesRepo.uploadFile(file);
-
-      await ref.read(conversionRepositoryProvider).transformImage(
-            fileId: uploadedFile.id,
-            operations: operations,
-          );
+      if (!result.success) {
+        throw Exception(result.message);
+      }
 
       _showSnackBar('Image transformed successfully!', isSuccess: true);
       if (mounted) {

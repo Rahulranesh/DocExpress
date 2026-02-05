@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,38 +79,22 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final compressionRepo = ref.read(compressionRepositoryProvider);
-      final totalSteps = _selectedImages.length * 2; // Upload + Compress
+      final totalSteps = _selectedImages.length * 2; // Simulated steps for progress
       int currentStep = 0;
       String? lastJobId;
 
-      // Upload and compress each image
+      // Compress each image locally
       for (final image in _selectedImages) {
-        // Step 1: Upload the file
-        final file = File(image.path);
-        final uploadedFile = await filesRepo.uploadFile(
-          file,
-          onProgress: (sent, total) {
-            // Update progress during upload
-            if (mounted) {
-              setState(() {
-                _progress = (currentStep + (sent / total) * 0.5) / totalSteps;
-              });
-            }
-          },
-        );
-        currentStep++;
-
-        // Step 2: Compress using the server file ID
-        final job = await compressionRepo.compressImage(
-          fileId: uploadedFile.id,
+        // Step 1: Compress the image directly using local processing
+        final result = await compressionRepo.compressImage(
+          filePath: image.path,
           quality: _quality,
           maxWidth: _resizeIfLarger ? _maxWidth : null,
           maxHeight: _resizeIfLarger ? _maxHeight : null,
         );
-        lastJobId = job.id;
-        currentStep++;
+        currentStep += 2; // Count as 2 steps (upload+compress combined)
+        lastJobId = result.outputPath; // Use output path as job reference
 
         if (mounted) {
           setState(() {
@@ -138,10 +120,11 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
 
         switch (result) {
           case 'view_job':
-            if (lastJobId != null) context.openJobDetail(lastJobId);
+            // For offline mode, open files screen instead
+            context.go(AppRoutes.files);
             break;
           case 'history':
-            context.go(AppRoutes.jobs);
+            context.go(AppRoutes.files);
             break;
           case 'stay':
             setState(() {
@@ -572,7 +555,7 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
                 ),
                 trailing: IconButton(
                   onPressed: () => _removeImage(index),
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.close_rounded,
                     color: AppTheme.errorColor,
                   ),
@@ -870,7 +853,7 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.analytics_rounded,
                 color: Colors.green,
                 size: 20,
@@ -908,7 +891,7 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.arrow_forward_rounded,
                 color: Colors.green,
               ),
@@ -946,7 +929,7 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.savings_rounded,
                   color: Colors.green,
                   size: 18,

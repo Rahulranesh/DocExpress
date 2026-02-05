@@ -4,14 +4,20 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../core/constants/app_constants.dart';
 import '../models/models.dart';
-import '../services/api_service.dart';
 import '../services/storage_service.dart';
-import '../repositories/auth_repository.dart';
-import '../repositories/notes_repository.dart';
-import '../repositories/files_repository.dart';
-import '../repositories/jobs_repository.dart';
-import '../repositories/conversion_repository.dart';
-import '../repositories/compression_repository.dart';
+import '../services/api_service.dart';
+
+// Import ONLY offline repositories - MongoDB has been completely removed
+import '../repositories/offline_notes_repository.dart';
+import '../repositories/offline_auth_repository.dart';
+import '../repositories/offline_files_repository.dart';
+import '../repositories/offline_conversion_repository.dart';
+import '../repositories/offline_jobs_repository.dart';
+import '../repositories/offline_compression_repository.dart';
+
+// ==================== FULLY OFFLINE MODE ====================
+// This app operates completely offline with local storage
+// No backend server or MongoDB required
 
 // ==================== Core Services ====================
 
@@ -29,47 +35,54 @@ final storageServiceProvider = Provider<StorageService>((ref) {
   return StorageService(secureStorage: ref.watch(secureStorageProvider));
 });
 
-/// API service provider
+/// API service provider (for backend conversions)
 final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService(
-    baseUrl: AppConstants.defaultBaseUrl,
-    secureStorage: ref.watch(secureStorageProvider),
-  );
+  final storageService = ref.watch(storageServiceProvider);
+  debugPrint('🔧 [PROVIDER] API Service: Initialized for backend conversions');
+  return ApiService(storageService: storageService);
 });
 
-// ==================== Repositories ====================
+// ==================== Offline Repositories ====================
 
-/// Auth repository provider
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(
+/// Auth repository provider (fully offline - Hive local storage)
+final authRepositoryProvider = Provider<OfflineAuthRepository>((ref) {
+  debugPrint('🔧 [PROVIDER] Auth: Using LOCAL storage (Hive)');
+  return OfflineAuthRepository();
+});
+
+/// Notes repository provider (fully offline - Hive local storage)
+final notesRepositoryProvider = Provider<OfflineNotesRepository>((ref) {
+  debugPrint('🔧 [PROVIDER] Notes: Using LOCAL storage (Hive)');
+  return OfflineNotesRepository();
+});
+
+/// Files repository provider (fully offline - Local file system)
+final filesRepositoryProvider = Provider<OfflineFilesRepository>((ref) {
+  debugPrint('🔧 [PROVIDER] Files: Using LOCAL file system');
+  return OfflineFilesRepository();
+});
+
+/// Jobs repository provider (fully offline - Hive local storage)
+final jobsRepositoryProvider = Provider<OfflineJobsRepository>((ref) {
+  debugPrint('🔧 [PROVIDER] Jobs: Using LOCAL storage (Hive)');
+  return OfflineJobsRepository();
+});
+
+/// Conversion repository provider (fully offline - Local processing)
+final conversionRepositoryProvider =
+    Provider<OfflineConversionRepository>((ref) {
+  debugPrint(
+      '🔧 [PROVIDER] Conversion: Using LOCAL processing with BACKEND fallback');
+  return OfflineConversionRepository(
     apiService: ref.watch(apiServiceProvider),
-    storageService: ref.watch(storageServiceProvider),
   );
 });
 
-/// Notes repository provider
-final notesRepositoryProvider = Provider<NotesRepository>((ref) {
-  return NotesRepository(apiService: ref.watch(apiServiceProvider));
-});
-
-/// Files repository provider
-final filesRepositoryProvider = Provider<FilesRepository>((ref) {
-  return FilesRepository(apiService: ref.watch(apiServiceProvider));
-});
-
-/// Jobs repository provider
-final jobsRepositoryProvider = Provider<JobsRepository>((ref) {
-  return JobsRepository(apiService: ref.watch(apiServiceProvider));
-});
-
-/// Conversion repository provider
-final conversionRepositoryProvider = Provider<ConversionRepository>((ref) {
-  return ConversionRepository(apiService: ref.watch(apiServiceProvider));
-});
-
-/// Compression repository provider
-final compressionRepositoryProvider = Provider<CompressionRepository>((ref) {
-  return CompressionRepository(apiService: ref.watch(apiServiceProvider));
+/// Compression repository provider (fully offline - Local processing)
+final compressionRepositoryProvider =
+    Provider<OfflineCompressionRepository>((ref) {
+  debugPrint('🔧 [PROVIDER] Compression: Using LOCAL processing');
+  return OfflineCompressionRepository();
 });
 
 // ==================== Auth State ====================
@@ -112,43 +125,23 @@ class AuthState {
   factory AuthState.error(String message) => AuthState(error: message);
 }
 
-/// Auth state notifier
+/// Auth state notifier (fully offline - local storage only)
 class AuthStateNotifier extends StateNotifier<AuthState> {
-  final AuthRepository _authRepository;
-  final StorageService _storageService;
+  final OfflineAuthRepository _authRepository;
 
-  AuthStateNotifier(this._authRepository, this._storageService)
-      : super(AuthState.initial());
+  AuthStateNotifier(this._authRepository) : super(AuthState.initial());
 
-  /// Initialize auth state - check for existing token
+  /// Initialize auth state - check for existing local user
   Future<void> initialize() async {
     state = AuthState.loading();
 
     try {
-      final isAuthenticated = await _authRepository.isAuthenticated();
-      if (isAuthenticated) {
-        // First try to get stored user for offline access
-        final user = await _authRepository.getStoredUser();
-        if (user != null) {
-          // Immediately authenticate with cached user
-          state = AuthState.authenticated(user);
-
-          // Then try to validate token in background and refresh user data
-          try {
-            final isValid = await _authRepository.validateToken();
-            if (!isValid) {
-              // Token expired, force re-login
-              state = AuthState.unauthenticated();
-            }
-          } catch (_) {
-            // Network error - keep user logged in with cached data
-            // They can continue using the app offline
-          }
-          return;
-        }
-      }
-      state = AuthState.unauthenticated();
+      debugPrint('🔐 [AUTH] Checking local authentication...');
+      final user = await _authRepository.getCurrentUser();
+      debugPrint('✅ [AUTH] User found locally: ${user.email}');
+      state = AuthState.authenticated(user);
     } catch (e) {
+      debugPrint('ℹ️ [AUTH] No local user found or error: $e');
       state = AuthState.unauthenticated();
     }
   }
@@ -161,16 +154,17 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final response = await _authRepository.login(
-        email: email,
-        password: password,
-      );
+      debugPrint('🔐 [AUTH] Logging in locally: $email');
+      final response =
+          await _authRepository.login(email: email, password: password);
+      debugPrint('✅ [AUTH] Login successful');
       state = AuthState.authenticated(response.user);
       return true;
     } catch (e) {
+      debugPrint('❌ [AUTH] Login failed: $e');
       state = state.copyWith(
         isLoading: false,
-        error: e.toString().replaceAll('ApiException: ', ''),
+        error: e.toString().replaceAll('Exception: ', ''),
       );
       return false;
     }
@@ -185,17 +179,17 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      debugPrint('📝 [AUTH] Registering locally: $email');
       final response = await _authRepository.register(
-        name: name,
-        email: email,
-        password: password,
-      );
+          name: name, email: email, password: password);
+      debugPrint('✅ [AUTH] Registration successful');
       state = AuthState.authenticated(response.user);
       return true;
     } catch (e) {
+      debugPrint('❌ [AUTH] Registration failed: $e');
       state = state.copyWith(
         isLoading: false,
-        error: e.toString().replaceAll('ApiException: ', ''),
+        error: e.toString().replaceAll('Exception: ', ''),
       );
       return false;
     }
@@ -205,10 +199,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
     try {
+      debugPrint('🚪 [AUTH] Logging out locally');
       await _authRepository.logout();
-    } catch (_) {
-      // Ignore errors
-    }
+    } catch (_) {}
     state = AuthState.unauthenticated();
   }
 
@@ -217,18 +210,18 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _authRepository.getCurrentUser();
       state = state.copyWith(user: user);
-    } catch (_) {
-      // Keep current state
-    }
+    } catch (_) {}
   }
 
   /// Update profile
   Future<bool> updateProfile({String? name}) async {
     try {
+      debugPrint('📝 [AUTH] Updating profile locally');
       final user = await _authRepository.updateProfile(name: name);
       state = state.copyWith(user: user);
       return true;
     } catch (e) {
+      debugPrint('❌ [AUTH] Profile update failed: $e');
       return false;
     }
   }
@@ -239,12 +232,14 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     required String newPassword,
   }) async {
     try {
+      debugPrint('🔑 [AUTH] Changing password locally');
       await _authRepository.changePassword(
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
       return true;
     } catch (e) {
+      debugPrint('❌ [AUTH] Password change failed: $e');
       return false;
     }
   }
@@ -252,10 +247,26 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   /// Delete account
   Future<bool> deleteAccount() async {
     try {
+      debugPrint('🗑️ [AUTH] Deleting account locally');
       await _authRepository.deleteAccount();
       state = AuthState.unauthenticated();
       return true;
     } catch (e) {
+      debugPrint('❌ [AUTH] Account deletion failed: $e');
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
+  /// Continue as guest
+  Future<bool> continueAsGuest() async {
+    try {
+      debugPrint('👤 [AUTH] Continuing as guest');
+      final response = await _authRepository.continueAsGuest();
+      state = AuthState.authenticated(response.user);
+      return true;
+    } catch (e) {
+      debugPrint('❌ [AUTH] Guest login failed: $e');
       state = state.copyWith(error: e.toString());
       return false;
     }
@@ -270,10 +281,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 /// Auth state provider
 final authStateProvider =
     StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
-  return AuthStateNotifier(
-    ref.watch(authRepositoryProvider),
-    ref.watch(storageServiceProvider),
-  );
+  return AuthStateNotifier(ref.watch(authRepositoryProvider));
 });
 
 /// Current user provider
@@ -329,9 +337,9 @@ class NotesListState {
   }
 }
 
-/// Notes list notifier
+/// Notes list notifier (fully offline - Hive local storage)
 class NotesListNotifier extends StateNotifier<NotesListState> {
-  final NotesRepository _repository;
+  final OfflineNotesRepository _repository;
 
   NotesListNotifier(this._repository) : super(const NotesListState());
 
@@ -537,9 +545,9 @@ class FilesListState {
   }
 }
 
-/// Files list notifier
+/// Files list notifier (fully offline - local file system)
 class FilesListNotifier extends StateNotifier<FilesListState> {
-  final FilesRepository _repository;
+  final OfflineFilesRepository _repository;
 
   FilesListNotifier(this._repository) : super(const FilesListState());
 
@@ -566,7 +574,7 @@ class FilesListNotifier extends StateNotifier<FilesListState> {
 
       debugPrint('📂 FilesListNotifier: Loaded ${result.data.length} files');
       state = state.copyWith(
-        files: result.data,
+        files: List<FileModel>.from(result.data),
         pagination: result.pagination,
         isLoading: false,
       );
@@ -592,7 +600,7 @@ class FilesListNotifier extends StateNotifier<FilesListState> {
       );
 
       state = state.copyWith(
-        files: [...state.files, ...result.data],
+        files: [...state.files, ...List<FileModel>.from(result.data)],
         pagination: result.pagination,
         isLoadingMore: false,
       );
@@ -745,9 +753,9 @@ class JobsListState {
   }
 }
 
-/// Jobs list notifier
+/// Jobs list notifier (fully offline - local storage)
 class JobsListNotifier extends StateNotifier<JobsListState> {
-  final JobsRepository _repository;
+  final OfflineJobsRepository _repository;
 
   JobsListNotifier(this._repository) : super(const JobsListState());
 
@@ -847,8 +855,8 @@ class JobsListNotifier extends StateNotifier<JobsListState> {
     try {
       debugPrint('🗑️ Deleting job with id: $id');
       await _repository.deleteJob(id);
-      debugPrint('🗑️ Job deleted from server, reloading jobs from server');
-      // Reload jobs from server to get correct pagination
+      debugPrint('🗑️ Job deleted locally, reloading jobs');
+      // Reload jobs to get correct pagination
       await loadJobs(refresh: true);
       debugPrint('🗑️ Jobs reloaded, current count: ${state.jobs.length}');
       return true;
@@ -916,7 +924,7 @@ class JobDetailState {
 }
 
 class JobDetailNotifier extends StateNotifier<JobDetailState> {
-  final JobsRepository _repository;
+  final OfflineJobsRepository _repository;
   final String jobId;
 
   JobDetailNotifier(this._repository, this.jobId)
@@ -1063,26 +1071,17 @@ final defaultFormatProvider = StateProvider<String>((ref) {
 // ==================== Conversion Controller ====================
 
 /// A simple conversion controller used by screens to start conversions.
-/// This is intentionally lightweight — it forwards calls to the
-/// `ConversionRepository`. Implement upload and richer state as needed.
+/// This is fully offline - all conversions happen locally on device.
 class ConversionController extends StateNotifier<void> {
-  final ConversionRepository _repository;
+  final OfflineConversionRepository _repository;
 
   ConversionController(this._repository) : super(null);
 
-  Future<Job> convertImagesToPdf(List<String> pathsOrIds,
+  Future<dynamic> convertImagesToPdf(List<String> pathsOrIds,
       [Map<String, dynamic>? options]) async {
-    // If pathsOrIds look like ids (no path separators), assume they are ids
-    final looksLikeId =
-        pathsOrIds.isNotEmpty && !pathsOrIds.first.contains('/');
-    if (looksLikeId) {
-      return _repository.imagesToPdf(fileIds: pathsOrIds);
-    }
-
-    // For local paths, we would need to upload first, but this is handled in the UI layer
-    // This method is kept for backwards compatibility
-    throw UnimplementedError(
-        'Use the UI layer to handle file uploads before conversion');
+    debugPrint('🔄 [CONVERSION] Converting images to PDF locally');
+    return _repository.imagesToPdf(
+        filePaths: pathsOrIds, title: options?['title']);
   }
 }
 
@@ -1092,7 +1091,7 @@ final conversionProvider =
 });
 
 /// Alias provider for PDF-specific operations (backwards compatibility)
-final pdfRepositoryProvider = Provider<ConversionRepository>((ref) {
+final pdfRepositoryProvider = Provider<dynamic>((ref) {
   return ref.watch(conversionRepositoryProvider);
 });
 

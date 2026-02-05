@@ -1,47 +1,41 @@
 {
-  "name": "docxpress-backend",
-  "version": "1.0.0",
-  "description": "Backend API for DocXpress - document scanner, converter, compressor, and note-taking app",
+  "name": "docxpress-simple-backend",
+  "version": "2.0.0",
+  "description": "Simple conversion backend for DocXpress - DOCX/PPTX/PDF conversions only",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "jest"
+    "dev": "nodemon src/server.js"
   },
   "keywords": [
     "document",
-    "scanner",
     "converter",
-    "compressor",
     "pdf",
-    "ocr"
+    "docx",
+    "pptx"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "docx": "^8.5.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "express-rate-limit": "^7.2.0",
-    "express-validator": "^7.0.1",
-    "fluent-ffmpeg": "^2.1.2",
     "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
     "mammoth": "^1.11.0",
-    "mongoose": "^8.3.2",
     "multer": "^1.4.5-lts.1",
     "pdf-lib": "^1.17.1",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "pptxgenjs": "^3.12.0",
-    "sharp": "^0.33.3",
-    "tesseract.js": "^5.0.5",
+    "sharp": "^0.33.0",
     "uuid": "^9.0.1"
   },
+  "optionalDependencies": {
+    "canvas": "^2.11.2",
+    "pdfjs-dist": "^3.11.174"
+  },
   "devDependencies": {
-    "jest": "^29.7.0",
     "nodemon": "^3.1.0"
   },
   "engines": {

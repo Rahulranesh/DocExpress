@@ -52,7 +52,7 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
     await Future.delayed(const Duration(seconds: 1));
 
     // Generate mock pages (in production, get actual page count from PDF)
-    final pageCount = 8; // Mock page count
+    const pageCount = 8; // Mock page count
     setState(() {
       _pages = List.generate(
         pageCount,
@@ -392,7 +392,7 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.insert_drive_file_rounded,
                 color: Colors.red,
                 size: 20,
@@ -455,7 +455,7 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
             itemBuilder: (context, index) {
               final page = _pages[index];
               return Container(
-                key: ValueKey('page_$index\_${page.originalIndex}'),
+                key: ValueKey('page_${index}_${page.originalIndex}'),
                 child: _PageItem(
                   page: page,
                   index: index,
@@ -560,7 +560,6 @@ class _PageItem extends StatelessWidget {
   final bool isDark;
 
   const _PageItem({
-    super.key,
     required this.page,
     required this.index,
     required this.isDark,

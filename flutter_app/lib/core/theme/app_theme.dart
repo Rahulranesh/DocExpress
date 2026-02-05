@@ -288,11 +288,11 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: lightDivider),
+          borderSide: const BorderSide(color: lightDivider),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: lightDivider),
+          borderSide: const BorderSide(color: lightDivider),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
@@ -332,7 +332,7 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusFull),
-          side: BorderSide(color: lightDivider),
+          side: const BorderSide(color: lightDivider),
         ),
       ),
 
@@ -401,14 +401,14 @@ class AppTheme {
       ),
 
       // Bottom Sheet Theme
-      bottomSheetTheme: BottomSheetThemeData(
+      bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: lightSurface,
         elevation: 0,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(radiusXl)),
         ),
         dragHandleColor: lightDivider,
-        dragHandleSize: const Size(40, 4),
+        dragHandleSize: Size(40, 4),
         showDragHandle: true,
       ),
 
@@ -619,11 +619,11 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: darkDivider),
+          borderSide: const BorderSide(color: darkDivider),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: darkDivider),
+          borderSide: const BorderSide(color: darkDivider),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
@@ -664,7 +664,7 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusFull),
-          side: BorderSide(color: darkDivider),
+          side: const BorderSide(color: darkDivider),
         ),
       ),
 
@@ -733,14 +733,14 @@ class AppTheme {
       ),
 
       // Bottom Sheet Theme
-      bottomSheetTheme: BottomSheetThemeData(
+      bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: darkSurface,
         elevation: 0,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(radiusXl)),
         ),
         dragHandleColor: darkDivider,
-        dragHandleSize: const Size(40, 4),
+        dragHandleSize: Size(40, 4),
         showDragHandle: true,
       ),
 

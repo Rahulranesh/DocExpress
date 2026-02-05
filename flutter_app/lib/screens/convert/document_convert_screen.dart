@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +8,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../widgets/common_widgets.dart';
+import '../../repositories/offline_conversion_repository.dart';
 
 class DocumentConvertScreen extends ConsumerStatefulWidget {
   final String conversionType;
@@ -35,7 +34,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
   _ConversionInfo get _conversionInfo {
     switch (widget.conversionType.toUpperCase()) {
       case 'DOCX_TO_PDF':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'DOCX',
           targetType: 'PDF',
           sourceExtensions: ['docx', 'doc'],
@@ -44,7 +43,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Convert Word documents to PDF format',
         );
       case 'PDF_TO_DOCX':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'PDF',
           targetType: 'DOCX',
           sourceExtensions: ['pdf'],
@@ -53,7 +52,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Convert PDF files to Word documents',
         );
       case 'PPTX_TO_PDF':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'PPTX',
           targetType: 'PDF',
           sourceExtensions: ['pptx', 'ppt'],
@@ -62,7 +61,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Convert PowerPoint presentations to PDF',
         );
       case 'PDF_TO_PPTX':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'PDF',
           targetType: 'PPTX',
           sourceExtensions: ['pdf'],
@@ -72,7 +71,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
         );
       case 'IMAGE_TO_TXT':
       case 'OCR':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'Image',
           targetType: 'Text',
           sourceExtensions: ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'webp'],
@@ -81,7 +80,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Extract text from images using OCR',
         );
       case 'IMAGE_TO_PPTX':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'Images',
           targetType: 'PPTX',
           sourceExtensions: ['jpg', 'jpeg', 'png', 'bmp', 'webp'],
@@ -90,7 +89,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Create a presentation from images',
         );
       case 'IMAGE_TO_DOCX':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'Images',
           targetType: 'DOCX',
           sourceExtensions: ['jpg', 'jpeg', 'png', 'bmp', 'webp'],
@@ -99,7 +98,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Create a Word document from images',
         );
       case 'IMAGE_MERGE':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'Images',
           targetType: 'Image',
           sourceExtensions: ['jpg', 'jpeg', 'png', 'bmp', 'webp'],
@@ -108,7 +107,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Merge multiple images into one',
         );
       case 'PDF_TO_TXT':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'PDF',
           targetType: 'Text',
           sourceExtensions: ['pdf'],
@@ -117,7 +116,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Extract text content from PDF files',
         );
       case 'PDF_EXTRACT_IMAGES':
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'PDF',
           targetType: 'Images',
           sourceExtensions: ['pdf'],
@@ -126,7 +125,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           description: 'Extract all images from PDF files',
         );
       default:
-        return _ConversionInfo(
+        return const _ConversionInfo(
           sourceType: 'File',
           targetType: 'File',
           sourceExtensions: ['*'],
@@ -277,49 +276,74 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
     });
 
     try {
-      final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
-      final totalSteps = _selectedFiles.length * 2; // Upload + Convert
-      int currentStep = 0;
-      final info = _conversionInfo;
+      final conversionType = widget.conversionType.toUpperCase();
+      final filePaths = _selectedFiles.map((f) => f.path).toList();
 
-      // Upload files first and get their IDs
-      final List<String> uploadedFileIds = [];
-      for (int i = 0; i < _selectedFiles.length; i++) {
-        final file = File(_selectedFiles[i].path);
-        final uploadedFile = await filesRepo.uploadFile(
-          file,
-          onProgress: (sent, total) {
+      ConversionResult? result;
+
+      // Handle different conversion types
+      switch (conversionType) {
+        case 'IMAGE_TO_PPTX':
+          // Convert all images to a single presentation
+          result = await conversionRepo.imagesToPptx(
+            filePaths: filePaths,
+            title: 'Presentation',
+          );
+          break;
+
+        case 'IMAGE_TO_DOCX':
+          // Convert all images to a single document
+          result = await conversionRepo.imagesToDocx(
+            filePaths: filePaths,
+            title: 'Document',
+          );
+          break;
+
+        case 'IMAGE_MERGE':
+          // Merge all images into one
+          result = await conversionRepo.mergeImages(
+            filePaths: filePaths,
+            vertical: true,
+          );
+          break;
+
+        case 'IMAGE_TO_TXT':
+        case 'OCR':
+          // Process each image for OCR
+          for (int i = 0; i < filePaths.length; i++) {
+            result = await conversionRepo.imageToText(filePath: filePaths[i]);
+            if (!result.success) break;
             if (mounted) {
               setState(() {
-                _progress = (currentStep + (sent / total) * 0.5) / totalSteps;
+                _progress = (i + 1) / filePaths.length;
               });
             }
-          },
-        );
-        uploadedFileIds.add(uploadedFile.id);
-        currentStep++;
-        if (mounted) {
-          setState(() {
-            _progress = currentStep / totalSteps;
-          });
-        }
+          }
+          break;
+
+        default:
+          // Process each file individually for other conversions
+          final info = _conversionInfo;
+          final targetFormat = info.targetType.toLowerCase();
+
+          for (int i = 0; i < filePaths.length; i++) {
+            result = await conversionRepo.convertDocument(
+              filePath: filePaths[i],
+              targetFormat: targetFormat,
+            );
+            if (!result.success) break;
+            if (mounted) {
+              setState(() {
+                _progress = (i + 1) / filePaths.length;
+              });
+            }
+          }
       }
 
-      // Get output name from first file (for single-file conversions)
-      final outputExt = _getOutputExtension(info.targetType);
-      final firstFile = _selectedFiles.first;
-      final outputName = firstFile.outputName.replaceAll(
-        RegExp(r'\.[^.]+$'),
-        '.$outputExt',
-      );
-
-      // Call actual conversion with server file IDs and output name
-      final job = await conversionRepo.convertDocument(
-        fileIds: uploadedFileIds,
-        conversionType: widget.conversionType,
-        outputName: outputName,
-      );
+      if (result != null && !result.success) {
+        throw Exception(result.message);
+      }
 
       if (mounted) {
         setState(() {
@@ -328,22 +352,20 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
         });
 
         // Show success dialog with options
-        final result = await ConversionSuccessDialog.show(
+        final dialogResult = await ConversionSuccessDialog.show(
           context,
-          title: 'Conversion Started!',
+          title: 'Conversion Complete!',
           message:
-              'Your files are being converted. You can view the progress or convert more files.',
-          jobId: job.id,
+              'Your files have been converted. You can view them in Files or convert more.',
+          jobId: null,
         );
 
         if (!mounted) return;
 
-        switch (result) {
+        switch (dialogResult) {
           case 'view_job':
-            context.openJobDetail(job.id);
-            break;
           case 'history':
-            context.go(AppRoutes.jobs);
+            context.go(AppRoutes.files);
             break;
           case 'stay':
             // Clear selection for next conversion
@@ -778,7 +800,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                           ),
                           IconButton(
                             onPressed: () => _removeFile(index),
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.close_rounded,
                               color: AppTheme.errorColor,
                             ),

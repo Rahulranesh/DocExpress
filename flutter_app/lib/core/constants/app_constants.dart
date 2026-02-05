@@ -8,14 +8,14 @@ class AppConstants {
   static const String appBuildNumber = '1';
 
   // API Configuration
-  // For Android emulator: use 10.0.2.2 (special IP that maps to host's localhost)
-  // For iOS simulator: use localhost
-  // For physical device: use your computer's actual IP address (e.g., 192.168.x.x)
-  // For Windows desktop: use localhost or 127.0.0.1
-  static const String defaultBaseUrl = 'http://10.200.175.180:3000/api';
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 60);
-  static const Duration uploadTimeout = Duration(minutes: 5);
+  // For Android Emulator use: http://10.0.2.2:3000/api
+  // For Physical Device use: http://YOUR_IP:3000/api
+  // For Production use: https://your-app.railway.app/api
+  static const String defaultBaseUrl = 'https://doc-backend-1-187r.onrender.com/api';
+
+  static const Duration connectionTimeout = Duration(minutes: 2);
+  static const Duration receiveTimeout = Duration(minutes: 5);
+  static const Duration uploadTimeout = Duration(minutes: 10);
 
   // Storage Keys
   static const String tokenKey = 'auth_token';

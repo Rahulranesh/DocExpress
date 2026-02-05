@@ -1,27 +1,27 @@
 /**
- * Routes Index - combines all route modules
+ * Routes Index - Simplified for conversion-only backend
  */
 
 const express = require('express');
 const router = express.Router();
 
-// Import route modules
-const authRoutes = require('./authRoutes');
-const noteRoutes = require('./noteRoutes');
-const fileRoutes = require('./fileRoutes');
-const conversionRoutes = require('./conversionRoutes');
-const pdfRoutes = require('./pdfRoutes');
-const compressionRoutes = require('./compressionRoutes');
-const jobRoutes = require('./jobRoutes');
-const adminRoutes = require('./adminRoutes');
+// Import only the simple conversion routes
+const simpleConversionRoutes = require('./simpleConversionRoutes');
 
 // Root API endpoint
 router.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to DocXpress API',
-    version: '1.0.0',
-    documentation: '/api/health',
+    message: 'Welcome to DocXpress Simple Conversion API',
+    version: '2.0.0',
+    features: [
+      'DOCX → PDF',
+      'PPTX → PDF',
+      'PDF → DOCX',
+      'PDF → PPTX',
+      'Extract Images from PDF',
+    ],
+    documentation: '/api/simple-convert/health',
   });
 });
 
@@ -29,19 +29,19 @@ router.get('/', (req, res) => {
 router.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'DocXpress API is running',
+    message: 'DocXpress Simple Conversion API is running',
     timestamp: new Date().toISOString(),
+    features: [
+      'DOCX → PDF',
+      'PPTX → PDF',
+      'PDF → DOCX',
+      'PDF → PPTX',
+      'Extract Images from PDF',
+    ],
   });
 });
 
-// Mount routes
-router.use('/auth', authRoutes);
-router.use('/notes', noteRoutes);
-router.use('/files', fileRoutes);
-router.use('/convert', conversionRoutes);
-router.use('/pdf', pdfRoutes);
-router.use('/compress', compressionRoutes);
-router.use('/jobs', jobRoutes);
-router.use('/admin', adminRoutes);
+// Mount simple conversion routes (no auth, no MongoDB)
+router.use('/simple-convert', simpleConversionRoutes);
 
 module.exports = router;
