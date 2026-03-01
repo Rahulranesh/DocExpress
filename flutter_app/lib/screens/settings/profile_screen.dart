@@ -7,6 +7,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -254,6 +255,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
+    // Watch palette for reactive color updates
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -322,15 +325,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primaryColor, AppTheme.primaryDark],
+                gradient: LinearGradient(
+                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    color: theme.colorScheme.primary.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),

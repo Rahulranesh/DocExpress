@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class PdfCompressScreen extends ConsumerStatefulWidget {
@@ -31,7 +32,6 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
       description: 'Best quality, larger size',
       reduction: '~20%',
       icon: Icons.high_quality_rounded,
-      color: Colors.green,
     ),
     const _CompressionOption(
       id: 'medium',
@@ -39,7 +39,6 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
       description: 'Balanced quality and size',
       reduction: '~50%',
       icon: Icons.tune_rounded,
-      color: Colors.orange,
     ),
     const _CompressionOption(
       id: 'high',
@@ -47,7 +46,6 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
       description: 'Smallest size, lower quality',
       reduction: '~80%',
       icon: Icons.compress_rounded,
-      color: Colors.red,
     ),
   ];
 
@@ -405,6 +403,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -444,13 +443,13 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.compress_rounded,
                 size: 64,
-                color: Colors.red,
+                color: theme.colorScheme.primary,
               ),
             ).animate(onPlay: (c) => c.repeat()).scale(
                   begin: const Offset(1, 1),
@@ -481,7 +480,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                 backgroundColor:
                     isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
                 borderRadius: BorderRadius.circular(4),
-                color: Colors.red,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -532,13 +531,13 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.red.withOpacity(0.1),
-            Colors.red.withOpacity(0.05),
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.primary.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.red.withOpacity(0.2),
+          color: theme.colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -546,12 +545,12 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.picture_as_pdf_rounded,
-              color: Colors.red,
+              color: theme.colorScheme.primary,
               size: 28,
             ),
           ),
@@ -626,7 +625,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
           color: isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.red.withOpacity(0.3),
+            color: theme.colorScheme.primary.withOpacity(0.3),
             width: 2,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -636,13 +635,13 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.upload_file_rounded,
                 size: 48,
-                color: Colors.red,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -689,12 +688,12 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
+                          color: theme.colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.picture_as_pdf_rounded,
-                          color: Colors.red,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       title: Text(
@@ -749,6 +748,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
   }
 
   Widget _buildCompressionOptions(ThemeData theme, bool isDark) {
+    final primaryColor = theme.colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -777,14 +777,14 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? option.color.withOpacity(0.1)
+                        ? primaryColor.withOpacity(0.1)
                         : isDark
                             ? AppTheme.darkSurface
                             : AppTheme.lightSurface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
-                          ? option.color
+                          ? primaryColor
                           : isDark
                               ? AppTheme.darkDivider
                               : AppTheme.lightDivider,
@@ -796,7 +796,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                       Icon(
                         option.icon,
                         color: isSelected
-                            ? option.color
+                            ? primaryColor
                             : isDark
                                 ? AppTheme.darkTextSecondary
                                 : AppTheme.lightTextSecondary,
@@ -806,7 +806,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                         option.title,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? option.color : null,
+                          color: isSelected ? primaryColor : null,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -814,7 +814,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                         option.reduction,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isSelected
-                              ? option.color
+                              ? primaryColor
                               : isDark
                                   ? AppTheme.darkTextSecondary
                                   : AppTheme.lightTextSecondary,
@@ -881,7 +881,7 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
                   label: 'Estimated',
                   value: _formatFileSize(estimatedSize),
                   icon: Icons.folder_zip_rounded,
-                  color: Colors.green,
+                  color: theme.colorScheme.primary,
                   isDark: isDark,
                 ),
               ),
@@ -891,22 +891,22 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.savings_rounded,
-                  color: Colors.green,
+                  color: theme.colorScheme.primary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Save ~${_formatFileSize(savings)} ($savingsPercent%)',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.green,
+                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -960,7 +960,6 @@ class _CompressionOption {
   final String description;
   final String reduction;
   final IconData icon;
-  final Color color;
 
   const _CompressionOption({
     required this.id,
@@ -968,7 +967,6 @@ class _CompressionOption {
     required this.description,
     required this.reduction,
     required this.icon,
-    required this.color,
   });
 }
 

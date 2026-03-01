@@ -7,6 +7,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class NotesScreen extends ConsumerStatefulWidget {
@@ -85,6 +86,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final notesState = ref.watch(notesListProvider);
+    // Watch palette for reactive color updates
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -199,6 +202,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   }
 
   Widget _buildNotesList(NotesListState state) {
+    final theme = Theme.of(context);
     // Separate pinned and unpinned notes
     final pinnedNotes = state.notes.where((n) => n.pinned).toList();
     final unpinnedNotes = state.notes.where((n) => !n.pinned).toList();
@@ -214,13 +218,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             sliver: SliverToBoxAdapter(
               child: Row(
                 children: [
-                  const Icon(Icons.push_pin,
-                      size: 16, color: AppTheme.primaryColor),
+                  Icon(Icons.push_pin,
+                      size: 16, color: theme.colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     'Pinned',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: AppTheme.primaryColor,
+                          color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -343,7 +347,7 @@ class _NoteCard extends StatelessWidget {
         children: [
           SlidableAction(
             onPressed: (_) => onTogglePin?.call(),
-            backgroundColor: AppTheme.primaryColor,
+            backgroundColor: theme.colorScheme.primary,
             foregroundColor: Colors.white,
             icon: note.pinned ? Icons.push_pin_outlined : Icons.push_pin,
             label: note.pinned ? 'Unpin' : 'Pin',
@@ -368,12 +372,12 @@ class _NoteCard extends StatelessWidget {
             Row(
               children: [
                 if (note.pinned)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
                     child: Icon(
                       Icons.push_pin,
                       size: 16,
-                      color: AppTheme.primaryColor,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 Expanded(
@@ -426,7 +430,7 @@ class _NoteCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            color: theme.colorScheme.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(
                               AppTheme.radiusFull,
                             ),
@@ -434,7 +438,7 @@ class _NoteCard extends StatelessWidget {
                           child: Text(
                             tag,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.primaryColor,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         );

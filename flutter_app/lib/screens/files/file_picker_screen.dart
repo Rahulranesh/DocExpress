@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class FilePickerScreen extends ConsumerStatefulWidget {
@@ -122,6 +123,7 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
     final filesState = ref.watch(filesListProvider);
 
     return Scaffold(
@@ -494,12 +496,12 @@ class _FilePickerItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _getFileColor().withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 _getFileIcon(),
-                color: _getFileColor(),
+                color: theme.colorScheme.primary,
                 size: 24,
               ),
             ),

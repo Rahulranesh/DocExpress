@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../providers/theme_provider.dart';
 
 class ConvertHubScreen extends ConsumerStatefulWidget {
   const ConvertHubScreen({super.key});
@@ -26,6 +27,7 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -381,12 +383,12 @@ class _ConvertHubScreenState extends ConsumerState<ConvertHubScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: category.color.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   category.icon,
-                  color: category.color,
+                  color: theme.colorScheme.primary,
                   size: 20,
                 ),
               ),
@@ -523,12 +525,12 @@ class _ToolCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: tool.color.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   tool.icon,
-                  color: tool.color,
+                  color: theme.colorScheme.primary,
                   size: 24,
                 ),
               ),

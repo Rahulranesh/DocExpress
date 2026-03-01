@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -49,6 +50,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final authState = ref.watch(authStateProvider);
     final isDark = theme.brightness == Brightness.dark;
+    // Watch palette for reactive color updates
+    ref.watch(colorPaletteProvider);
 
     // Show error snackbar if there's an error
     ref.listen<AuthState>(authStateProvider, (previous, next) {
@@ -85,18 +88,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                AppTheme.primaryColor,
-                                AppTheme.primaryDark,
+                                theme.colorScheme.primary,
+                                theme.colorScheme.primary.withOpacity(0.7),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryColor.withOpacity(0.3),
+                                color: theme.colorScheme.primary.withOpacity(0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -301,7 +304,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Text(
                             'Sign Up',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.primaryColor,
+                              color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),

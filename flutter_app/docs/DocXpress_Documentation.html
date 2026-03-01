@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocXpress - Technical Documentation & LinkedIn Content</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #F97316;
+            --primary-light: #FDBA74;
+            --primary-dark: #C2410C;
+            --accent: #3B82F6;
+            --success: #22C55E;
+            --warning: #EAB308;
+            --error: #EF4444;
+            --bg-dark: #1C1917;
+            --bg-card: #292524;
+            --text-primary: #FAFAF9;
+            --text-secondary: #A8A29E;
+            --border: #44403C;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 50px;
+        }
+        
+        /* Cover Page */
+        .cover {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #292524 50%, var(--bg-dark) 100%);
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+        }
+        
+        .cover::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .cover-logo {
+            width: 180px;
+            height: 180px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary), var(--primary-dark));
+            border-radius: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 72px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 40px;
+            box-shadow: 0 30px 80px rgba(249,115,22,0.4);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cover h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cover .subtitle {
+            font-size: 22px;
+            color: var(--text-secondary);
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cover-meta {
+            display: flex;
+            gap: 40px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cover-meta span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .cover-meta .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+        
+        /* Table of Contents */
+        .toc {
+            page-break-after: always;
+            padding: 60px 50px;
+        }
+        
+        .toc h2 {
+            font-size: 32px;
+            margin-bottom: 40px;
+            color: var(--primary);
+        }
+        
+        .toc-section {
+            margin-bottom: 30px;
+        }
+        
+        .toc-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-primary);
+        }
+        
+        .toc-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dotted var(--border);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .toc-item:hover {
+            color: var(--primary);
+        }
+        
+        /* Document Sections */
+        .document {
+            page-break-before: always;
+        }
+        
+        .section-header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            padding: 50px;
+            margin: -40px -50px 40px -50px;
+            text-align: center;
+        }
+        
+        .section-header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 10px;
+        }
+        
+        .section-header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 50px 0 20px 0;
+            color: var(--primary);
+        }
+        
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 40px 0 16px 0;
+            color: var(--text-primary);
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 30px 0 12px 0;
+            color: var(--primary-light);
+        }
+        
+        h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 24px 0 10px 0;
+            color: var(--text-primary);
+        }
+        
+        p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        tr:nth-child(even) {
+            background: rgba(255,255,255,0.02);
+        }
+        
+        tr:hover {
+            background: rgba(249,115,22,0.05);
+        }
+        
+        /* Code Blocks */
+        pre {
+            background: #0D0D0D;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary-light);
+        }
+        
+        pre code {
+            color: #E5E5E5;
+        }
+        
+        /* Inline code */
+        p code, li code, td code {
+            background: rgba(249,115,22,0.15);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+        
+        li::marker {
+            color: var(--primary);
+        }
+        
+        /* Status Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: rgba(34,197,94,0.15);
+            color: var(--success);
+        }
+        
+        .badge-warning {
+            background: rgba(234,179,8,0.15);
+            color: var(--warning);
+        }
+        
+        .badge-error {
+            background: rgba(239,68,68,0.15);
+            color: var(--error);
+        }
+        
+        .badge-info {
+            background: rgba(59,130,246,0.15);
+            color: var(--accent);
+        }
+        
+        /* Cards/Boxes */
+        .info-box {
+            background: var(--bg-card);
+            border-left: 4px solid var(--primary);
+            padding: 20px 24px;
+            margin: 24px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        
+        .info-box.success {
+            border-left-color: var(--success);
+        }
+        
+        .info-box.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .info-box.accent {
+            border-left-color: var(--accent);
+        }
+        
+        .info-box h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        /* Diagrams */
+        .diagram {
+            background: #0D0D0D;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 24px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre;
+            overflow-x: auto;
+            color: var(--text-secondary);
+        }
+        
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 24px 0;
+        }
+        
+        .metric-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .metric-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* LinkedIn Post Styling */
+        .linkedin-post {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 32px;
+            margin: 30px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .linkedin-post h3 {
+            color: var(--text-primary);
+            margin-top: 0;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        
+        .linkedin-post .content {
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        
+        .linkedin-post .hashtags {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            color: var(--accent);
+            font-size: 13px;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 50px 0;
+        }
+        
+        /* Page Break */
+        .page-break {
+            page-break-before: always;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: #1a1a1a;
+            }
+            
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+            
+            .cover {
+                background: white;
+            }
+            
+            .cover::before {
+                display: none;
+            }
+            
+            .cover h1 {
+                background: none;
+                -webkit-text-fill-color: #1a1a1a;
+            }
+            
+            .section-header {
+                background: var(--primary);
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            table, th, td {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .info-box, .linkedin-post, .metric-card {
+                background: #f5f5f5;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            pre, .diagram {
+                background: #f5f5f5;
+                border-color: #ddd;
+            }
+        }
+        
+        /* Workflow Section */
+        .workflow {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 28px;
+            margin: 24px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .workflow h4 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 18px;
+        }
+        
+        .workflow .old-way {
+            background: rgba(239,68,68,0.08);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            border-left: 3px solid var(--error);
+        }
+        
+        .workflow .new-way {
+            background: rgba(34,197,94,0.08);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            border-left: 3px solid var(--success);
+        }
+        
+        .workflow .time-saved {
+            background: var(--primary);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 12px;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+    <div class="cover-logo">DX</div>
+    <h1>DocXpress</h1>
+    <p class="subtitle">Technical Architecture Documentation<br>& LinkedIn Marketing Content</p>
+    <div class="cover-meta">
+        <span><span class="dot"></span> Version 1.0.0</span>
+        <span><span class="dot"></span> March 2026</span>
+        <span><span class="dot"></span> Internal Documentation</span>
+    </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc container">
+    <h2>Table of Contents</h2>
+    
+    <div class="toc-section">
+        <h3>Part 1: Technical Architecture</h3>
+        <div class="toc-item"><span>1. Executive Summary</span><span>4</span></div>
+        <div class="toc-item"><span>2. Folder Structure Explanation</span><span>5</span></div>
+        <div class="toc-item"><span>3. Architecture Pattern</span><span>7</span></div>
+        <div class="toc-item"><span>4. State Management</span><span>9</span></div>
+        <div class="toc-item"><span>5. API & Networking Layer</span><span>11</span></div>
+        <div class="toc-item"><span>6. Data Persistence</span><span>13</span></div>
+        <div class="toc-item"><span>7. UI Layer Design</span><span>14</span></div>
+        <div class="toc-item"><span>8. Performance Analysis</span><span>16</span></div>
+        <div class="toc-item"><span>9. Scalability Review</span><span>17</span></div>
+        <div class="toc-item"><span>10. Security Considerations</span><span>18</span></div>
+        <div class="toc-item"><span>11. Recommended Improvements</span><span>20</span></div>
+    </div>
+    
+    <div class="toc-section">
+        <h3>Part 2: LinkedIn Marketing Content</h3>
+        <div class="toc-item"><span>Post 1: The Problem with Document Apps</span><span>23</span></div>
+        <div class="toc-item"><span>Post 2: Workflows That Save Time</span><span>27</span></div>
+        <div class="toc-item"><span>Posting Guide & Strategy</span><span>31</span></div>
+    </div>
+</div>
+
+<!-- PART 1: ARCHITECTURE DOCUMENTATION -->
+<div class="document container">
+    <div class="section-header">
+        <h1>Part 1</h1>
+        <p>Technical Architecture Documentation</p>
+    </div>
+
+    <h1>1. Executive Summary</h1>
+    
+    <h2>1.1 Application Overview</h2>
+    <p><strong>DocXpress</strong> is a comprehensive document processing mobile application built with Flutter, designed for document scanning, file conversion, compression, and note-taking. The application operates in a <strong>hybrid offline-first architecture</strong> with optional backend fallback for complex operations.</p>
+    
+    <h3>Application Type</h3>
+    <table>
+        <tr><th>Attribute</th><th>Description</th></tr>
+        <tr><td>Category</td><td>Productivity / Document Management</td></tr>
+        <tr><td>Platform</td><td>Cross-platform (iOS, Android, Web, Desktop)</td></tr>
+        <tr><td>Primary Function</td><td>Document scanning, format conversion, compression, OCR, note-taking</td></tr>
+        <tr><td>Offline Capability</td><td>Full offline support with local processing</td></tr>
+    </table>
+    
+    <h3>Architecture Style</h3>
+    <p><strong>Layered Architecture with Repository Pattern</strong> — A hybrid approach combining:</p>
+    <ul>
+        <li>Clean Architecture principles for separation of concerns</li>
+        <li>Repository pattern for data abstraction</li>
+        <li>Provider/Riverpod for state management</li>
+        <li>Service-oriented design for business logic</li>
+    </ul>
+    
+    <h3>Maturity Assessment</h3>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-value">8/10</div>
+            <div class="metric-label">Code Organization</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">7/10</div>
+            <div class="metric-label">Scalability</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">8/10</div>
+            <div class="metric-label">Production Ready</div>
+        </div>
+    </div>
+    
+    <div class="info-box success">
+        <h4>Classification: Startup-Ready / Mid-Stage Production-Ready</h4>
+        <p>The codebase demonstrates engineering maturity suitable for a growing product with 10k-100k users. Enterprise-level improvements recommended for larger scale.</p>
+    </div>
+
+    <hr>
+    
+    <h1>2. Folder Structure</h1>
+    
+    <h2>2.1 Project Structure Overview</h2>
+    
+    <div class="diagram">lib/
+├── main.dart                    # Application entry point
+├── core/                        # Core infrastructure layer
+│   ├── constants/               # App-wide constants and configuration
+│   ├── exceptions/              # Custom exception classes
+│   ├── router/                  # Navigation configuration
+│   └── theme/                   # Design system
+├── models/                      # Data models layer
+├── providers/                   # State management layer
+├── repositories/                # Data abstraction layer
+│   ├── offline_auth_repository.dart
+│   ├── offline_notes_repository.dart
+│   ├── offline_files_repository.dart
+│   ├── offline_conversion_repository.dart
+│   └── offline_jobs_repository.dart
+├── services/                    # Business logic layer
+│   ├── api_service.dart
+│   ├── storage_service.dart
+│   ├── local_pdf_service.dart
+│   ├── local_image_service.dart
+│   ├── local_ocr_service.dart
+│   └── offline_service_manager.dart
+├── screens/                     # Presentation layer
+│   ├── auth/    ├── home/    ├── notes/
+│   ├── files/   ├── convert/ ├── compress/
+│   ├── scan/    ├── jobs/    └── settings/
+└── widgets/                     # Reusable UI components</div>
+
+    <h2>2.2 Layer Responsibilities</h2>
+    <table>
+        <tr><th>Layer</th><th>Folder</th><th>Responsibility</th><th>Coupling</th></tr>
+        <tr><td>Presentation</td><td><code>screens/</code>, <code>widgets/</code></td><td>UI rendering, user interaction</td><td>Depends on Providers</td></tr>
+        <tr><td>State Management</td><td><code>providers/</code></td><td>State orchestration, side effects</td><td>Depends on Repositories</td></tr>
+        <tr><td>Data Abstraction</td><td><code>repositories/</code></td><td>Data source abstraction</td><td>Depends on Services</td></tr>
+        <tr><td>Business Logic</td><td><code>services/</code></td><td>Core operations, transformations</td><td>Depends on Core</td></tr>
+        <tr><td>Data Models</td><td><code>models/</code></td><td>Data structures, serialization</td><td>Independent</td></tr>
+        <tr><td>Infrastructure</td><td><code>core/</code></td><td>Cross-cutting concerns</td><td>Independent</td></tr>
+    </table>
+
+    <div class="info-box">
+        <h4>Separation of Concerns Quality</h4>
+        <p><strong>Strengths:</strong></p>
+        <ul>
+            <li>Clear unidirectional dependency flow: UI → Providers → Repositories → Services</li>
+            <li>Models are independent and reusable across layers</li>
+            <li>Repository pattern enables seamless online/offline switching</li>
+        </ul>
+        <p><strong>Areas for Improvement:</strong></p>
+        <ul>
+            <li>Some providers contain business logic that could be moved to services</li>
+            <li>Missing dedicated <code>use_cases/</code> layer for complex business operations</li>
+        </ul>
+    </div>
+
+    <hr class="page-break">
+    
+    <h1>3. Architecture Pattern</h1>
+    
+    <h2>3.1 Pattern Classification</h2>
+    <p>The architecture is a <strong>Hybrid Layered Architecture</strong> combining:</p>
+    <ol>
+        <li><strong>Repository Pattern</strong> — Data source abstraction</li>
+        <li><strong>Service Pattern</strong> — Business logic encapsulation</li>
+        <li><strong>Provider Pattern</strong> — State management with dependency injection</li>
+        <li><strong>Offline-First Design</strong> — Local processing with backend fallback</li>
+    </ol>
+    
+    <h2>3.2 Dependency Direction</h2>
+    
+    <div class="diagram">┌─────────────────────────────────────────────────────────────────┐
+│                        PRESENTATION LAYER                        │
+│         Screens    │    Widgets    │    Navigation               │
+│                            │                                     │
+│                            ▼                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                     STATE MANAGEMENT LAYER                       │
+│                    Riverpod Providers                            │
+│      AuthState    │    NotesState    │    FilesState            │
+│                            │                                     │
+│                            ▼                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                    DATA ABSTRACTION LAYER                        │
+│   OfflineAuth    │   OfflineNotes   │   OfflineFiles            │
+│   Repository     │    Repository    │    Repository             │
+│                            │                                     │
+│                            ▼                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                     BUSINESS LOGIC LAYER                         │
+│   LocalAuth   │  LocalPDF  │  LocalImage  │  LocalOCR           │
+│    Service    │  Service   │   Service    │  Service            │
+│                            │                                     │
+│                            ▼                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                      INFRASTRUCTURE LAYER                        │
+│      Hive     │   Secure    │    File     │     Dio             │
+│    Storage    │   Storage   │   System    │    Client           │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+    <h2>3.3 Data Flow</h2>
+    
+    <div class="diagram">User Action
+    │
+    ▼
+┌─────────────────┐
+│  Screen/Widget  │  (ConsumerWidget)
+│  ref.read()     │─────────────────────────┐
+│  ref.watch()    │                         │
+└────────┬────────┘                         │
+         │ Trigger action                   ▼
+         ▼                         ┌─────────────────┐
+┌─────────────────┐                │  State Updates  │
+│ StateNotifier   │                │  (Automatic)    │
+│                 │                │  UI Rebuilds    │
+│ - loadData()    │                └─────────────────┘
+│ - createItem()  │                         ▲
+└────────┬────────┘                         │
+         │ Call repository                  │
+         ▼                                  │
+┌─────────────────┐                         │
+│   Repository    │ ── Return Result ───────┘
+│ - getData()     │
+└────────┬────────┘
+         │ Call service
+         ▼
+┌─────────────────┐
+│    Service      │
+│ Local Processing│
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│   Data Source   │
+│ Hive / File     │
+└─────────────────┘</div>
+
+    <hr class="page-break">
+    
+    <h1>4. State Management</h1>
+    
+    <h2>4.1 Framework Selection</h2>
+    <table>
+        <tr><th>Framework</th><th>Version</th><th>Role</th></tr>
+        <tr><td>Flutter Riverpod</td><td>2.4.9</td><td>Primary state management</td></tr>
+        <tr><td>Hooks Riverpod</td><td>2.4.9</td><td>Widget hooks integration</td></tr>
+    </table>
+    
+    <h2>4.2 Provider Types Used</h2>
+    <table>
+        <tr><th>Provider Type</th><th>Usage</th><th>Example</th></tr>
+        <tr><td><code>Provider</code></td><td>Static dependencies</td><td><code>secureStorageProvider</code></td></tr>
+        <tr><td><code>StateNotifierProvider</code></td><td>Complex state with actions</td><td><code>authStateProvider</code></td></tr>
+        <tr><td><code>FutureProvider</code></td><td>Async data fetching</td><td><code>noteTagsProvider</code></td></tr>
+        <tr><td><code>StateProvider</code></td><td>Simple mutable state</td><td><code>globalLoadingProvider</code></td></tr>
+        <tr><td><code>Provider.family</code></td><td>Parameterized providers</td><td><code>jobDetailProvider</code></td></tr>
+    </table>
+    
+    <h2>4.3 State Architecture Pattern</h2>
+    
+<pre><code>// State Class Pattern Used Throughout
+class NotesListState {
+  final List&lt;Note&gt; notes;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final String? error;
+  final PaginationInfo pagination;
+
+  // copyWith pattern for immutable updates
+  NotesListState copyWith({...});
+}
+
+// StateNotifier Pattern
+class NotesListNotifier extends StateNotifier&lt;NotesListState&gt; {
+  final OfflineNotesRepository _repository;
+
+  Future&lt;void&gt; loadNotes({bool refresh = false}) async {
+    state = state.copyWith(isLoading: true);
+    final result = await _repository.getNotes();
+    state = state.copyWith(notes: result, isLoading: false);
+  }
+}</code></pre>
+
+    <div class="info-box success">
+        <h4>Why This Works</h4>
+        <ul>
+            <li><strong>Compile-time safety</strong> — Riverpod provides type-safe state access</li>
+            <li><strong>Automatic disposal</strong> — Providers clean up when not used</li>
+            <li><strong>Testability</strong> — Easy to override providers in tests</li>
+            <li><strong>No BuildContext dependency</strong> — Providers accessible anywhere</li>
+        </ul>
+    </div>
+
+    <hr class="page-break">
+    
+    <h1>5. API & Networking Layer</h1>
+    
+    <h2>5.1 HTTP Client Configuration</h2>
+    
+<pre><code>class ApiService {
+  late final Dio _dio;
+  
+  ApiService({required StorageService storageService}) {
+    _dio = Dio(BaseOptions(
+      baseUrl: AppConstants.defaultBaseUrl,
+      connectTimeout: Duration(minutes: 2),
+      receiveTimeout: Duration(minutes: 5),
+      sendTimeout: Duration(minutes: 10),
+    ));
+    _setupInterceptors();
+  }
+}</code></pre>
+
+    <h2>5.2 Interceptor Architecture</h2>
+    <table>
+        <tr><th>Interceptor</th><th>Function</th></tr>
+        <tr><td>Auth Interceptor</td><td>Injects Bearer token from secure storage</td></tr>
+        <tr><td>Logging Interceptor</td><td>Debug prints for development</td></tr>
+        <tr><td>Error Handler</td><td>Transforms DioException to ApiException</td></tr>
+    </table>
+    
+    <h2>5.3 Offline-First Strategy</h2>
+    
+<pre><code>class OfflineConversionRepository {
+  Future&lt;ConversionResult&gt; imagesToPdf({
+    required List&lt;String&gt; filePaths
+  }) async {
+    // 1. Create local job entry
+    final job = await _jobsService.createJob(type: 'images_to_pdf');
+    
+    // 2. Process locally using native services
+    final outputPath = await _pdfService.imagesToPdf(imagePaths: filePaths);
+    
+    // 3. Save to local file system
+    final savedFile = await _fileService.saveFile(File(outputPath));
+    
+    // 4. Update job status
+    await _jobsService.updateJob(job.id, status: 'completed');
+    
+    return ConversionResult(success: true, outputPath: savedFile.path);
+  }
+}</code></pre>
+
+    <div class="info-box accent">
+        <h4>Key Benefit</h4>
+        <p>All core document processing happens on-device. No uploads. No server round-trips. Works completely offline.</p>
+    </div>
+
+    <hr class="page-break">
+    
+    <h1>6. Data Persistence</h1>
+    
+    <h2>6.1 Storage Solutions</h2>
+    <table>
+        <tr><th>Storage Type</th><th>Package</th><th>Use Case</th></tr>
+        <tr><td>Hive</td><td>hive_flutter 1.1.0</td><td>Structured data (notes, jobs, settings)</td></tr>
+        <tr><td>Secure Storage</td><td>flutter_secure_storage 9.0.0</td><td>Tokens, credentials</td></tr>
+        <tr><td>File System</td><td>path_provider 2.1.1</td><td>Documents, images, PDFs</td></tr>
+    </table>
+    
+    <h2>6.2 Secure Storage Configuration</h2>
+    
+<pre><code>final secureStorageProvider = Provider&lt;FlutterSecureStorage&gt;((ref) {
+  return const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device
+    ),
+  );
+});</code></pre>
+
+    <hr>
+    
+    <h1>7. UI Layer Design</h1>
+    
+    <h2>7.1 Responsive Layout Strategy</h2>
+    <table>
+        <tr><th>Breakpoint</th><th>Width</th><th>Navigation</th></tr>
+        <tr><td>Mobile</td><td>&lt; 600px</td><td>Bottom Navigation Bar</td></tr>
+        <tr><td>Tablet</td><td>600-900px</td><td>Navigation Rail (collapsed)</td></tr>
+        <tr><td>Desktop</td><td>&gt; 900px</td><td>Navigation Rail (extended)</td></tr>
+    </table>
+    
+    <h2>7.2 Theming System</h2>
+    <p><strong>Multi-Palette Design System</strong> with 6 color schemes:</p>
+    
+    <table>
+        <tr><th>Palette</th><th>Colors</th><th>Mood</th></tr>
+        <tr><td>Sunset</td><td>Orange / Yellow</td><td>Warm, Energetic (Default)</td></tr>
+        <tr><td>Ocean</td><td>Blue / Teal</td><td>Calm, Professional</td></tr>
+        <tr><td>Forest</td><td>Green / Emerald</td><td>Natural, Fresh</td></tr>
+        <tr><td>Lavender</td><td>Purple / Violet</td><td>Creative, Premium</td></tr>
+        <tr><td>Rose</td><td>Pink / Rose</td><td>Soft, Elegant</td></tr>
+        <tr><td>Midnight</td><td>Dark Blue / Navy</td><td>Sleek, Modern</td></tr>
+    </table>
+
+    <hr class="page-break">
+    
+    <h1>8. Performance Analysis</h1>
+    
+    <h2>8.1 Widget Tree Efficiency</h2>
+    <table>
+        <tr><th>Screen</th><th>Sliver Usage</th><th>Lazy Loading</th><th>Grade</th></tr>
+        <tr><td>HomeScreen</td><td>CustomScrollView</td><td>Yes</td><td><span class="badge badge-success">A</span></td></tr>
+        <tr><td>ConvertHubScreen</td><td>SliverList</td><td>Yes</td><td><span class="badge badge-success">A</span></td></tr>
+        <tr><td>NotesScreen</td><td>SliverGrid</td><td>Yes</td><td><span class="badge badge-success">A</span></td></tr>
+        <tr><td>SettingsScreen</td><td>SliverList</td><td>Yes</td><td><span class="badge badge-success">A</span></td></tr>
+    </table>
+    
+    <h2>8.2 Memory Considerations</h2>
+    <table>
+        <tr><th>Concern</th><th>Status</th><th>Mitigation</th></tr>
+        <tr><td>Image caching</td><td><span class="badge badge-success">Good</span></td><td>cached_network_image package</td></tr>
+        <tr><td>Large list handling</td><td><span class="badge badge-success">Good</span></td><td>Sliver-based layouts</td></tr>
+        <tr><td>PDF processing</td><td><span class="badge badge-warning">Caution</span></td><td>Large PDFs could cause pressure</td></tr>
+        <tr><td>Video compression</td><td><span class="badge badge-warning">Caution</span></td><td>Should use isolate</td></tr>
+    </table>
+
+    <hr>
+    
+    <h1>9. Scalability Review</h1>
+    
+    <h2>9.1 Current Capacity</h2>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-value">100k+</div>
+            <div class="metric-label">Concurrent Users</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">10k+</div>
+            <div class="metric-label">Local Documents</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">50MB</div>
+            <div class="metric-label">Per Document Limit</div>
+        </div>
+    </div>
+    
+    <h2>9.2 Potential Bottlenecks</h2>
+    <table>
+        <tr><th>Component</th><th>Threshold</th><th>Solution</th></tr>
+        <tr><td>Hive Performance</td><td>&gt;50k records</td><td>Implement pagination, consider SQLite</td></tr>
+        <tr><td>Memory on Low-End Devices</td><td>Large PDF/video</td><td>Streaming/chunked processing</td></tr>
+        <tr><td>Storage Space</td><td>Device limit</td><td>Implement retention policies</td></tr>
+    </table>
+
+    <hr class="page-break">
+    
+    <h1>10. Security Considerations</h1>
+    
+    <h2>10.1 Security Checklist</h2>
+    <table>
+        <tr><th>Item</th><th>Status</th></tr>
+        <tr><td>Secure token storage</td><td><span class="badge badge-success">Implemented</span></td></tr>
+        <tr><td>Certificate pinning</td><td><span class="badge badge-error">Not implemented</span></td></tr>
+        <tr><td>Root/Jailbreak detection</td><td><span class="badge badge-error">Not implemented</span></td></tr>
+        <tr><td>Code obfuscation</td><td><span class="badge badge-warning">Needs config</span></td></tr>
+        <tr><td>Input validation</td><td><span class="badge badge-success">Present</span></td></tr>
+        <tr><td>Data encryption at rest</td><td><span class="badge badge-warning">Partial</span></td></tr>
+    </table>
+    
+    <div class="info-box warning">
+        <h4>Recommendation</h4>
+        <p>Add Hive box encryption for sensitive data. Remove debug prints containing user information in release builds.</p>
+    </div>
+
+    <hr>
+    
+    <h1>11. Recommended Improvements</h1>
+    
+    <h2>11.1 Priority Refactors</h2>
+    <table>
+        <tr><th>Priority</th><th>Area</th><th>Effort</th><th>Impact</th></tr>
+        <tr><td><span class="badge badge-error">High</span></td><td>Split providers.dart (1100+ lines)</td><td>Low</td><td>High</td></tr>
+        <tr><td><span class="badge badge-error">High</span></td><td>Add database migrations</td><td>Medium</td><td>High</td></tr>
+        <tr><td><span class="badge badge-warning">Medium</span></td><td>Implement isolates for heavy processing</td><td>Medium</td><td>Medium</td></tr>
+        <tr><td><span class="badge badge-warning">Medium</span></td><td>Add crash reporting</td><td>Low</td><td>High</td></tr>
+    </table>
+    
+    <h2>11.2 Production Readiness Checklist</h2>
+    <table>
+        <tr><th>Category</th><th>Item</th><th>Status</th></tr>
+        <tr><td>Build</td><td>Release build configuration</td><td><span class="badge badge-warning">Verify</span></td></tr>
+        <tr><td>Build</td><td>Code obfuscation</td><td><span class="badge badge-error">Add</span></td></tr>
+        <tr><td>Monitoring</td><td>Crash reporting (Crashlytics)</td><td><span class="badge badge-error">Add</span></td></tr>
+        <tr><td>Monitoring</td><td>Analytics</td><td><span class="badge badge-error">Add</span></td></tr>
+        <tr><td>Quality</td><td>Unit tests (&gt;70% coverage)</td><td><span class="badge badge-error">Add</span></td></tr>
+        <tr><td>DevOps</td><td>CI/CD pipeline</td><td><span class="badge badge-error">Add</span></td></tr>
+    </table>
+</div>
+
+<!-- PART 2: LINKEDIN POSTS -->
+<div class="document container">
+    <div class="section-header">
+        <h1>Part 2</h1>
+        <p>LinkedIn Marketing Content</p>
+    </div>
+
+    <h1>Post 1 of 2</h1>
+    <h2>"The Problem with Document Apps"</h2>
+    
+    <div class="linkedin-post">
+        <h3>Full Post Content</h3>
+        <div class="content">Every document app I've used has the same problem.
+
+You download it for one simple task - scanning a receipt, converting an image to PDF, or compressing a video for email.
+
+Then the friction begins.
+
+"Create an account to continue."
+"Watch this 30-second ad."
+"Premium feature - upgrade for $9.99/month."
+"Uploading to our servers..."
+"Processing... please wait."
+"Download limit reached."
+
+For something that should take 5 seconds.
+
+I spent four months building DocXpress to solve this.
+
+<strong>Here's what it does:</strong>
+
+<strong>Document Scanning</strong>
+
+Point your camera at any document. The app detects the edges automatically. Tap once. It straightens the perspective, enhances the text contrast, removes shadows, and creates a clean scan.
+
+Not one blurry photo - an actual document-quality scan.
+
+Scan multiple pages continuously. They combine into a single PDF with proper page ordering. No manual arrangement needed.
+
+<strong>Format Conversion</strong>
+
+The core of the app. Every conversion you actually need:
+
+Images to PDF - Select 50 photos from a project folder. Get one organized PDF in seconds. Choose page size (A4, Letter, custom). Control margins and orientation.
+
+PDF Operations - Merge multiple PDFs into one. Split a 100-page document into chapters. Extract only pages 15, 23, and 47. Reorder pages by dragging them. All without uploading anything anywhere.
+
+Office Format Support - Images to PPTX creates actual presentation slides. Images to DOCX embeds them in a Word document. Ready to edit immediately.
+
+OCR Text Extraction - Point at a screenshot, whiteboard photo, or printed document. Extract the text. Copy and paste it anywhere. Works in 50+ languages.
+
+<strong>Compression That Actually Works</strong>
+
+Image compression with quality preview. See exactly what you're getting before committing. Typical result: 5MB photo becomes 400KB. Still looks good.
+
+PDF compression reduces file size without destroying text clarity. That 20MB contract becomes 3MB. Still readable. Still printable.
+
+Video compression is the real lifesaver. A 200MB video becomes 40MB. Choose your quality level. Preview before saving. Send it in email without "file too large" errors.
+
+<strong>The Whole Point</strong>
+
+All of this works completely offline.
+
+No servers. No uploads. No subscriptions for basic features. No ads. No account required.
+
+Your documents never leave your device unless you explicitly share them.
+
+Part 2: The specific workflows that save hours each week, and how the technical architecture makes offline processing possible.
+
+What document task wastes the most of your time?</div>
+        <div class="hashtags">#DocXpress #ProductivityApp #DocumentManagement #MobileApp #BuildInPublic</div>
+    </div>
+
+    <hr class="page-break">
+
+    <h1>Post 2 of 2</h1>
+    <h2>"Workflows That Actually Save Time"</h2>
+    
+    <div class="workflow">
+        <h4>Workflow 1: Client Meeting Documentation</h4>
+        <p>You're in a meeting. There's a whiteboard covered in diagrams and notes.</p>
+        
+        <div class="old-way">
+            <strong>Old way:</strong><br>
+            Take photos → Transfer to computer later → Crop and straighten manually → Find a PDF converter → Upload to some website → Wait for processing → Download result → Email to attendees
+        </div>
+        
+        <div class="new-way">
+            <strong>DocXpress way:</strong><br>
+            Open app, tap camera → Scan each whiteboard section → App auto-enhances and straightens → Tap "Create PDF" → Share directly to email or chat → Done before the meeting ends
+        </div>
+        
+        <span class="time-saved">Time saved: 15-20 minutes per meeting</span>
+    </div>
+    
+    <div class="workflow">
+        <h4>Workflow 2: Contract Handling</h4>
+        <p>A client sends you a 47-page contract. You need pages 12-15 (scope) and pages 44-47 (payment terms) as a separate document.</p>
+        
+        <div class="old-way">
+            <strong>Old way:</strong><br>
+            Open in PDF reader → Realize it can't extract pages → Google "free PDF splitter" → Find one with reasonable privacy → Upload confidential contract to unknown server → Download result → Repeat for second section → Find PDF merger → Upload both → Download final
+        </div>
+        
+        <div class="new-way">
+            <strong>DocXpress way:</strong><br>
+            Open PDF in app → Select pages 12-15 and 44-47 → Tap "Extract Selected" → New PDF ready instantly → Share
+        </div>
+        
+        <span class="time-saved">Time saved: 10-15 minutes. Privacy protected.</span>
+    </div>
+    
+    <div class="workflow">
+        <h4>Workflow 3: Expense Tracking</h4>
+        <p>You're traveling for work. You have 23 receipts from the trip.</p>
+        
+        <div class="old-way">
+            <strong>Old way:</strong><br>
+            Photograph each receipt → Hope they're readable → Transfer to computer → Manually name each file → Create expense report → Attach photos one by one → Submit
+        </div>
+        
+        <div class="new-way">
+            <strong>DocXpress way:</strong><br>
+            Batch scan all receipts → App enhances each one → Auto-organize by date → Add notes to each → Export as single PDF → Attach to expense report → Done
+        </div>
+        
+        <span class="time-saved">Time saved: 30+ minutes per trip</span>
+    </div>
+    
+    <div class="workflow">
+        <h4>Workflow 4: File Size Problems</h4>
+        <p>You need to email a video. It's 180MB. Email limit is 25MB.</p>
+        
+        <div class="old-way">
+            <strong>Old way:</strong><br>
+            Find compression software → Figure out settings → Guess at quality → Compress, check size → Still too big, try again → Quality unwatchable → Give up, upload to cloud → Send link
+        </div>
+        
+        <div class="new-way">
+            <strong>DocXpress way:</strong><br>
+            Open video → Choose target quality → See estimated size before processing → Compress → Preview quality → Share
+        </div>
+        
+        <span class="time-saved">Time saved: 15 minutes of guessing</span>
+    </div>
+    
+    <div class="info-box">
+        <h4>Daily Time Savings for Document-Heavy Roles</h4>
+        <p><strong>Daily:</strong> 30-45 minutes<br>
+        <strong>Weekly:</strong> 3-4 hours<br>
+        <strong>Monthly:</strong> 12-16 hours recovered</p>
+    </div>
+
+    <h2>Who It's For</h2>
+    <ul>
+        <li><strong>Real estate agents</strong> — property photos, contracts, disclosures</li>
+        <li><strong>Consultants</strong> — reports, presentations, client materials</li>
+        <li><strong>Legal professionals</strong> — contracts, evidence, correspondence</li>
+        <li><strong>Students and researchers</strong> — reading materials, notes, citations</li>
+        <li><strong>Small business owners</strong> — receipts, invoices, records</li>
+        <li><strong>Freelancers</strong> — project files, invoices, deliverables</li>
+        <li><strong>Field workers</strong> — inspection reports, site photos, forms</li>
+    </ul>
+    
+    <div class="linkedin-post">
+        <h3>Post Closing</h3>
+        <div class="content">Currently in final testing phase.
+
+If document handling is a regular friction point in your work, I'd like to hear about your specific pain points.
+
+Drop a comment or DM with your biggest document headache.</div>
+        <div class="hashtags">#DocXpress #Productivity #DocumentWorkflow #MobileApp #BuildInPublic #NoMoreFriction</div>
+    </div>
+
+    <hr class="page-break">
+    
+    <h1>Posting Guide</h1>
+    
+    <h2>Schedule</h2>
+    <table>
+        <tr><th>Post</th><th>Day</th><th>Time</th></tr>
+        <tr><td>Post 1: The Problem</td><td>Tuesday or Wednesday</td><td>8:00-10:00 AM</td></tr>
+        <tr><td>Post 2: Workflows</td><td>Friday or following Monday</td><td>8:00-10:00 AM</td></tr>
+    </table>
+    
+    <h2>Engagement Strategy</h2>
+    <ul>
+        <li>Respond to every comment within 2 hours</li>
+        <li>Ask follow-up questions to commenters</li>
+        <li>Pin the comment linking to Part 2 on Post 1</li>
+    </ul>
+    
+    <h2>Hashtag Strategy</h2>
+    <table>
+        <tr><th>Type</th><th>Hashtags</th></tr>
+        <tr><td>Core</td><td>#DocXpress #ProductivityApp #DocumentManagement</td></tr>
+        <tr><td>Reach</td><td>#BuildInPublic #MobileApp</td></tr>
+        <tr><td>Community</td><td>#Productivity #NoMoreFriction</td></tr>
+    </table>
+    
+    <div class="info-box accent">
+        <h4>Pro Tip</h4>
+        <p>LinkedIn limits effective hashtags to 3-5 per post. The #BuildInPublic community is highly engaged and often amplifies posts from indie makers.</p>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer container">
+    <p><strong>DocXpress</strong> — Technical Documentation & Marketing Content</p>
+    <p>Version 1.0.0 | March 2026 | Internal Use</p>
+</div>
+
+</body>
+</html>

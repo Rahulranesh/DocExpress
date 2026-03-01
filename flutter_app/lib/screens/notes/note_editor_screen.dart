@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -145,6 +146,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Watch palette for reactive color updates
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -154,7 +157,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           IconButton(
             icon: Icon(
               _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-              color: _isPinned ? AppTheme.primaryColor : null,
+              color: _isPinned ? theme.colorScheme.primary : null,
             ),
             onPressed: () => setState(() => _isPinned = !_isPinned),
             tooltip: _isPinned ? 'Unpin note' : 'Pin note',
@@ -216,7 +219,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _saveNote,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: theme.colorScheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius:

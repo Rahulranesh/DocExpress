@@ -1,0 +1,1594 @@
+<h1 id="docxpress---technical-architecture-documentation">DocXpress -
+Technical Architecture Documentation</h1>
+<p><strong>Version:</strong> 1.0.0<br />
+<strong>Last Updated:</strong> March 2026<br />
+<strong>Document Type:</strong> Internal Technical Documentation</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#1-executive-summary">Executive Summary</a></li>
+<li><a href="#2-folder-structure-explanation">Folder Structure
+Explanation</a></li>
+<li><a href="#3-architecture-pattern">Architecture Pattern</a></li>
+<li><a href="#4-state-management">State Management</a></li>
+<li><a href="#5-api--networking-layer">API &amp; Networking
+Layer</a></li>
+<li><a href="#6-data-persistence">Data Persistence</a></li>
+<li><a href="#7-ui-layer-design">UI Layer Design</a></li>
+<li><a href="#8-performance-analysis">Performance Analysis</a></li>
+<li><a href="#9-scalability-review">Scalability Review</a></li>
+<li><a href="#10-security-considerations">Security
+Considerations</a></li>
+<li><a href="#11-recommended-improvements">Recommended
+Improvements</a></li>
+</ol>
+<hr />
+<h2 id="executive-summary">1. Executive Summary</h2>
+<h3 id="application-overview">1.1 Application Overview</h3>
+<p><strong>DocXpress</strong> is a comprehensive document processing
+mobile application built with Flutter, designed for document scanning,
+file conversion, compression, and note-taking. The application operates
+in a <strong>hybrid offline-first architecture</strong> with optional
+backend fallback for complex operations.</p>
+<h3 id="application-type">1.2 Application Type</h3>
+<table>
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Category</strong></td>
+<td>Productivity / Document Management</td>
+</tr>
+<tr>
+<td><strong>Platform</strong></td>
+<td>Cross-platform (iOS, Android, Web, Desktop)</td>
+</tr>
+<tr>
+<td><strong>Primary Function</strong></td>
+<td>Document scanning, format conversion, compression, OCR,
+note-taking</td>
+</tr>
+<tr>
+<td><strong>Offline Capability</strong></td>
+<td>Full offline support with local processing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="architecture-style">1.3 Architecture Style</h3>
+<p><strong>Layered Architecture with Repository Pattern</strong> - A
+hybrid approach combining: - Clean Architecture principles for
+separation of concerns - Repository pattern for data abstraction -
+Provider/Riverpod for state management - Service-oriented design for
+business logic</p>
+<h3 id="maturity-assessment">1.4 Maturity Assessment</h3>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 32%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr>
+<th>Criteria</th>
+<th>Rating</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Code Organization</strong></td>
+<td>8/10</td>
+<td>Excellent separation of concerns</td>
+</tr>
+<tr>
+<td><strong>Scalability Readiness</strong></td>
+<td>7/10</td>
+<td>Good for 50k+ users, improvements needed for enterprise</td>
+</tr>
+<tr>
+<td><strong>Production Readiness</strong></td>
+<td>8/10</td>
+<td>Comprehensive error handling, offline support</td>
+</tr>
+<tr>
+<td><strong>Testability</strong></td>
+<td>6/10</td>
+<td>Architecture supports testing, coverage needs improvement</td>
+</tr>
+<tr>
+<td><strong>Maintainability</strong></td>
+<td>8/10</td>
+<td>Clear patterns, consistent code style</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Classification:</strong> <strong>Startup-Ready / Mid-Stage
+Production-Ready</strong></p>
+<p>The codebase demonstrates engineering maturity suitable for a growing
+product with 10k-100k users. Enterprise-level improvements recommended
+for larger scale.</p>
+<hr />
+<h2 id="folder-structure-explanation">2. Folder Structure
+Explanation</h2>
+<h3 id="project-structure-overview">2.1 Project Structure Overview</h3>
+<pre><code>lib/
+├── main.dart                    # Application entry point
+├── core/                        # Core infrastructure layer
+│   ├── constants/               # App-wide constants and configuration
+│   │   └── app_constants.dart   # API URLs, timeouts, file limits, keys
+│   ├── exceptions/              # Custom exception classes
+│   │   └── app_exception.dart   # Unified exception handling
+│   ├── router/                  # Navigation configuration
+│   │   └── app_router.dart      # GoRouter setup with auth guards
+│   └── theme/                   # Design system
+│       └── app_theme.dart       # Multi-palette theming system
+├── models/                      # Data models layer
+│   └── models.dart              # User, Note, FileModel, Job, etc.
+├── providers/                   # State management layer
+│   ├── providers.dart           # All Riverpod providers
+│   └── theme_provider.dart      # Theme state management
+├── repositories/                # Data abstraction layer
+│   ├── offline_auth_repository.dart
+│   ├── offline_notes_repository.dart
+│   ├── offline_files_repository.dart
+│   ├── offline_conversion_repository.dart
+│   ├── offline_jobs_repository.dart
+│   ├── offline_compression_repository.dart
+│   └── backend_conversion_repository.dart
+├── services/                    # Business logic layer
+│   ├── api_service.dart         # HTTP client (Dio wrapper)
+│   ├── storage_service.dart     # Secure/local storage
+│   ├── offline_service_manager.dart  # Service orchestration
+│   ├── local_auth_service.dart
+│   ├── local_notes_service.dart
+│   ├── local_file_service.dart
+│   ├── local_pdf_service.dart
+│   ├── local_image_service.dart
+│   ├── local_ocr_service.dart
+│   ├── local_compression_service.dart
+│   ├── local_jobs_service.dart
+│   ├── local_document_service.dart
+│   └── local_office_service.dart
+├── screens/                     # Presentation layer
+│   ├── auth/                    # Authentication screens
+│   ├── home/                    # Home and main navigation
+│   ├── notes/                   # Note-taking feature
+│   ├── files/                   # File management
+│   ├── convert/                 # Conversion tools
+│   ├── compress/                # Compression tools
+│   ├── scan/                    # Document scanning
+│   ├── jobs/                    # Job/history tracking
+│   └── settings/                # App settings
+└── widgets/                     # Reusable UI components
+    ├── app_logo.dart            # Branding component
+    └── common_widgets.dart      # Shared widgets library</code></pre>
+<h3 id="layer-responsibilities">2.2 Layer Responsibilities</h3>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 17%" />
+<col style="width: 34%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Folder</th>
+<th>Responsibility</th>
+<th>Coupling Level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Presentation</strong></td>
+<td><code>screens/</code>, <code>widgets/</code></td>
+<td>UI rendering, user interaction</td>
+<td>Depends on Providers</td>
+</tr>
+<tr>
+<td><strong>State Management</strong></td>
+<td><code>providers/</code></td>
+<td>State orchestration, side effects</td>
+<td>Depends on Repositories</td>
+</tr>
+<tr>
+<td><strong>Data Abstraction</strong></td>
+<td><code>repositories/</code></td>
+<td>Data source abstraction</td>
+<td>Depends on Services</td>
+</tr>
+<tr>
+<td><strong>Business Logic</strong></td>
+<td><code>services/</code></td>
+<td>Core operations, transformations</td>
+<td>Depends on Core</td>
+</tr>
+<tr>
+<td><strong>Data Models</strong></td>
+<td><code>models/</code></td>
+<td>Data structures, serialization</td>
+<td>Independent</td>
+</tr>
+<tr>
+<td><strong>Infrastructure</strong></td>
+<td><code>core/</code></td>
+<td>Cross-cutting concerns</td>
+<td>Independent</td>
+</tr>
+</tbody>
+</table>
+<h3 id="separation-of-concerns-quality">2.3 Separation of Concerns
+Quality</h3>
+<p><strong>Strengths:</strong> - Clear unidirectional dependency flow:
+UI → Providers → Repositories → Services - Models are independent and
+reusable across layers - Core module provides infrastructure without
+business logic leakage - Repository pattern enables seamless
+online/offline switching</p>
+<p><strong>Areas for Improvement:</strong> - Some providers contain
+business logic that could be moved to services - Model transformations
+happen in repositories (could use dedicated mappers) - Missing dedicated
+<code>use_cases/</code> layer for complex business operations</p>
+<hr />
+<h2 id="architecture-pattern">3. Architecture Pattern</h2>
+<h3 id="pattern-classification">3.1 Pattern Classification</h3>
+<p>The architecture is a <strong>Hybrid Layered Architecture</strong>
+combining:</p>
+<ol type="1">
+<li><strong>Repository Pattern</strong> - Data source abstraction</li>
+<li><strong>Service Pattern</strong> - Business logic encapsulation</li>
+<li><strong>Provider Pattern</strong> - State management with dependency
+injection</li>
+<li><strong>Offline-First Design</strong> - Local processing with
+backend fallback</li>
+</ol>
+<h3 id="dependency-direction">3.2 Dependency Direction</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                        PRESENTATION LAYER                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │   Screens    │  │   Widgets    │  │  Navigation  │           │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘           │
+│         │                 │                 │                    │
+│         └─────────────────┴────────┬────────┘                    │
+│                                    │                             │
+│                                    ▼                             │
+├─────────────────────────────────────────────────────────────────┤
+│                     STATE MANAGEMENT LAYER                       │
+│  ┌────────────────────────────────────────────────────┐         │
+│  │                   Riverpod Providers               │         │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐   │         │
+│  │  │ AuthState  │  │ NotesState │  │ FilesState │   │         │
+│  │  │ Notifier   │  │ Notifier   │  │ Notifier   │   │         │
+│  │  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘   │         │
+│  └────────┼───────────────┼───────────────┼──────────┘         │
+│           │               │               │                     │
+│           └───────────────┴───────┬───────┘                     │
+│                                   │                             │
+│                                   ▼                             │
+├─────────────────────────────────────────────────────────────────┤
+│                    DATA ABSTRACTION LAYER                        │
+│  ┌────────────────────────────────────────────────────┐         │
+│  │                    Repositories                    │         │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ │         │
+│  │  │OfflineAuth  │  │OfflineNotes│  │OfflineFiles│ │         │
+│  │  │ Repository  │  │ Repository │  │ Repository │ │         │
+│  │  └──────┬──────┘  └──────┬──────┘  └─────┬──────┘ │         │
+│  └─────────┼────────────────┼───────────────┼────────┘         │
+│            │                │               │                   │
+│            └────────────────┴───────┬───────┘                   │
+│                                     │                           │
+│                                     ▼                           │
+├─────────────────────────────────────────────────────────────────┤
+│                     BUSINESS LOGIC LAYER                         │
+│  ┌────────────────────────────────────────────────────┐         │
+│  │                     Services                       │         │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────┐ │         │
+│  │  │LocalAuth │ │LocalPDF  │ │LocalImage│ │LocalOCR│ │         │
+│  │  │Service   │ │Service   │ │Service   │ │Service │ │         │
+│  │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └───┬───┘ │         │
+│  └───────┼────────────┼────────────┼───────────┼─────┘         │
+│          │            │            │           │                │
+│          └────────────┴────────────┴───┬───────┘                │
+│                                        │                        │
+│                                        ▼                        │
+├─────────────────────────────────────────────────────────────────┤
+│                      INFRASTRUCTURE LAYER                        │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │
+│  │   Hive    │  │  Secure   │  │   File    │  │    Dio    │    │
+│  │  Storage  │  │  Storage  │  │  System   │  │   Client  │    │
+│  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="data-flow-diagram">3.3 Data Flow Diagram</h3>
+<pre><code>User Action
+    │
+    ▼
+┌─────────────────┐
+│  Screen/Widget  │  (ConsumerWidget/ConsumerStatefulWidget)
+│                 │
+│  ref.read()     │──────────────────────────────────────────┐
+│  ref.watch()    │                                          │
+└────────┬────────┘                                          │
+         │                                                   │
+         │ Trigger action                                    │
+         ▼                                                   ▼
+┌─────────────────┐                               ┌─────────────────┐
+│ StateNotifier   │                               │  State Updates  │
+│                 │                               │  (Automatic)    │
+│ - loadData()    │                               │                 │
+│ - createItem()  │                               │  UI Rebuilds    │
+│ - deleteItem()  │                               │                 │
+└────────┬────────┘                               └─────────────────┘
+         │                                                   ▲
+         │ Call repository                                   │
+         ▼                                                   │
+┌─────────────────┐                                          │
+│   Repository    │                                          │
+│                 │                                          │
+│ - getData()     │                                          │
+│ - saveData()    │ ─────────── Return Result ───────────────┘
+│ - deleteData()  │                                         
+└────────┬────────┘
+         │
+         │ Call service
+         ▼
+┌─────────────────┐
+│    Service      │
+│                 │
+│ Local Processing│
+│ or API Call     │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   Data Source   │
+│                 │
+│ Hive / File     │
+│ System / API    │
+└─────────────────┘</code></pre>
+<hr />
+<h2 id="state-management">4. State Management</h2>
+<h3 id="framework-selection">4.1 Framework Selection</h3>
+<p><strong>Primary:</strong> Flutter Riverpod 2.4.9<br />
+<strong>Secondary:</strong> Hooks Riverpod 2.4.9 (for widget hooks
+integration)</p>
+<h3 id="provider-types-used">4.2 Provider Types Used</h3>
+<table>
+<colgroup>
+<col style="width: 48%" />
+<col style="width: 22%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr>
+<th>Provider Type</th>
+<th>Usage</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Provider</code></td>
+<td>Static dependencies</td>
+<td><code>secureStorageProvider</code>,
+<code>apiServiceProvider</code></td>
+</tr>
+<tr>
+<td><code>StateNotifierProvider</code></td>
+<td>Complex state with actions</td>
+<td><code>authStateProvider</code>, <code>notesListProvider</code></td>
+</tr>
+<tr>
+<td><code>FutureProvider</code></td>
+<td>Async data fetching</td>
+<td><code>noteTagsProvider</code>, <code>fileStatsProvider</code></td>
+</tr>
+<tr>
+<td><code>StateProvider</code></td>
+<td>Simple mutable state</td>
+<td><code>globalLoadingProvider</code>,
+<code>baseUrlProvider</code></td>
+</tr>
+<tr>
+<td><code>Provider.family</code></td>
+<td>Parameterized providers</td>
+<td><code>brightnessProvider</code>, <code>jobDetailProvider</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="state-architecture">4.3 State Architecture</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// State Class Pattern Used Throughout</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> NotesListState <span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> <span class="dt">List</span><span class="op">&lt;</span>Note<span class="op">&gt;</span> notes;</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> <span class="dt">bool</span> isLoading;</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> <span class="dt">bool</span> isLoadingMore;</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> <span class="dt">String</span><span class="op">?</span> error;</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> PaginationInfo pagination;</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> <span class="dt">String</span><span class="op">?</span> searchQuery;</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> <span class="dt">String</span><span class="op">?</span> selectedTag;</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">// copyWith pattern for immutable updates</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  NotesListState copyWith(<span class="op">{...}</span>);</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">// StateNotifier Pattern</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> NotesListNotifier <span class="kw">extends</span> StateNotifier<span class="op">&lt;</span>NotesListState<span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> OfflineNotesRepository _repository;</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  NotesListNotifier(<span class="kw">this</span><span class="op">.</span>_repository) <span class="op">:</span> <span class="kw">super</span>(<span class="at">const</span> NotesListState());</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Future</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> loadNotes(<span class="op">{</span><span class="dt">bool</span> refresh <span class="op">=</span> <span class="cn">false</span><span class="op">}</span>) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> state<span class="op">.</span>copyWith(isLoading<span class="op">:</span> <span class="cn">true</span>);</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ... business logic</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> state<span class="op">.</span>copyWith(notes<span class="op">:</span> result<span class="op">,</span> isLoading<span class="op">:</span> <span class="cn">false</span>);</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="why-this-works">4.4 Why This Works</h3>
+<p><strong>Strengths:</strong> 1. <strong>Compile-time safety</strong> -
+Riverpod provides type-safe state access 2. <strong>Automatic
+disposal</strong> - Providers automatically clean up when not used 3.
+<strong>Testability</strong> - Easy to override providers in tests 4.
+<strong>DevTools support</strong> - Full debugging support with Riverpod
+DevTools 5. <strong>Scoped overrides</strong> - Can override providers
+at any point in the widget tree 6. <strong>No BuildContext
+dependency</strong> - Providers accessible anywhere</p>
+<p><strong>Potential Issues:</strong> 1. <strong>Provider
+proliferation</strong> - 30+ providers in single file could be split 2.
+<strong>Deep nesting</strong> - Some provider chains are 4+ levels deep
+3. <strong>Missing error boundaries</strong> - No global error handling
+for providers</p>
+<h3 id="performance-implications">4.5 Performance Implications</h3>
+<table>
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 34%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Selective rebuilds</td>
+<td>Good</td>
+<td>Using <code>ref.watch()</code> with specific providers</td>
+</tr>
+<tr>
+<td>State granularity</td>
+<td>Good</td>
+<td>Separate providers for different features</td>
+</tr>
+<tr>
+<td>Memory management</td>
+<td>Good</td>
+<td>StateNotifier disposes properly</td>
+</tr>
+<tr>
+<td>Async handling</td>
+<td>Good</td>
+<td>FutureProvider for async data</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation:</strong> Split <code>providers.dart</code>
+(1100+ lines) into feature-based files.</p>
+<hr />
+<h2 id="api-networking-layer">5. API &amp; Networking Layer</h2>
+<h3 id="http-client">5.1 HTTP Client</h3>
+<p><strong>Framework:</strong> Dio 5.4.0</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ApiService <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">late</span> <span class="at">final</span> Dio _dio;</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  ApiService(<span class="op">{</span>required StorageService storageService<span class="op">,</span> <span class="dt">String</span><span class="op">?</span> baseUrl<span class="op">}</span>) <span class="op">{</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    _dio <span class="op">=</span> Dio(BaseOptions(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>      baseUrl<span class="op">:</span> baseUrl <span class="op">??</span> AppConstants<span class="op">.</span>defaultBaseUrl<span class="op">,</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>      connectTimeout<span class="op">:</span> Duration(minutes<span class="op">:</span> <span class="dv">2</span>)<span class="op">,</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>      receiveTimeout<span class="op">:</span> Duration(minutes<span class="op">:</span> <span class="dv">5</span>)<span class="op">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>      sendTimeout<span class="op">:</span> Duration(minutes<span class="op">:</span> <span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    ));</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    _setupInterceptors();</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="interceptor-architecture">5.2 Interceptor Architecture</h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>_dio<span class="op">.</span>interceptors<span class="op">.</span>add(InterceptorsWrapper(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  onRequest<span class="op">:</span> (options<span class="op">,</span> handler) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Auth token injection</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">final</span> token <span class="op">=</span> <span class="at">await</span> _storageService<span class="op">.</span>getToken();</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (token <span class="op">!=</span> <span class="cn">null</span>) <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>      options<span class="op">.</span>headers[<span class="st">&#39;Authorization&#39;</span>] <span class="op">=</span> <span class="st">&#39;Bearer $token&#39;</span>;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> handler<span class="op">.</span>next(options);</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  onResponse<span class="op">:</span> (response<span class="op">,</span> handler) <span class="op">{</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    debugPrint(<span class="st">&#39;Response: ${response.statusCode}&#39;</span>);</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> handler<span class="op">.</span>next(response);</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  onError<span class="op">:</span> (error<span class="op">,</span> handler) <span class="op">{</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    debugPrint(<span class="st">&#39;Error: ${error.message}&#39;</span>);</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> handler<span class="op">.</span>next(error);</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>));</span></code></pre></div>
+<h3 id="error-handling-quality">5.3 Error Handling Quality</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Implementation</th>
+<th>Quality</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTTP error codes</td>
+<td>Custom <code>ApiException</code> class</td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Network errors</td>
+<td><code>DioException</code> handling</td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Error messages</td>
+<td>User-friendly messages</td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Error recovery</td>
+<td>Retry logic in services</td>
+<td>Basic</td>
+</tr>
+<tr>
+<td>Offline detection</td>
+<td><code>connectivity_plus</code> package</td>
+<td>Good</td>
+</tr>
+</tbody>
+</table>
+<h3 id="token-management">5.4 Token Management</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Secure token storage</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Future</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> saveToken(<span class="dt">String</span> token) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">await</span> _secureStorage<span class="op">.</span>write(key<span class="op">:</span> AppConstants<span class="op">.</span>tokenKey<span class="op">,</span> value<span class="op">:</span> token);</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">// Auto-injection in requests</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>onRequest<span class="op">:</span> (options<span class="op">,</span> handler) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> token <span class="op">=</span> <span class="at">await</span> _storageService<span class="op">.</span>getToken();</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (token <span class="op">!=</span> <span class="cn">null</span> <span class="op">&amp;&amp;</span> token<span class="op">.</span>isNotEmpty) <span class="op">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    options<span class="op">.</span>headers[<span class="st">&#39;Authorization&#39;</span>] <span class="op">=</span> <span class="st">&#39;Bearer $token&#39;</span>;</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Missing:</strong> Token refresh logic, JWT expiry
+handling</p>
+<h3 id="retry-logic">5.5 Retry Logic</h3>
+<p><strong>Current Implementation:</strong> Basic (manual retry in UI
+layer)<br />
+<strong>Recommended:</strong> Add exponential backoff interceptor</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Suggested improvement</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>_dio<span class="op">.</span>interceptors<span class="op">.</span>add(RetryInterceptor(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  dio<span class="op">:</span> _dio<span class="op">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  retries<span class="op">:</span> <span class="dv">3</span><span class="op">,</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  retryDelays<span class="op">:</span> [</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    Duration(seconds<span class="op">:</span> <span class="dv">1</span>)<span class="op">,</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    Duration(seconds<span class="op">:</span> <span class="dv">2</span>)<span class="op">,</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    Duration(seconds<span class="op">:</span> <span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  ]<span class="op">,</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>));</span></code></pre></div>
+<h3 id="offline-first-strategy">5.6 Offline-First Strategy</h3>
+<p>The application implements a robust offline-first approach:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> OfflineConversionRepository <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// All operations process locally first</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Future</span><span class="op">&lt;</span>ConversionResult<span class="op">&gt;</span> imagesToPdf(<span class="op">{</span>required <span class="dt">List</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">&gt;</span> filePaths<span class="op">}</span>) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 1. Create local job entry</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">final</span> job <span class="op">=</span> <span class="at">await</span> _jobsService<span class="op">.</span>createJob(type<span class="op">:</span> <span class="st">&#39;images_to_pdf&#39;</span>);</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 2. Process locally using native services</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">final</span> outputPath <span class="op">=</span> <span class="at">await</span> _pdfService<span class="op">.</span>imagesToPdf(imagePaths<span class="op">:</span> filePaths);</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 3. Save to local file system</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">final</span> savedFile <span class="op">=</span> <span class="at">await</span> _fileService<span class="op">.</span>saveFile(File(outputPath));</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 4. Update job status</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">await</span> _jobsService<span class="op">.</span>updateJob(job<span class="op">.</span>id<span class="op">,</span> status<span class="op">:</span> <span class="st">&#39;completed&#39;</span>);</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> ConversionResult(success<span class="op">:</span> <span class="cn">true</span><span class="op">,</span> outputPath<span class="op">:</span> savedFile<span class="op">.</span>path);</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<h2 id="data-persistence">6. Data Persistence</h2>
+<h3 id="storage-solutions">6.1 Storage Solutions</h3>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 27%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>Storage Type</th>
+<th>Package</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hive</strong></td>
+<td>hive_flutter 1.1.0</td>
+<td>Structured data (notes, jobs, settings)</td>
+</tr>
+<tr>
+<td><strong>Secure Storage</strong></td>
+<td>flutter_secure_storage 9.0.0</td>
+<td>Tokens, credentials</td>
+</tr>
+<tr>
+<td><strong>File System</strong></td>
+<td>path_provider 2.1.1</td>
+<td>Documents, images, PDFs</td>
+</tr>
+<tr>
+<td><strong>Shared Preferences</strong></td>
+<td>shared_preferences 2.2.2</td>
+<td>Simple key-value (legacy support)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hive-implementation">6.2 Hive Implementation</h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Initialization in main.dart</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">await</span> Hive<span class="op">.</span>initFlutter();</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">await</span> Hive<span class="op">.</span>openBox(<span class="st">&#39;settings&#39;</span>);</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Usage in services</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LocalNotesService <span class="op">{</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">late</span> Box<span class="op">&lt;</span>LocalNote<span class="op">&gt;</span> _notesBox;</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Future</span><span class="op">&lt;</span><span class="dt">void</span><span class="op">&gt;</span> init() <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    _notesBox <span class="op">=</span> <span class="at">await</span> Hive<span class="op">.</span>openBox<span class="op">&lt;</span>LocalNote<span class="op">&gt;</span>(<span class="st">&#39;notes&#39;</span>);</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Future</span><span class="op">&lt;</span>LocalNote<span class="op">&gt;</span> createNote(<span class="op">{</span>required <span class="dt">String</span> title<span class="op">}</span>) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">final</span> note <span class="op">=</span> LocalNote(id<span class="op">:</span> uuid<span class="op">.</span>v4()<span class="op">,</span> title<span class="op">:</span> title<span class="op">,</span> <span class="op">...</span>);</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">await</span> _notesBox<span class="op">.</span>put(note<span class="op">.</span>id<span class="op">,</span> note);</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> note;</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="secure-storage-configuration">6.3 Secure Storage
+Configuration</h3>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="at">final</span> secureStorageProvider <span class="op">=</span> Provider<span class="op">&lt;</span>FlutterSecureStorage<span class="op">&gt;</span>((ref) <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> <span class="at">const</span> FlutterSecureStorage(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    aOptions<span class="op">:</span> AndroidOptions(encryptedSharedPreferences<span class="op">:</span> <span class="cn">true</span>)<span class="op">,</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    iOptions<span class="op">:</span> IOSOptions(</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>      accessibility<span class="op">:</span> KeychainAccessibility<span class="op">.</span>first_unlock_this_device</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    )<span class="op">,</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code></pre></div>
+<h3 id="structure-analysis">6.4 Structure Analysis</h3>
+<p><strong>Strengths:</strong> - Proper separation between secure and
+regular storage - Consistent service layer abstraction - Clear data
+model definitions with serialization</p>
+<p><strong>Issues:</strong> 1. Hive adapters not registered for custom
+types (will fail on complex objects) 2. No database migrations strategy
+3. No data encryption for Hive boxes (sensitive data risk)</p>
+<h3 id="recommended-data-model">6.5 Recommended Data Model</h3>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Current: Manual JSON serialization</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">factory</span> Note<span class="op">.</span>fromJson(<span class="dt">Map</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">,</span> <span class="at">dynamic</span><span class="op">&gt;</span> json) <span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> Note(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    id<span class="op">:</span> json[<span class="st">&#39;_id&#39;</span>] <span class="op">??</span> json[<span class="st">&#39;id&#39;</span>] <span class="op">??</span> <span class="st">&#39;&#39;</span><span class="op">,</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ... manual parsing</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Recommended: Freezed + json_serializable (already in dependencies)</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>@freezed</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Note <span class="kw">with</span> _$Note <span class="op">{</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">const</span> <span class="kw">factory</span> Note(<span class="op">{</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    required <span class="dt">String</span> id<span class="op">,</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    required <span class="dt">String</span> title<span class="op">,</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    @Default(<span class="st">&#39;&#39;</span>) <span class="dt">String</span> content<span class="op">,</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span>) <span class="op">=</span> _Note;</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">factory</span> Note<span class="op">.</span>fromJson(<span class="dt">Map</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">,</span> <span class="at">dynamic</span><span class="op">&gt;</span> json) <span class="op">=&gt;</span> _$NoteFromJson(json);</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<h2 id="ui-layer-design">7. UI Layer Design</h2>
+<h3 id="widget-architecture">7.1 Widget Architecture</h3>
+<pre><code>┌─────────────────────────────────────────────────────┐
+│                    App Shell                         │
+│  ┌──────────────────────────────────────────────┐   │
+│  │              MainShell                        │   │
+│  │  ┌─────────────────────────────────────────┐ │   │
+│  │  │         Navigation Rail / Bottom Nav    │ │   │
+│  │  └─────────────────────────────────────────┘ │   │
+│  │  ┌─────────────────────────────────────────┐ │   │
+│  │  │              Child Screen               │ │   │
+│  │  └─────────────────────────────────────────┘ │   │
+│  └──────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘</code></pre>
+<h3 id="reusability-assessment">7.2 Reusability Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Reusability</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PrimaryButton</code></td>
+<td>Excellent</td>
+<td>Used across all screens</td>
+</tr>
+<tr>
+<td><code>SecondaryButton</code></td>
+<td>Excellent</td>
+<td>Consistent styling</td>
+</tr>
+<tr>
+<td><code>AppCard</code></td>
+<td>Good</td>
+<td>Flexible container</td>
+</tr>
+<tr>
+<td><code>WelcomeBanner</code></td>
+<td>Good</td>
+<td>Home screen specific but adaptable</td>
+</tr>
+<tr>
+<td>Screen-specific widgets</td>
+<td>Poor</td>
+<td>Many one-off implementations</td>
+</tr>
+</tbody>
+</table>
+<p><strong>common_widgets.dart:</strong> 1115 lines of well-structured
+reusable components</p>
+<h3 id="responsiveness">7.3 Responsiveness</h3>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Adaptive layout in MainShell</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (isWideScreen) <span class="op">{</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Tablet/Desktop layout with NavigationRail</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> Row(</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    children<span class="op">:</span> [</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>      NavigationRail(<span class="op">...</span>)<span class="op">,</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>      Expanded(child<span class="op">:</span> widget<span class="op">.</span>child)<span class="op">,</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    ]<span class="op">,</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="co">// Mobile layout with BottomNavigationBar</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="kw">return</span> Scaffold(</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  body<span class="op">:</span> widget<span class="op">.</span>child<span class="op">,</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  bottomNavigationBar<span class="op">:</span> _buildBottomNav()<span class="op">,</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p><strong>Breakpoints:</strong> - Mobile: &lt; 600px - Tablet:
+600-900px<br />
+- Desktop: &gt; 900px</p>
+<h3 id="theming-system">7.4 Theming System</h3>
+<p><strong>Multi-Palette Design System:</strong></p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">enum</span> ColorPalette <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  sunset<span class="op">,</span>    <span class="co">// Orange/Yellow - Default</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  ocean<span class="op">,</span>     <span class="co">// Blue/Teal</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  forest<span class="op">,</span>    <span class="co">// Green/Emerald</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  lavender<span class="op">,</span>  <span class="co">// Purple/Violet</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  rose<span class="op">,</span>      <span class="co">// Pink/Rose</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  midnight<span class="op">,</span>  <span class="co">// Dark Blue/Navy</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> AppTheme <span class="op">{</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">static</span> <span class="at">const</span> <span class="dt">Map</span><span class="op">&lt;</span>ColorPalette<span class="op">,</span> PaletteColors<span class="op">&gt;</span> palettes <span class="op">=</span> <span class="op">{...}</span>;</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Dynamic getters based on current palette</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">static</span> Color <span class="kw">get</span> primaryColor <span class="op">=&gt;</span> colors<span class="op">.</span>primary;</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">static</span> Color <span class="kw">get</span> secondaryColor <span class="op">=&gt;</span> colors<span class="op">.</span>secondary;</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Semantic colors (constant)</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">static</span> <span class="at">const</span> Color successColor <span class="op">=</span> Color(<span class="dv">0xFF22C55E</span>);</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">static</span> <span class="at">const</span> Color errorColor <span class="op">=</span> Color(<span class="dv">0xFFEF4444</span>);</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>Quality:</strong> Excellent - Professional design system with
+consistent tokens</p>
+<h3 id="code-duplication-analysis">7.5 Code Duplication Analysis</h3>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Severity</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Similar list builders</td>
+<td>Medium</td>
+<td>Multiple screens</td>
+</tr>
+<tr>
+<td>Repeated gradient decorations</td>
+<td>Low</td>
+<td>Header sections</td>
+</tr>
+<tr>
+<td>Copy-paste error handling</td>
+<td>Medium</td>
+<td>Try-catch blocks in screens</td>
+</tr>
+<tr>
+<td>Duplicate padding values</td>
+<td>Low</td>
+<td>Various screens</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation:</strong> Extract common patterns into
+dedicated widgets/mixins</p>
+<hr />
+<h2 id="performance-analysis">8. Performance Analysis</h2>
+<h3 id="rebuild-analysis">8.1 Rebuild Analysis</h3>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">// GOOD: Selective watching</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="at">final</span> themeMode <span class="op">=</span> ref<span class="op">.</span>watch(themeModeProvider);</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co">// GOOD: Using Consumer for scoped rebuilds</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>Consumer(</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  builder<span class="op">:</span> (context<span class="op">,</span> ref<span class="op">,</span> child) <span class="op">{</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">final</span> state <span class="op">=</span> ref<span class="op">.</span>watch(specificProvider);</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> StateWidget(state<span class="op">:</span> state);</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co">// POTENTIAL ISSUE: Watching entire state objects</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">final</span> authState <span class="op">=</span> ref<span class="op">.</span>watch(authStateProvider);  <span class="co">// Rebuilds on any auth change</span></span></code></pre></div>
+<h3 id="widget-tree-efficiency">8.2 Widget Tree Efficiency</h3>
+<table>
+<thead>
+<tr>
+<th>Screen</th>
+<th>Sliver Usage</th>
+<th>Lazy Loading</th>
+<th>Grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HomeScreen</td>
+<td>CustomScrollView</td>
+<td>Yes</td>
+<td>A</td>
+</tr>
+<tr>
+<td>ConvertHubScreen</td>
+<td>SliverList</td>
+<td>Yes</td>
+<td>A</td>
+</tr>
+<tr>
+<td>NotesScreen</td>
+<td>SliverGrid (inferred)</td>
+<td>Yes</td>
+<td>A</td>
+</tr>
+<tr>
+<td>SettingsScreen</td>
+<td>SliverList</td>
+<td>Yes</td>
+<td>A</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Animation Usage:</strong></p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">// flutter_animate library used throughout</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>animate()</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span>fadeIn(duration<span class="op">:</span> <span class="fl">400.</span>ms)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span>slideX(begin<span class="op">:</span> <span class="op">-</span><span class="fl">0.1</span>)</span></code></pre></div>
+<h3 id="memory-considerations">8.3 Memory Considerations</h3>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Status</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Image caching</td>
+<td>Good</td>
+<td>cached_network_image package</td>
+</tr>
+<tr>
+<td>Large list handling</td>
+<td>Good</td>
+<td>Sliver-based layouts</td>
+</tr>
+<tr>
+<td>PDF processing</td>
+<td>Caution</td>
+<td>Large PDFs could cause memory pressure</td>
+</tr>
+<tr>
+<td>Video compression</td>
+<td>Caution</td>
+<td>Should be done in isolate</td>
+</tr>
+</tbody>
+</table>
+<h3 id="potential-issues">8.4 Potential Issues</h3>
+<ol type="1">
+<li><strong>PDF Service:</strong> Processes entire files in memory</li>
+<li><strong>Image Processing:</strong> No isolate usage for heavy
+operations</li>
+<li><strong>State Objects:</strong> Some state classes hold large lists
+without pagination awareness in UI</li>
+</ol>
+<h3 id="recommendations">8.5 Recommendations</h3>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Move heavy processing to isolates</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Future</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">&gt;</span> processImageInIsolate(<span class="dt">String</span> path) <span class="op">{</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> compute(_processImage<span class="op">,</span> path);</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">static</span> <span class="dt">String</span> _processImage(<span class="dt">String</span> path) <span class="op">{</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Heavy processing here</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<h2 id="scalability-review">9. Scalability Review</h2>
+<h3 id="current-capacity-estimate">9.1 Current Capacity Estimate</h3>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 42%" />
+<col style="width: 26%" />
+</colgroup>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Supported</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Concurrent users</td>
+<td>100k+</td>
+<td>Offline-first eliminates server bottleneck</td>
+</tr>
+<tr>
+<td>Local documents</td>
+<td>10,000+</td>
+<td>Hive handles well</td>
+</tr>
+<tr>
+<td>File sizes</td>
+<td>50MB per doc</td>
+<td>Configurable limits</td>
+</tr>
+<tr>
+<td>Conversion operations</td>
+<td>Unlimited</td>
+<td>Local processing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="where-it-will-break-first">9.2 Where It Will Break First</h3>
+<ol type="1">
+<li><strong>Hive Performance (&gt;50k records)</strong>
+<ul>
+<li>Solution: Implement pagination in Hive queries</li>
+<li>Consider: SQLite migration for complex queries</li>
+</ul></li>
+<li><strong>Memory on Low-End Devices</strong>
+<ul>
+<li>Large PDF processing</li>
+<li>Multiple video compressions</li>
+<li>Solution: Streaming/chunked processing</li>
+</ul></li>
+<li><strong>Storage Space</strong>
+<ul>
+<li>No automatic cleanup</li>
+<li>Solution: Implement retention policies</li>
+</ul></li>
+<li><strong>Backend API (if enabled)</strong>
+<ul>
+<li>Single API instance</li>
+<li>Solution: Load balancing, rate limiting</li>
+</ul></li>
+</ol>
+<h3 id="refactoring-priorities">9.3 Refactoring Priorities</h3>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Area</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>High</td>
+<td>Split providers.dart</td>
+<td>Low</td>
+<td>High - Maintainability</td>
+</tr>
+<tr>
+<td>High</td>
+<td>Add database migrations</td>
+<td>Medium</td>
+<td>High - Stability</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>Implement isolates</td>
+<td>Medium</td>
+<td>Medium - Performance</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>Add retry interceptors</td>
+<td>Low</td>
+<td>Medium - Reliability</td>
+</tr>
+<tr>
+<td>Low</td>
+<td>Use code generation</td>
+<td>Medium</td>
+<td>Low - Dev experience</td>
+</tr>
+</tbody>
+</table>
+<h3 id="horizontal-scaling-support">9.4 Horizontal Scaling Support</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Current</th>
+<th>Scalable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local processing</td>
+<td>Single device</td>
+<td>N/A (by design)</td>
+</tr>
+<tr>
+<td>Backend API</td>
+<td>Single instance</td>
+<td>Needs load balancer</td>
+</tr>
+<tr>
+<td>Data sync</td>
+<td>Not implemented</td>
+<td>Needs sync service</td>
+</tr>
+<tr>
+<td>User sessions</td>
+<td>JWT-based</td>
+<td>Stateless (good)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="security-considerations">10. Security Considerations</h2>
+<h3 id="token-storage">10.1 Token Storage</h3>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">// GOOD: Using platform-specific secure storage</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="at">final</span> secureStorageProvider <span class="op">=</span> Provider<span class="op">&lt;</span>FlutterSecureStorage<span class="op">&gt;</span>((ref) <span class="op">{</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> <span class="at">const</span> FlutterSecureStorage(</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    aOptions<span class="op">:</span> AndroidOptions(encryptedSharedPreferences<span class="op">:</span> <span class="cn">true</span>)<span class="op">,</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    iOptions<span class="op">:</span> IOSOptions(</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>      accessibility<span class="op">:</span> KeychainAccessibility<span class="op">.</span>first_unlock_this_device</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    )<span class="op">,</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>);</span></code></pre></div>
+<p><strong>Grade: A</strong> - Proper implementation</p>
+<h3 id="api-exposure">10.2 API Exposure</h3>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hardcoded URLs</td>
+<td>Present</td>
+<td>In constants (acceptable)</td>
+</tr>
+<tr>
+<td>API keys</td>
+<td>Not found</td>
+<td>Good</td>
+</tr>
+<tr>
+<td>Debug endpoints</td>
+<td>Protected</td>
+<td>Only in debug mode</td>
+</tr>
+<tr>
+<td>HTTPS enforcement</td>
+<td>Configurable</td>
+<td>Should be enforced</td>
+</tr>
+</tbody>
+</table>
+<h3 id="logging-issues">10.3 Logging Issues</h3>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co">// </span><span class="al">WARNING</span><span class="co">: Debug prints contain sensitive data</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>debugPrint(<span class="st">&#39;🔐 [AUTH] Logging in locally: $email&#39;</span>);</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>debugPrint(<span class="st">&#39;✅ [AUTH] Login successful&#39;</span>);</span></code></pre></div>
+<p><strong>Recommendations:</strong> 1. Remove or gate debug prints in
+release builds 2. Never log passwords or tokens 3. Implement proper
+logging framework (e.g., Logger package)</p>
+<h3 id="security-checklist">10.4 Security Checklist</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Secure token storage</td>
+<td>✅ Implemented</td>
+</tr>
+<tr>
+<td>Certificate pinning</td>
+<td>❌ Not implemented</td>
+</tr>
+<tr>
+<td>Root/Jailbreak detection</td>
+<td>❌ Not implemented</td>
+</tr>
+<tr>
+<td>Code obfuscation</td>
+<td>❓ Build configuration needed</td>
+</tr>
+<tr>
+<td>Input validation</td>
+<td>✅ Form validation present</td>
+</tr>
+<tr>
+<td>SQL injection</td>
+<td>✅ Using ORM (Hive)</td>
+</tr>
+<tr>
+<td>Data encryption at rest</td>
+<td>⚠️ Partial (only secure storage)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="owasp-mobile-top-10-assessment">10.5 OWASP Mobile Top 10
+Assessment</h3>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 36%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1: Improper Platform Usage</td>
+<td>Low</td>
+<td>Good platform integration</td>
+</tr>
+<tr>
+<td>M2: Insecure Data Storage</td>
+<td>Medium</td>
+<td>Encrypt Hive boxes</td>
+</tr>
+<tr>
+<td>M3: Insecure Communication</td>
+<td>Low</td>
+<td>HTTPS used</td>
+</tr>
+<tr>
+<td>M4: Insecure Authentication</td>
+<td>Low</td>
+<td>Proper token handling</td>
+</tr>
+<tr>
+<td>M5: Insufficient Cryptography</td>
+<td>Medium</td>
+<td>Add encryption for sensitive data</td>
+</tr>
+<tr>
+<td>M6: Insecure Authorization</td>
+<td>Low</td>
+<td>Server-side validation</td>
+</tr>
+<tr>
+<td>M7: Client Code Quality</td>
+<td>Low</td>
+<td>Good code quality</td>
+</tr>
+<tr>
+<td>M8: Code Tampering</td>
+<td>Medium</td>
+<td>Add integrity checks</td>
+</tr>
+<tr>
+<td>M9: Reverse Engineering</td>
+<td>Medium</td>
+<td>Add obfuscation</td>
+</tr>
+<tr>
+<td>M10: Extraneous Functionality</td>
+<td>Low</td>
+<td>Clean debug code for release</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommended-improvements">11. Recommended Improvements</h2>
+<h3 id="refactor-suggestions">11.1 Refactor Suggestions</h3>
+<h4 id="split-providers-file">11.1.1 Split Providers File</h4>
+<pre><code>lib/providers/
+├── providers.dart              -&gt; index.dart (exports only)
+├── auth/
+│   └── auth_provider.dart
+├── notes/
+│   └── notes_provider.dart
+├── files/
+│   └── files_provider.dart
+├── jobs/
+│   └── jobs_provider.dart
+├── settings/
+│   └── settings_provider.dart
+└── theme/
+    └── theme_provider.dart</code></pre>
+<h4 id="use-freezed-for-models">11.1.2 Use Freezed for Models</h4>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Already in pubspec.yaml - just needs implementation</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dependencies</span><span class="kw">:</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">freezed_annotation</span><span class="kw">:</span><span class="at"> ^2.4.1</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dev_dependencies</span><span class="kw">:</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">freezed</span><span class="kw">:</span><span class="at"> ^2.4.6</span></span></code></pre></div>
+<h4 id="add-use-cases-layer">11.1.3 Add Use Cases Layer</h4>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co">// lib/use_cases/convert_images_to_pdf.dart</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ConvertImagesToPdfUseCase <span class="op">{</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> ConversionRepository _repository;</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">final</span> JobsRepository _jobsRepository;</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Future</span><span class="op">&lt;</span>Result<span class="op">&lt;</span><span class="dt">String</span><span class="op">&gt;&gt;</span> execute(<span class="dt">List</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">&gt;</span> imagePaths) <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Validation</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Business logic</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Error handling</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="architectural-upgrades">11.2 Architectural Upgrades</h3>
+<table>
+<thead>
+<tr>
+<th>Upgrade</th>
+<th>Complexity</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Add Use Cases layer</td>
+<td>Medium</td>
+<td>High - Better testability</td>
+</tr>
+<tr>
+<td>Implement BLoC for complex flows</td>
+<td>High</td>
+<td>Medium - Team scalability</td>
+</tr>
+<tr>
+<td>Add GraphQL support</td>
+<td>Medium</td>
+<td>Low - Current REST is fine</td>
+</tr>
+<tr>
+<td>Implement sync service</td>
+<td>High</td>
+<td>High - Multi-device support</td>
+</tr>
+</tbody>
+</table>
+<h3 id="code-level-improvements">11.3 Code-Level Improvements</h3>
+<ol type="1">
+<li><strong>Error Handling:</strong></li>
+</ol>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Current</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="cf">catch</span> (e) <span class="op">{</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  debugPrint(<span class="st">&#39;Error: $e&#39;</span>);</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">return</span> <span class="cn">false</span>;</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Improved</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="cf">catch</span> (e<span class="op">,</span> stackTrace) <span class="op">{</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  _logger<span class="op">.</span>error(<span class="st">&#39;Operation failed&#39;</span><span class="op">,</span> error<span class="op">:</span> e<span class="op">,</span> stackTrace<span class="op">:</span> stackTrace);</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  _analytics<span class="op">.</span>trackError(e);</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">throw</span> AppException(message<span class="op">:</span> <span class="st">&#39;User-friendly message&#39;</span><span class="op">,</span> originalError<span class="op">:</span> e);</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Null Safety:</strong></li>
+</ol>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Review optional types and add proper null checks</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="at">final</span> user <span class="op">=</span> ref<span class="op">.</span>watch(currentUserProvider);</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (user <span class="cf">case</span> <span class="at">final</span> User currentUser) <span class="op">{</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Use currentUser safely</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Testing:</strong></li>
+</ol>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode dart"><code class="sourceCode dart"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Add repository tests</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> main() <span class="op">{</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">late</span> MockLocalNotesService mockService;</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">late</span> OfflineNotesRepository repository;</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  setUp(() <span class="op">{</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    mockService <span class="op">=</span> MockLocalNotesService();</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    repository <span class="op">=</span> OfflineNotesRepository(notesService<span class="op">:</span> mockService);</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span>);</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>  test(<span class="st">&#39;should return paginated notes&#39;</span><span class="op">,</span> () <span class="at">async</span> <span class="op">{</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Test implementation</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span>);</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="production-readiness-checklist">11.4 Production Readiness
+Checklist</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Item</th>
+<th>Status</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Build</strong></td>
+<td>Release build configuration</td>
+<td>⚠️ Verify</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Build</strong></td>
+<td>Code obfuscation</td>
+<td>❌ Add</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Build</strong></td>
+<td>App signing</td>
+<td>⚠️ Verify</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Monitoring</strong></td>
+<td>Crash reporting (Crashlytics)</td>
+<td>❌ Add</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Monitoring</strong></td>
+<td>Analytics</td>
+<td>❌ Add</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Monitoring</strong></td>
+<td>Performance monitoring</td>
+<td>❌ Add</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td>Certificate pinning</td>
+<td>❌ Add</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td>Root detection</td>
+<td>❌ Add</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td>Data encryption</td>
+<td>⚠️ Partial</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Quality</strong></td>
+<td>Unit tests (&gt;70% coverage)</td>
+<td>❌ Add</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Quality</strong></td>
+<td>Integration tests</td>
+<td>❌ Add</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Quality</strong></td>
+<td>Accessibility audit</td>
+<td>❌ Add</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>DevOps</strong></td>
+<td>CI/CD pipeline</td>
+<td>❌ Add</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>DevOps</strong></td>
+<td>Automated releases</td>
+<td>❌ Add</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Docs</strong></td>
+<td>API documentation</td>
+<td>⚠️ Partial</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Docs</strong></td>
+<td>User documentation</td>
+<td>❌ Add</td>
+<td>Low</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="appendix-a-technology-stack">Appendix A: Technology Stack</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Technology</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td>Flutter</td>
+<td>3.x</td>
+</tr>
+<tr>
+<td>State Management</td>
+<td>Riverpod</td>
+<td>2.4.9</td>
+</tr>
+<tr>
+<td>Navigation</td>
+<td>GoRouter</td>
+<td>13.0.1</td>
+</tr>
+<tr>
+<td>HTTP Client</td>
+<td>Dio</td>
+<td>5.4.0</td>
+</tr>
+<tr>
+<td>Local Storage</td>
+<td>Hive</td>
+<td>1.1.0</td>
+</tr>
+<tr>
+<td>Secure Storage</td>
+<td>flutter_secure_storage</td>
+<td>9.0.0</td>
+</tr>
+<tr>
+<td>PDF Processing</td>
+<td>pdf, syncfusion_flutter_pdf</td>
+<td>3.11.3, 24.1.41</td>
+</tr>
+<tr>
+<td>Image Processing</td>
+<td>image, crop_your_image</td>
+<td>4.1.4, 1.0.2</td>
+</tr>
+<tr>
+<td>OCR</td>
+<td>google_mlkit_text_recognition</td>
+<td>0.15.0</td>
+</tr>
+<tr>
+<td>Video</td>
+<td>video_compress</td>
+<td>3.1.3</td>
+</tr>
+<tr>
+<td>Animations</td>
+<td>flutter_animate</td>
+<td>4.3.0</td>
+</tr>
+<tr>
+<td>Typography</td>
+<td>google_fonts</td>
+<td>6.1.0</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="appendix-b-key-metrics">Appendix B: Key Metrics</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total Dart files</td>
+<td>~50+</td>
+</tr>
+<tr>
+<td>Lines of code (estimated)</td>
+<td>15,000+</td>
+</tr>
+<tr>
+<td>Number of screens</td>
+<td>20+</td>
+</tr>
+<tr>
+<td>Number of providers</td>
+<td>30+</td>
+</tr>
+<tr>
+<td>Number of services</td>
+<td>12</td>
+</tr>
+<tr>
+<td>Number of repositories</td>
+<td>7</td>
+</tr>
+<tr>
+<td>Test coverage</td>
+<td>Unknown (tests minimal)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>Document Prepared By:</strong> Technical Architecture
+Review<br />
+<strong>Review Date:</strong> March 2026<br />
+<strong>Classification:</strong> Internal Technical Documentation</p>

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../providers/theme_provider.dart';
 
 class CompressHubScreen extends ConsumerWidget {
   const CompressHubScreen({super.key});
@@ -12,6 +13,7 @@ class CompressHubScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -46,7 +48,6 @@ class CompressHubScreen extends ConsumerWidget {
                     description:
                         'Reduce image file size while maintaining quality',
                     icon: Icons.photo_size_select_small_rounded,
-                    color: Colors.blue,
                     stats: 'Supports JPG, PNG, WebP',
                     onTap: () => context.openCompressImage(),
                     isDark: isDark,
@@ -61,7 +62,6 @@ class CompressHubScreen extends ConsumerWidget {
                     title: 'Compress PDFs',
                     description: 'Optimize PDF documents for sharing',
                     icon: Icons.picture_as_pdf_rounded,
-                    color: Colors.red,
                     stats: 'Reduce up to 80% file size',
                     onTap: () => context.openCompressPdf(),
                     isDark: isDark,
@@ -112,20 +112,21 @@ class CompressHubScreen extends ConsumerWidget {
   }
 
   Widget _buildStatsCard(ThemeData theme, bool isDark) {
+    final primaryColor = theme.colorScheme.primary;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.green.withOpacity(0.15),
-            Colors.green.withOpacity(0.05),
+            primaryColor.withOpacity(0.15),
+            primaryColor.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.green.withOpacity(0.2),
+          color: primaryColor.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -135,12 +136,12 @@ class CompressHubScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.2),
+                  color: primaryColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.compress_rounded,
-                  color: Colors.green,
+                  color: primaryColor,
                   size: 28,
                 ),
               ),
@@ -183,7 +184,7 @@ class CompressHubScreen extends ConsumerWidget {
               Container(
                 width: 1,
                 height: 40,
-                color: Colors.green.withOpacity(0.3),
+                color: primaryColor.withOpacity(0.3),
               ),
               Expanded(
                 child: _StatItem(
@@ -196,7 +197,7 @@ class CompressHubScreen extends ConsumerWidget {
               Container(
                 width: 1,
                 height: 40,
-                color: Colors.green.withOpacity(0.3),
+                color: primaryColor.withOpacity(0.3),
               ),
               Expanded(
                 child: _StatItem(
@@ -275,7 +276,7 @@ class _StatItem extends StatelessWidget {
           value,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.green,
+            color: theme.colorScheme.primary,
           ),
         ),
         const SizedBox(height: 4),
@@ -297,7 +298,6 @@ class _CompressionCard extends StatelessWidget {
   final String title;
   final String description;
   final IconData icon;
-  final Color color;
   final String stats;
   final VoidCallback onTap;
   final bool isDark;
@@ -306,7 +306,6 @@ class _CompressionCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.icon,
-    required this.color,
     required this.stats,
     required this.onTap,
     required this.isDark,
@@ -315,6 +314,7 @@ class _CompressionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = theme.colorScheme.primary;
 
     return Material(
       color: Colors.transparent,
@@ -443,7 +443,7 @@ class _TipCard extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: Colors.amber,
+            color: theme.colorScheme.primary,
             size: 20,
           ),
           const SizedBox(width: 12),

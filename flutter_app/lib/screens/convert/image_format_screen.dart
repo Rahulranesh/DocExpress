@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class ImageFormatScreen extends ConsumerStatefulWidget {
@@ -143,6 +144,7 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -355,12 +357,12 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: theme.colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.image_rounded,
-                          color: Colors.blue,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       title: Text(
@@ -652,12 +654,12 @@ class _FormatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: option.color.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   option.icon,
-                  color: option.color,
+                  color: theme.colorScheme.primary,
                   size: 20,
                 ),
               ),

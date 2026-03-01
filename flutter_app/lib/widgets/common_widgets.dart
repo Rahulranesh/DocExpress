@@ -217,7 +217,7 @@ class AppCard extends StatelessWidget {
                   ? Colors.white.withOpacity(0.1)
                   : Colors.black.withOpacity(0.05),
             ),
-        boxShadow: shadow ?? AppTheme.shadowSm,
+        boxShadow: shadow ?? AppTheme.shadowSm(isDark),
       ),
       child: Material(
         color: Colors.transparent,

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; }
+        body {
+            width: 1024px;
+            height: 1024px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+        .icon {
+            width: 1024px;
+            height: 1024px;
+            background: linear-gradient(135deg, #FDBA74 0%, #F97316 50%, #C2410C 100%);
+            border-radius: 230px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 40px 120px rgba(249,115,22,0.5);
+        }
+        .text {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-size: 420px;
+            font-weight: 900;
+            color: white;
+            letter-spacing: -20px;
+            text-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
+        }
+        /* Orbital rings */
+        .ring {
+            position: absolute;
+            border: 8px solid rgba(255,255,255,0.25);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .ring1 {
+            width: 800px;
+            height: 800px;
+            transform: rotate(-20deg);
+        }
+        .ring2 {
+            width: 900px;
+            height: 900px;
+            transform: rotate(30deg);
+            border-color: rgba(255,255,255,0.15);
+        }
+        .ring3 {
+            width: 700px;
+            height: 700px;
+            transform: rotate(60deg);
+            border-color: rgba(255,255,255,0.2);
+        }
+        /* Document accent */
+        .doc-accent {
+            position: absolute;
+            top: 80px;
+            right: 120px;
+            width: 120px;
+            height: 150px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .doc-accent::before {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 20px;
+            right: 20px;
+            height: 12px;
+            background: #F97316;
+            border-radius: 6px;
+        }
+        .doc-accent::after {
+            content: '';
+            position: absolute;
+            top: 55px;
+            left: 20px;
+            width: 50px;
+            height: 12px;
+            background: #FDBA74;
+            border-radius: 6px;
+        }
+        /* Corner fold */
+        .doc-fold {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, transparent 50%, #E5E7EB 50%);
+            border-radius: 0 12px 0 0;
+        }
+        /* Processing indicator */
+        .sync-icon {
+            position: absolute;
+            bottom: 100px;
+            left: 130px;
+            width: 100px;
+            height: 100px;
+            border: 12px solid rgba(255,255,255,0.9);
+            border-top-color: transparent;
+            border-radius: 50%;
+        }
+        /* Dots */
+        .dot {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+        }
+        .dot1 { top: 200px; left: 200px; }
+        .dot2 { bottom: 250px; right: 180px; }
+        .dot3 { top: 300px; right: 100px; width: 20px; height: 20px; }
+    </style>
+</head>
+<body>
+    <div class="icon">
+        <div class="ring ring1"></div>
+        <div class="ring ring2"></div>
+        <div class="ring ring3"></div>
+        <div class="doc-accent">
+            <div class="doc-fold"></div>
+        </div>
+        <div class="sync-icon"></div>
+        <div class="dot dot1"></div>
+        <div class="dot dot2"></div>
+        <div class="dot dot3"></div>
+        <span class="text">DX</span>
+    </div>
+</body>
+</html>

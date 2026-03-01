@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class VideoCompressScreen extends ConsumerStatefulWidget {
@@ -228,6 +229,7 @@ class _VideoCompressScreenState extends ConsumerState<VideoCompressScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(

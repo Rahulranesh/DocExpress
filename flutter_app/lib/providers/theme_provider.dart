@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/theme/app_theme.dart';
 import '../models/models.dart';
 
 /// Theme mode notifier - manages theme state
@@ -96,4 +97,71 @@ final brightnessProvider = Provider.family<Brightness, BuildContext>((ref, conte
     case ThemeMode.system:
       return MediaQuery.platformBrightnessOf(context);
   }
+});
+
+// =============================================================================
+// COLOR PALETTE PROVIDER
+// =============================================================================
+
+/// Color palette notifier - manages color palette state
+class ColorPaletteNotifier extends StateNotifier<ColorPalette> {
+  ColorPaletteNotifier() : super(ColorPalette.sunset) {
+    _loadPalette();
+  }
+
+  static const String _paletteKey = 'color_palette';
+
+  /// Load palette from storage
+  Future<void> _loadPalette() async {
+    try {
+      final box = Hive.box('settings');
+      final index = box.get(_paletteKey, defaultValue: 0);
+      if (index >= 0 && index < ColorPalette.values.length) {
+        state = ColorPalette.values[index];
+        AppTheme.setPalette(state);
+      }
+    } catch (e) {
+      state = ColorPalette.sunset;
+      AppTheme.setPalette(ColorPalette.sunset);
+    }
+  }
+
+  /// Set color palette
+  Future<void> setPalette(ColorPalette palette) async {
+    try {
+      final box = Hive.box('settings');
+      await box.put(_paletteKey, palette.index);
+      state = palette;
+      AppTheme.setPalette(palette);
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  /// Get all available palettes
+  List<ColorPalette> get availablePalettes => ColorPalette.values;
+}
+
+/// Color palette provider
+final colorPaletteProvider =
+    StateNotifierProvider<ColorPaletteNotifier, ColorPalette>((ref) {
+  return ColorPaletteNotifier();
+});
+
+/// Current palette colors provider
+final paletteColorsProvider = Provider<PaletteColors>((ref) {
+  final palette = ref.watch(colorPaletteProvider);
+  return AppTheme.palettes[palette]!;
+});
+
+/// Light theme provider (uses current palette)
+final lightThemeProvider = Provider<ThemeData>((ref) {
+  final palette = ref.watch(colorPaletteProvider);
+  return AppTheme.buildLightTheme(palette);
+});
+
+/// Dark theme provider (uses current palette)
+final darkThemeProvider = Provider<ThemeData>((ref) {
+  final palette = ref.watch(colorPaletteProvider);
+  return AppTheme.buildDarkTheme(palette);
 });

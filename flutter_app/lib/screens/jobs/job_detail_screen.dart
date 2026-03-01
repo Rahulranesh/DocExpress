@@ -13,6 +13,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class JobDetailScreen extends ConsumerStatefulWidget {
@@ -224,6 +225,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
     final jobState = ref.watch(jobDetailProvider(widget.jobId));
 
     return Scaffold(
@@ -351,7 +353,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.teal.withOpacity(0.3),
+          color: theme.colorScheme.primary.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -359,9 +361,9 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.text_fields_rounded,
-                color: Colors.teal,
+                color: theme.colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -381,7 +383,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                 },
                 tooltip: 'Copy text',
                 style: IconButton.styleFrom(
-                  foregroundColor: Colors.teal,
+                  foregroundColor: theme.colorScheme.primary,
                 ),
               ),
             ],
@@ -409,7 +411,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   }
 
   Widget _buildStatusCard(Job job, ThemeData theme, bool isDark) {
-    final statusInfo = _getStatusInfo(job.status);
+    final statusInfo = _getStatusInfo(job.status, theme);
 
     return Container(
       width: double.infinity,
@@ -611,7 +613,6 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
           ...job.inputs.map((input) => _FileItem(
                 fileName: input,
                 icon: Icons.insert_drive_file_rounded,
-                color: Colors.blue,
                 isDark: isDark,
               )),
         ],
@@ -628,7 +629,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.green.withOpacity(0.3),
+          color: theme.colorScheme.primary.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -636,9 +637,9 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.output_rounded,
-                color: Colors.green,
+                color: theme.colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -652,13 +653,13 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${outputFiles.length}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.green,
+                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -693,8 +694,8 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                     : const Icon(Icons.download_rounded),
                 label: Text(_isDownloading ? 'Downloading...' : 'Download All'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.green,
-                  side: const BorderSide(color: Colors.green),
+                  foregroundColor: theme.colorScheme.primary,
+                  side: BorderSide(color: theme.colorScheme.primary),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -794,28 +795,29 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
     );
   }
 
-  _StatusInfo _getStatusInfo(JobStatus status) {
+  _StatusInfo _getStatusInfo(JobStatus status, ThemeData theme) {
+    final primaryColor = theme.colorScheme.primary;
     switch (status) {
       case JobStatus.pending:
-        return const _StatusInfo(
+        return _StatusInfo(
           label: 'Pending',
           description: 'Job is waiting to be processed',
           icon: Icons.schedule_rounded,
-          color: Colors.orange,
+          color: primaryColor,
         );
       case JobStatus.running:
-        return const _StatusInfo(
+        return _StatusInfo(
           label: 'Processing',
           description: 'Job is currently being processed',
           icon: Icons.hourglass_top_rounded,
-          color: Colors.blue,
+          color: primaryColor,
         );
       case JobStatus.completed:
-        return const _StatusInfo(
+        return _StatusInfo(
           label: 'Completed',
           description: 'Job finished successfully',
           icon: Icons.check_circle_rounded,
-          color: Colors.green,
+          color: primaryColor,
         );
       case JobStatus.failed:
         return const _StatusInfo(
@@ -913,19 +915,18 @@ class _InfoRow extends StatelessWidget {
 class _FileItem extends StatelessWidget {
   final String fileName;
   final IconData icon;
-  final Color color;
   final bool isDark;
 
   const _FileItem({
     required this.fileName,
     required this.icon,
-    required this.color,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = theme.colorScheme.primary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1016,7 +1017,7 @@ class _OutputFileCard extends StatelessWidget {
         color: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.green.withOpacity(0.2),
+          color: theme.colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -1029,12 +1030,12 @@ class _OutputFileCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     _getFileIcon(),
-                    color: Colors.green,
+                    color: theme.colorScheme.primary,
                     size: 24,
                   ),
                 ),
@@ -1075,7 +1076,7 @@ class _OutputFileCard extends StatelessWidget {
           // Action buttons row
           Container(
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.05),
+              color: theme.colorScheme.primary.withOpacity(0.05),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
@@ -1089,7 +1090,7 @@ class _OutputFileCard extends StatelessWidget {
                     icon: const Icon(Icons.open_in_new_rounded, size: 18),
                     label: const Text('Open'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.green,
+                      foregroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -1097,7 +1098,7 @@ class _OutputFileCard extends StatelessWidget {
                 Container(
                   width: 1,
                   height: 24,
-                  color: Colors.green.withOpacity(0.2),
+                  color: theme.colorScheme.primary.withOpacity(0.2),
                 ),
                 Expanded(
                   child: TextButton.icon(
@@ -1105,7 +1106,7 @@ class _OutputFileCard extends StatelessWidget {
                     icon: const Icon(Icons.download_rounded, size: 18),
                     label: const Text('Save'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.green,
+                      foregroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -1113,7 +1114,7 @@ class _OutputFileCard extends StatelessWidget {
                 Container(
                   width: 1,
                   height: 24,
-                  color: Colors.green.withOpacity(0.2),
+                  color: theme.colorScheme.primary.withOpacity(0.2),
                 ),
                 Expanded(
                   child: TextButton.icon(
@@ -1121,7 +1122,7 @@ class _OutputFileCard extends StatelessWidget {
                     icon: const Icon(Icons.share_rounded, size: 18),
                     label: const Text('Share'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.green,
+                      foregroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),

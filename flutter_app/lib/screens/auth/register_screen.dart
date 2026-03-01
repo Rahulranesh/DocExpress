@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -55,6 +56,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final theme = Theme.of(context);
     final authState = ref.watch(authStateProvider);
     final isDark = theme.brightness == Brightness.dark;
+    // Watch palette for reactive color updates
+    ref.watch(colorPaletteProvider);
 
     // Show error snackbar if there's an error
     ref.listen<AuthState>(authStateProvider, (previous, next) {
@@ -328,7 +331,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           child: Text(
                             'Sign In',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.primaryColor,
+                              color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),

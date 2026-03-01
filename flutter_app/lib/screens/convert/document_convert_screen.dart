@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 import '../../repositories/offline_conversion_repository.dart';
 
@@ -428,6 +429,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
     final info = _conversionInfo;
 
     return Scaffold(
@@ -469,13 +471,13 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: info.color.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 info.icon,
                 size: 64,
-                color: info.color,
+                color: theme.colorScheme.primary,
               ),
             ).animate(onPlay: (c) => c.repeat()).rotate(duration: 2.seconds),
             const SizedBox(height: 32),
@@ -502,7 +504,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                 backgroundColor:
                     isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
                 borderRadius: BorderRadius.circular(4),
-                color: info.color,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -548,13 +550,13 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            info.color.withOpacity(0.1),
-            info.color.withOpacity(0.05),
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.primary.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: info.color.withOpacity(0.2),
+          color: theme.colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -562,12 +564,12 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: info.color.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               info.icon,
-              color: info.color,
+              color: theme.colorScheme.primary,
               size: 28,
             ),
           ),
@@ -584,14 +586,14 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: info.color.withOpacity(0.2),
+                        color: theme.colorScheme.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         info.sourceType,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: info.color,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -600,7 +602,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                       child: Icon(
                         Icons.arrow_forward_rounded,
                         size: 16,
-                        color: info.color,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     Container(
@@ -609,14 +611,14 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: info.color.withOpacity(0.2),
+                        color: theme.colorScheme.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         info.targetType,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: info.color,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -669,7 +671,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
           color: isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: info.color.withOpacity(0.3),
+            color: theme.colorScheme.primary.withOpacity(0.3),
             width: 2,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -679,13 +681,13 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: info.color.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.add_rounded,
                 size: 48,
-                color: info.color,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -737,12 +739,12 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: info.color.withOpacity(0.1),
+                          color: theme.colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           info.icon,
-                          color: info.color,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       title: Text(
@@ -768,7 +770,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                               Icon(
                                 Icons.arrow_forward_rounded,
                                 size: 12,
-                                color: info.color,
+                                color: theme.colorScheme.primary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -777,7 +779,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: info.color,
+                                    color: theme.colorScheme.primary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -793,7 +795,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
                             onPressed: () => _editOutputName(index),
                             icon: Icon(
                               Icons.edit_rounded,
-                              color: info.color,
+                              color: theme.colorScheme.primary,
                               size: 20,
                             ),
                             tooltip: 'Rename output',
@@ -968,6 +970,7 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final color = theme.colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(12),

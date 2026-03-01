@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class PdfSplitScreen extends ConsumerStatefulWidget {
@@ -188,6 +189,7 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -236,13 +238,13 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.pink.withOpacity(0.1),
-            Colors.pink.withOpacity(0.05),
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.primary.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.pink.withOpacity(0.2),
+          color: theme.colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -250,12 +252,12 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.pink.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.call_split_rounded,
-              color: Colors.pink,
+              color: theme.colorScheme.primary,
               size: 28,
             ),
           ),
@@ -321,7 +323,7 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: theme.colorScheme.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -329,7 +331,7 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
                           ? Icons.picture_as_pdf_rounded
                           : Icons.upload_file_rounded,
                       size: 48,
-                      color: Colors.red,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 16),

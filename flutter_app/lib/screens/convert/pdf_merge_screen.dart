@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class PdfMergeScreen extends ConsumerStatefulWidget {
@@ -220,6 +221,7 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -289,13 +291,13 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.red.withOpacity(0.1),
-            Colors.red.withOpacity(0.05),
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.primary.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.red.withOpacity(0.2),
+          color: theme.colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -303,12 +305,12 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.merge_rounded,
-              color: Colors.red,
+              color: theme.colorScheme.primary,
               size: 28,
             ),
           ),
@@ -350,13 +352,13 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.picture_as_pdf_rounded,
                 size: 64,
-                color: Colors.red,
+                color: theme.colorScheme.primary,
               ),
             ).animate().scale(duration: 400.ms),
             const SizedBox(height: 24),
@@ -576,14 +578,14 @@ class _PdfListItem extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
               child: Text(
                 '${index + 1}',
-                style: const TextStyle(
-                  color: Colors.red,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -595,12 +597,12 @@ class _PdfListItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.picture_as_pdf_rounded,
-              color: Colors.red,
+              color: theme.colorScheme.primary,
               size: 24,
             ),
           ),

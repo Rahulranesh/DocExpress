@@ -8,6 +8,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
@@ -93,6 +94,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
     final jobsState = ref.watch(jobsListProvider);
 
     return Scaffold(
@@ -605,12 +607,12 @@ class _JobCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _getJobColor().withOpacity(0.1),
+                    color: theme.colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     _getJobIcon(),
-                    color: _getJobColor(),
+                    color: theme.colorScheme.primary,
                     size: 24,
                   ),
                 ),
@@ -764,28 +766,8 @@ class _JobCard extends StatelessWidget {
     }
   }
 
-  Color _getJobColor() {
-    switch (job.type.toUpperCase()) {
-      case 'IMAGE_TO_PDF':
-      case 'PDF_MERGE':
-      case 'PDF_SPLIT':
-      case 'PDF_REORDER':
-      case 'PDF_COMPRESS':
-        return Colors.red;
-      case 'IMAGE_COMPRESS':
-      case 'IMAGE_FORMAT':
-      case 'IMAGE_TRANSFORM':
-        return Colors.blue;
-      case 'VIDEO_COMPRESS':
-        return Colors.purple;
-      case 'DOCX_TO_PDF':
-      case 'PDF_TO_DOCX':
-        return Colors.orange;
-      case 'OCR':
-        return Colors.teal;
-      default:
-        return Colors.grey;
-    }
+  Color _getJobColor(BuildContext context) {
+    return Theme.of(context).colorScheme.primary;
   }
 
   String _formatDate(DateTime date) {
@@ -825,7 +807,7 @@ class _StatusBadge extends StatelessWidget {
         label = 'Completed';
         break;
       case JobStatus.running:
-        color = Colors.blue;
+        color = theme.colorScheme.primary;
         icon = Icons.pending_rounded;
         label = 'Processing';
         break;
@@ -835,7 +817,7 @@ class _StatusBadge extends StatelessWidget {
         label = 'Failed';
         break;
       case JobStatus.pending:
-        color = Colors.orange;
+        color = theme.colorScheme.primary;
         icon = Icons.schedule_rounded;
         label = 'Pending';
         break;

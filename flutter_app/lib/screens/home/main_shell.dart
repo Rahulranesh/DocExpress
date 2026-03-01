@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../providers/theme_provider.dart';
 
 /// Main shell with bottom navigation
 class MainShell extends ConsumerStatefulWidget {
@@ -57,9 +58,12 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideScreen = screenWidth > 600;
+    // Watch palette for reactive updates
+    ref.watch(colorPaletteProvider);
 
     if (isWideScreen) {
       // Tablet/Desktop layout with NavigationRail
@@ -79,8 +83,8 @@ class _MainShellState extends ConsumerState<MainShell> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.primaryColor, AppTheme.primaryDark],
+                    gradient: LinearGradient(
+                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.7)],
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -45,6 +45,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final themeMode = ref.watch(themeModeProvider);
+    // Watch palette for reactive color updates
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -146,9 +148,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Container(
               width: 60,
               height: 60,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppTheme.primaryColor, AppTheme.primaryDark],
+                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -233,7 +235,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+          color: theme.colorScheme.primary.withOpacity(0.25),
         ),
       ),
       child: Column(
@@ -260,7 +262,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+          color: theme.colorScheme.primary.withOpacity(0.25),
         ),
       ),
       child: Column(
@@ -326,7 +328,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+          color: theme.colorScheme.primary.withOpacity(0.25),
         ),
       ),
       child: Column(
@@ -372,7 +374,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+          color: theme.colorScheme.primary.withOpacity(0.25),
         ),
       ),
       child: Column(
@@ -498,9 +500,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _showSnackBar(
                           'Thank you for your ${index + 1}-star rating!');
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.star_rounded,
-                      color: Colors.amber,
+                      color: theme.colorScheme.primary,
                       size: 32,
                     ),
                   ),
@@ -689,7 +691,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               ListTile(
                 leading:
-                    const Icon(Icons.high_quality_rounded, color: Colors.green),
+                    Icon(Icons.high_quality_rounded, color: theme.colorScheme.primary),
                 title: const Text('High'),
                 subtitle: const Text('Best quality, larger file size'),
                 trailing: currentQuality >= 80
@@ -705,7 +707,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.tune_rounded, color: Colors.orange),
+                leading: Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
                 title: const Text('Medium'),
                 subtitle: const Text('Balanced quality and size'),
                 trailing: currentQuality >= 50 && currentQuality < 80
@@ -721,7 +723,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.compress_rounded, color: Colors.red),
+                leading: Icon(Icons.compress_rounded, color: theme.colorScheme.primary),
                 title: const Text('Low'),
                 subtitle: const Text('Smallest file size'),
                 trailing: currentQuality < 50
@@ -849,21 +851,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.image_rounded,
                   label: 'Images',
                   size: '120 MB',
-                  color: Colors.blue,
+                  color: theme.colorScheme.primary,
                   isDark: isDark,
                 ),
                 _StorageItem(
                   icon: Icons.picture_as_pdf_rounded,
                   label: 'PDFs',
                   size: '85 MB',
-                  color: Colors.red,
+                  color: theme.colorScheme.primary,
                   isDark: isDark,
                 ),
                 _StorageItem(
                   icon: Icons.videocam_rounded,
                   label: 'Videos',
                   size: '28 MB',
-                  color: Colors.purple,
+                  color: theme.colorScheme.primary,
                   isDark: isDark,
                 ),
                 _StorageItem(
@@ -1026,8 +1028,7 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: iconColor ??
-            (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary),
+        color: iconColor ?? theme.colorScheme.primary,
       ),
       title: Text(
         title,
@@ -1084,8 +1085,7 @@ class _SettingsSwitch extends StatelessWidget {
     return SwitchListTile(
       secondary: Icon(
         icon,
-        color:
-            isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+        color: theme.colorScheme.primary,
       ),
       title: Text(
         title,

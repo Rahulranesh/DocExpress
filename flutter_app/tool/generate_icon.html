@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DocXpress App Icon Generator</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: white;
+        }
+        h1 { margin-bottom: 20px; }
+        canvas { 
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(249, 115, 22, 0.4);
+        }
+        .instructions {
+            margin-top: 30px;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 32px;
+            font-size: 16px;
+            background: #F97316;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover { background: #EA580C; }
+        .sizes { margin-top: 20px; display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <h1>DocXpress Premium App Icon</h1>
+    <canvas id="iconCanvas" width="1024" height="1024"></canvas>
+    <div class="sizes">
+        <button onclick="downloadIcon(1024)">Download 1024px</button>
+        <button onclick="downloadIcon(512)">Download 512px</button>
+        <button onclick="downloadIcon(192)">Download 192px</button>
+    </div>
+    <div class="instructions">
+        <p><strong>Instructions:</strong></p>
+        <p>1. Click download button for your desired size</p>
+        <p>2. Save to: <code>flutter_app/assets/icons/app_icon.png</code></p>
+        <p>3. Run: <code>flutter pub run flutter_launcher_icons</code></p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('iconCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 1024;
+
+        // Colors
+        const primary = '#F97316';
+        const primaryLight = '#FB923C';
+        const primaryDark = '#C2410C';
+        const white = '#FFFFFF';
+
+        function drawIcon(s = size) {
+            canvas.width = s;
+            canvas.height = s;
+            ctx.clearRect(0, 0, s, s);
+
+            const scale = s / 1024;
+            const radius = s * 0.24;
+
+            // Background gradient
+            const bgGrad = ctx.createLinearGradient(0, 0, s, s);
+            bgGrad.addColorStop(0, primaryLight);
+            bgGrad.addColorStop(0.4, primary);
+            bgGrad.addColorStop(1, primaryDark);
+
+            // Draw rounded rect background
+            ctx.beginPath();
+            ctx.roundRect(0, 0, s, s, radius);
+            ctx.fillStyle = bgGrad;
+            ctx.fill();
+
+            // Radial highlight
+            const radGrad = ctx.createRadialGradient(s * 0.35, s * 0.3, 0, s * 0.5, s * 0.5, s);
+            radGrad.addColorStop(0, 'rgba(255,255,255,0.12)');
+            radGrad.addColorStop(0.5, 'rgba(255,255,255,0)');
+            radGrad.addColorStop(1, 'rgba(0,0,0,0.15)');
+            ctx.beginPath();
+            ctx.roundRect(0, 0, s, s, radius);
+            ctx.fillStyle = radGrad;
+            ctx.fill();
+
+            // Orbital rings
+            drawOrbitalRing(s * 0.44, 2.5 * scale, 'rgba(255,255,255,0.08)', -15);
+            drawOrbitalRing(s * 0.38, 3 * scale, 'rgba(255,255,255,0.12)', 25, true);
+            drawOrbitalRing(s * 0.32, 4 * scale, 'rgba(255,255,255,0.18)', -40);
+
+            // Inner glow circle
+            ctx.beginPath();
+            ctx.arc(s/2, s/2, s * 0.26, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 2 * scale;
+            ctx.stroke();
+
+            // Center backdrop
+            const centerGrad = ctx.createRadialGradient(s/2, s/2, 0, s/2, s/2, s * 0.23);
+            centerGrad.addColorStop(0, 'rgba(255,255,255,0.12)');
+            centerGrad.addColorStop(1, 'rgba(255,255,255,0.04)');
+            ctx.beginPath();
+            ctx.arc(s/2, s/2, s * 0.23, 0, Math.PI * 2);
+            ctx.fillStyle = centerGrad;
+            ctx.fill();
+
+            // DX Text
+            ctx.save();
+            ctx.font = `900 ${s * 0.32}px 'Segoe UI', Arial, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = s * 0.03;
+            ctx.shadowOffsetX = s * 0.01;
+            ctx.shadowOffsetY = s * 0.015;
+            ctx.fillStyle = white;
+            ctx.fillText('DX', s/2, s/2 + s * 0.02);
+            ctx.restore();
+
+            // Document accent (top-right)
+            ctx.save();
+            ctx.translate(s * 0.85, s * 0.18);
+            ctx.rotate(0.15);
+            
+            // Document shadow
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = s * 0.02;
+            ctx.shadowOffsetX = s * 0.005;
+            ctx.shadowOffsetY = s * 0.008;
+            
+            // Document body
+            ctx.beginPath();
+            ctx.roundRect(-s * 0.06, -s * 0.075, s * 0.12, s * 0.15, s * 0.02);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            
+            // Document lines
+            ctx.fillStyle = 'rgba(249, 115, 22, 0.5)';
+            ctx.beginPath();
+            ctx.roundRect(-s * 0.035, -s * 0.04, s * 0.07, s * 0.012, 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(249, 115, 22, 0.35)';
+            ctx.beginPath();
+            ctx.roundRect(-s * 0.0275, -s * 0.015, s * 0.055, s * 0.012, 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
+            ctx.beginPath();
+            ctx.roundRect(-s * 0.035, s * 0.01, s * 0.07, s * 0.012, 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Processing circle (bottom-left)
+            ctx.beginPath();
+            ctx.arc(s * 0.18, s * 0.80, s * 0.08, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = s * 0.006;
+            ctx.stroke();
+
+            // Sync arrows
+            drawSyncIcon(s * 0.18, s * 0.80, s * 0.045);
+
+            // Corner dots
+            ctx.beginPath();
+            ctx.arc(s * 0.1, s * 0.1, s * 0.02, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(s * 0.92, s * 0.92, s * 0.015, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fill();
+        }
+
+        function drawOrbitalRing(r, lineWidth, color, rotation, dashed = false) {
+            const s = canvas.width;
+            ctx.save();
+            ctx.translate(s/2, s/2);
+            ctx.rotate(rotation * Math.PI / 180);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            
+            if (dashed) {
+                ctx.setLineDash([r * 0.12, r * 0.08]);
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+            } else {
+                ctx.arc(0, 0, r, 0.3, Math.PI * 1.7);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        function drawSyncIcon(x, y, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = size * 0.18;
+            ctx.lineCap = 'round';
+            
+            // Top arc with arrow
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.5, -Math.PI * 0.7, Math.PI * 0.1);
+            ctx.stroke();
+            
+            // Bottom arc with arrow
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.5, Math.PI * 0.3, Math.PI * 1.1);
+            ctx.stroke();
+            
+            // Arrow heads
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            
+            // Top arrow
+            ctx.save();
+            ctx.translate(size * 0.45, -size * 0.2);
+            ctx.rotate(Math.PI * 0.6);
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.2);
+            ctx.lineTo(size * 0.15, size * 0.05);
+            ctx.lineTo(-size * 0.15, size * 0.05);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            
+            // Bottom arrow
+            ctx.save();
+            ctx.translate(-size * 0.45, size * 0.2);
+            ctx.rotate(-Math.PI * 0.4);
+            ctx.beginPath();
+            ctx.moveTo(0, size * 0.2);
+            ctx.lineTo(size * 0.15, -size * 0.05);
+            ctx.lineTo(-size * 0.15, -size * 0.05);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.restore();
+        }
+
+        function downloadIcon(targetSize) {
+            drawIcon(targetSize);
+            const link = document.createElement('a');
+            link.download = `app_icon_${targetSize}px.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            drawIcon(1024); // Reset to preview size
+        }
+
+        // Initial draw
+        drawIcon();
+    </script>
+</body>
+</html>

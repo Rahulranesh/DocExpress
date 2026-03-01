@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../repositories/offline_conversion_repository.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -140,6 +141,7 @@ class _ImageTransformScreenState extends ConsumerState<ImageTransformScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(

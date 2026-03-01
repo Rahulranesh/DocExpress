@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class FilesScreen extends ConsumerStatefulWidget {
@@ -137,6 +138,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
     final filesState = ref.watch(filesListProvider);
 
     return Scaffold(
@@ -699,12 +701,12 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _getFileTypeColor(file).withOpacity(0.1),
+                          color: theme.colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           _getFileTypeIcon(file),
-                          color: _getFileTypeColor(file),
+                          color: theme.colorScheme.primary,
                           size: 28,
                         ),
                       ),
@@ -1015,12 +1017,8 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     return Icons.insert_drive_file_rounded;
   }
 
-  Color _getFileTypeColor(FileModel file) {
-    if (file.isImage) return Colors.blue;
-    if (file.isPdf) return Colors.red;
-    if (file.isVideo) return Colors.purple;
-    if (file.isDocument) return Colors.orange;
-    return Colors.grey;
+  Color _getFileTypeColor(BuildContext context) {
+    return Theme.of(context).colorScheme.primary;
   }
 
   String _formatFileSize(int bytes) {
@@ -1075,7 +1073,7 @@ class _FileGridItem extends StatelessWidget {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: _getFileColor().withOpacity(0.1),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(16),
                   ),
@@ -1086,7 +1084,7 @@ class _FileGridItem extends StatelessWidget {
                       child: Icon(
                         _getFileIcon(),
                         size: 48,
-                        color: _getFileColor(),
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     Positioned(
@@ -1164,12 +1162,8 @@ class _FileGridItem extends StatelessWidget {
     return Icons.insert_drive_file_rounded;
   }
 
-  Color _getFileColor() {
-    if (file.isImage) return Colors.blue;
-    if (file.isPdf) return Colors.red;
-    if (file.isVideo) return Colors.purple;
-    if (file.isDocument) return Colors.orange;
-    return Colors.grey;
+  Color _getFileColor(BuildContext context) {
+    return Theme.of(context).colorScheme.primary;
   }
 
   String _formatFileSize(int bytes) {
@@ -1223,12 +1217,12 @@ class _FileListItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _getFileColor().withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 _getFileIcon(),
-                color: _getFileColor(),
+                color: theme.colorScheme.primary,
                 size: 28,
               ),
             ),
@@ -1297,12 +1291,8 @@ class _FileListItem extends StatelessWidget {
     return Icons.insert_drive_file_rounded;
   }
 
-  Color _getFileColor() {
-    if (file.isImage) return Colors.blue;
-    if (file.isPdf) return Colors.red;
-    if (file.isVideo) return Colors.purple;
-    if (file.isDocument) return Colors.orange;
-    return Colors.grey;
+  Color _getFileColor(BuildContext context) {
+    return Theme.of(context).colorScheme.primary;
   }
 
   String _formatFileSize(int bytes) {

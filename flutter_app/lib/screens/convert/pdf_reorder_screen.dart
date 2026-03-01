@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 
 class PdfReorderScreen extends ConsumerStatefulWidget {
@@ -175,6 +176,7 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -249,13 +251,13 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.purple.withOpacity(0.1),
-            Colors.purple.withOpacity(0.05),
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.primary.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.purple.withOpacity(0.2),
+          color: theme.colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -263,12 +265,12 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.reorder_rounded,
-              color: Colors.purple,
+              color: theme.colorScheme.primary,
               size: 28,
             ),
           ),
@@ -394,7 +396,7 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
             children: [
               const Icon(
                 Icons.insert_drive_file_rounded,
-                color: Colors.red,
+                color: AppTheme.errorColor,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -608,10 +610,10 @@ class _PageItem extends StatelessWidget {
             width: 50,
             height: 65,
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.red.withOpacity(0.3),
+                color: theme.colorScheme.primary.withOpacity(0.3),
               ),
             ),
             child: Stack(
@@ -619,7 +621,7 @@ class _PageItem extends StatelessWidget {
               children: [
                 Icon(
                   Icons.article_rounded,
-                  color: Colors.red.withOpacity(0.5),
+                  color: theme.colorScheme.primary.withOpacity(0.5),
                   size: 24,
                 ),
                 Positioned(
@@ -630,7 +632,7 @@ class _PageItem extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red,
+                      color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

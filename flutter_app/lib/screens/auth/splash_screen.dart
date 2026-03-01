@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../providers/theme_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -49,6 +50,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    // Watch palette for reactive color updates
+    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       body: Container(
@@ -64,7 +67,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     const Color(0xFF0F172A),
                   ]
                 : [
-                    AppTheme.primaryLight.withOpacity(0.1),
+                    theme.colorScheme.primary.withOpacity(0.1),
                     Colors.white,
                   ],
           ),
@@ -79,18 +82,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.primaryDark,
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withOpacity(0.7),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      color: theme.colorScheme.primary.withOpacity(0.3),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -153,9 +156,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       child: LinearProgressIndicator(
                         backgroundColor: isDark
                             ? Colors.white.withOpacity(0.1)
-                            : AppTheme.primaryColor.withOpacity(0.1),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppTheme.primaryColor,
+                            : theme.colorScheme.primary.withOpacity(0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.primary,
                         ),
                         minHeight: 4,
                       ),
