@@ -239,7 +239,8 @@ class AuthRepository {
 
       debugPrint('✅ [API] Auth: Average rating fetched successfully');
       return {
-        'averageRating': (response.data['data']['averageRating'] as num).toDouble(),
+        'averageRating':
+            (response.data['data']['averageRating'] as num).toDouble(),
         'totalRatings': response.data['data']['totalRatings'] as int,
       };
     } catch (e) {

@@ -38,14 +38,16 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 /// API service provider (for backend conversions)
 final apiServiceProvider = Provider<ApiService>((ref) {
   final storageService = ref.watch(storageServiceProvider);
-  debugPrint('🔧 [PROVIDER] API Service: Initialized for authentication (MongoDB backend)');
+  debugPrint(
+      '🔧 [PROVIDER] API Service: Initialized for authentication (MongoDB backend)');
   return ApiService(storageService: storageService);
 });
 
 /// Conversion API service provider (uses old conversion backend)
 final conversionApiServiceProvider = Provider<ApiService>((ref) {
   final storageService = ref.watch(storageServiceProvider);
-  debugPrint('🔧 [PROVIDER] Conversion API Service: Using OLD backend for document conversions');
+  debugPrint(
+      '🔧 [PROVIDER] Conversion API Service: Using OLD backend for document conversions');
   return ApiService(
     storageService: storageService,
     baseUrl: AppConstants.conversionBaseUrl,

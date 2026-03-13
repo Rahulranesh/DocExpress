@@ -82,8 +82,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Change Password'),
           content: SingleChildScrollView(
             child: Column(
@@ -131,7 +133,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (newPasswordController.text != confirmPasswordController.text) {
+                if (newPasswordController.text !=
+                    confirmPasswordController.text) {
                   _showSnackBar('Passwords do not match', isSuccess: false);
                   return;
                 }
@@ -141,9 +144,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         currentPassword: currentPasswordController.text,
                         newPassword: newPasswordController.text,
                       );
-                  _showSnackBar('Password changed successfully!', isSuccess: true);
+                  _showSnackBar('Password changed successfully!',
+                      isSuccess: true);
                 } catch (e) {
-                  _showSnackBar('Failed to change password: $e', isSuccess: false);
+                  _showSnackBar('Failed to change password: $e',
+                      isSuccess: false);
                 }
               },
               child: const Text('Change'),
@@ -162,8 +167,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Logout'),
           content: const Text('Are you sure you want to logout?'),
           actions: [
@@ -199,8 +206,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text(
             'Delete Account',
             style: TextStyle(color: AppTheme.errorColor),
@@ -232,8 +241,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor:
+                isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text('Confirm Password'),
             content: TextField(
               controller: passwordController,
@@ -263,8 +274,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (passwordConfirmed == true && passwordController.text.isNotEmpty) {
         try {
           await ref.read(authStateProvider.notifier).deleteAccount(
-            password: passwordController.text,
-          );
+                password: passwordController.text,
+              );
           if (mounted) {
             context.go(AppRoutes.login);
           }
@@ -279,7 +290,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? AppTheme.successColor : AppTheme.errorColor,
+        backgroundColor:
+            isSuccess ? AppTheme.successColor : AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -364,7 +376,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               height: 120,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withOpacity(0.7)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -670,9 +685,8 @@ class _SettingsTile extends StatelessWidget {
       subtitle: Text(
         subtitle,
         style: theme.textTheme.bodySmall?.copyWith(
-          color: isDark
-              ? AppTheme.darkTextSecondary
-              : AppTheme.lightTextSecondary,
+          color:
+              isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
         ),
       ),
       trailing: showArrow

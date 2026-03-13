@@ -167,7 +167,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               height: 60,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withOpacity(0.7)
+                  ],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -748,8 +751,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               ListTile(
-                leading:
-                    Icon(Icons.high_quality_rounded, color: theme.colorScheme.primary),
+                leading: Icon(Icons.high_quality_rounded,
+                    color: theme.colorScheme.primary),
                 title: const Text('High'),
                 subtitle: const Text('Best quality, larger file size'),
                 trailing: currentQuality >= 80
@@ -765,7 +768,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
+                leading:
+                    Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
                 title: const Text('Medium'),
                 subtitle: const Text('Balanced quality and size'),
                 trailing: currentQuality >= 50 && currentQuality < 80
@@ -781,7 +785,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.compress_rounded, color: theme.colorScheme.primary),
+                leading: Icon(Icons.compress_rounded,
+                    color: theme.colorScheme.primary),
                 title: const Text('Low'),
                 subtitle: const Text('Smallest file size'),
                 trailing: currentQuality < 50
@@ -1074,16 +1079,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTermsSection('1. Use License', 
-                  'Permission is granted to temporarily download one copy of the materials on DocXpress for personal, non-commercial transitory viewing only.'),
+                _buildTermsSection('1. Use License',
+                    'Permission is granted to temporarily download one copy of the materials on DocXpress for personal, non-commercial transitory viewing only.'),
                 _buildTermsSection('2. Disclaimer',
-                  'The materials on DocXpress are provided without any representations or warranties, express or implied. DocXpress makes no representations or warranties in relation to the site.'),
+                    'The materials on DocXpress are provided without any representations or warranties, express or implied. DocXpress makes no representations or warranties in relation to the site.'),
                 _buildTermsSection('3. Limitations',
-                  'In no case shall DocXpress or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use of the materials.'),
+                    'In no case shall DocXpress or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use of the materials.'),
                 _buildTermsSection('4. User Accounts',
-                  'If you create an account on DocXpress, you must provide accurate information and keep your password confidential. You are responsible for all activity under your account.'),
+                    'If you create an account on DocXpress, you must provide accurate information and keep your password confidential. You are responsible for all activity under your account.'),
                 _buildTermsSection('5. Modifications',
-                  'DocXpress may revise these terms of service at any time. Your continued use of the site constitutes your acceptance of the new terms.'),
+                    'DocXpress may revise these terms of service at any time. Your continued use of the site constitutes your acceptance of the new terms.'),
               ],
             ),
           ),
@@ -1114,17 +1119,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTermsSection('1. Information We Collect',
-                  'We collect information you provide directly to us such as when you create an account, including your name, email address, and account credentials.'),
+                    'We collect information you provide directly to us such as when you create an account, including your name, email address, and account credentials.'),
                 _buildTermsSection('2. How We Use Your Information',
-                  'We use your information to provide, maintain, and improve our services, process transactions, send transactional and promotional communications, and comply with legal obligations.'),
+                    'We use your information to provide, maintain, and improve our services, process transactions, send transactional and promotional communications, and comply with legal obligations.'),
                 _buildTermsSection('3. Data Security',
-                  'We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.'),
+                    'We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.'),
                 _buildTermsSection('4. Third-Party Sharing',
-                  'We do not sell, trade, or share your personal information with third parties except as required by law or as necessary to provide our services.'),
+                    'We do not sell, trade, or share your personal information with third parties except as required by law or as necessary to provide our services.'),
                 _buildTermsSection('5. Your Rights',
-                  'You have the right to access, correct, or delete your personal information. You can manage your account settings or contact us to exercise these rights.'),
+                    'You have the right to access, correct, or delete your personal information. You can manage your account settings or contact us to exercise these rights.'),
                 _buildTermsSection('6. Policy Updates',
-                  'We may update this privacy policy periodically. Your continued use of the service constitutes acceptance of any updates.'),
+                    'We may update this privacy policy periodically. Your continued use of the service constitutes acceptance of any updates.'),
               ],
             ),
           ),
