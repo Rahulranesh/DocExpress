@@ -7,17 +7,17 @@ import '../models/models.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
 
-// Import ONLY offline repositories - MongoDB has been completely removed
+// Import repositories
+import '../repositories/auth_repository.dart';
 import '../repositories/offline_notes_repository.dart';
-import '../repositories/offline_auth_repository.dart';
 import '../repositories/offline_files_repository.dart';
 import '../repositories/offline_conversion_repository.dart';
 import '../repositories/offline_jobs_repository.dart';
 import '../repositories/offline_compression_repository.dart';
 
-// ==================== FULLY OFFLINE MODE ====================
-// This app operates completely offline with local storage
-// No backend server or MongoDB required
+// ==================== ONLINE MODE WITH MONGODB ===========================
+// This app uses MongoDB backend for authentication
+// User data is stored and managed in the database
 
 // ==================== Core Services ====================
 
@@ -38,16 +38,29 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 /// API service provider (for backend conversions)
 final apiServiceProvider = Provider<ApiService>((ref) {
   final storageService = ref.watch(storageServiceProvider);
-  debugPrint('🔧 [PROVIDER] API Service: Initialized for backend conversions');
+  debugPrint('🔧 [PROVIDER] API Service: Initialized for authentication (MongoDB backend)');
   return ApiService(storageService: storageService);
 });
 
-// ==================== Offline Repositories ====================
+/// Conversion API service provider (uses old conversion backend)
+final conversionApiServiceProvider = Provider<ApiService>((ref) {
+  final storageService = ref.watch(storageServiceProvider);
+  debugPrint('🔧 [PROVIDER] Conversion API Service: Using OLD backend for document conversions');
+  return ApiService(
+    storageService: storageService,
+    baseUrl: AppConstants.conversionBaseUrl,
+  );
+});
 
-/// Auth repository provider (fully offline - Hive local storage)
-final authRepositoryProvider = Provider<OfflineAuthRepository>((ref) {
-  debugPrint('🔧 [PROVIDER] Auth: Using LOCAL storage (Hive)');
-  return OfflineAuthRepository();
+// ==================== Repositories ====================
+
+/// Auth repository provider (MongoDB backend)
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  debugPrint('🔧 [PROVIDER] Auth: Using MONGODB backend');
+  return AuthRepository(
+    apiService: ref.watch(apiServiceProvider),
+    storageService: ref.watch(storageServiceProvider),
+  );
 });
 
 /// Notes repository provider (fully offline - Hive local storage)
@@ -68,13 +81,13 @@ final jobsRepositoryProvider = Provider<OfflineJobsRepository>((ref) {
   return OfflineJobsRepository();
 });
 
-/// Conversion repository provider (fully offline - Local processing)
+/// Conversion repository provider (uses old backend for conversions)
 final conversionRepositoryProvider =
     Provider<OfflineConversionRepository>((ref) {
   debugPrint(
-      '🔧 [PROVIDER] Conversion: Using LOCAL processing with BACKEND fallback');
+      '🔧 [PROVIDER] Conversion: Using LOCAL processing with OLD BACKEND fallback');
   return OfflineConversionRepository(
-    apiService: ref.watch(apiServiceProvider),
+    apiService: ref.watch(conversionApiServiceProvider),
   );
 });
 
@@ -125,23 +138,23 @@ class AuthState {
   factory AuthState.error(String message) => AuthState(error: message);
 }
 
-/// Auth state notifier (fully offline - local storage only)
+/// Auth state notifier (MongoDB backend)
 class AuthStateNotifier extends StateNotifier<AuthState> {
-  final OfflineAuthRepository _authRepository;
+  final AuthRepository _authRepository;
 
   AuthStateNotifier(this._authRepository) : super(AuthState.initial());
 
-  /// Initialize auth state - check for existing local user
+  /// Initialize auth state - check for existing user
   Future<void> initialize() async {
     state = AuthState.loading();
 
     try {
-      debugPrint('🔐 [AUTH] Checking local authentication...');
+      debugPrint('🔐 [AUTH] Checking authentication...');
       final user = await _authRepository.getCurrentUser();
-      debugPrint('✅ [AUTH] User found locally: ${user.email}');
+      debugPrint('✅ [AUTH] User authenticated: ${user.email}');
       state = AuthState.authenticated(user);
     } catch (e) {
-      debugPrint('ℹ️ [AUTH] No local user found or error: $e');
+      debugPrint('ℹ️ [AUTH] Not authenticated or error: $e');
       state = AuthState.unauthenticated();
     }
   }
@@ -154,7 +167,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      debugPrint('🔐 [AUTH] Logging in locally: $email');
+      debugPrint('🔐 [AUTH] Logging in with backend: $email');
       final response =
           await _authRepository.login(email: email, password: password);
       debugPrint('✅ [AUTH] Login successful');
@@ -179,7 +192,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      debugPrint('📝 [AUTH] Registering locally: $email');
+      debugPrint('📝 [AUTH] Registering with backend: $email');
       final response = await _authRepository.register(
           name: name, email: email, password: password);
       debugPrint('✅ [AUTH] Registration successful');
@@ -199,13 +212,13 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
     try {
-      debugPrint('🚪 [AUTH] Logging out locally');
+      debugPrint('🚪 [AUTH] Logging out from backend');
       await _authRepository.logout();
     } catch (_) {}
     state = AuthState.unauthenticated();
   }
 
-  /// Refresh user data
+  /// Refresh user data from backend
   Future<void> refreshUser() async {
     try {
       final user = await _authRepository.getCurrentUser();
@@ -216,7 +229,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   /// Update profile
   Future<bool> updateProfile({String? name}) async {
     try {
-      debugPrint('📝 [AUTH] Updating profile locally');
+      debugPrint('📝 [AUTH] Updating profile with backend');
       final user = await _authRepository.updateProfile(name: name);
       state = state.copyWith(user: user);
       return true;
@@ -232,7 +245,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     required String newPassword,
   }) async {
     try {
-      debugPrint('🔑 [AUTH] Changing password locally');
+      debugPrint('🔑 [AUTH] Changing password with backend');
       await _authRepository.changePassword(
         currentPassword: currentPassword,
         newPassword: newPassword,
@@ -245,28 +258,14 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }
 
   /// Delete account
-  Future<bool> deleteAccount() async {
+  Future<bool> deleteAccount({required String password}) async {
     try {
-      debugPrint('🗑️ [AUTH] Deleting account locally');
-      await _authRepository.deleteAccount();
+      debugPrint('🗑️ [AUTH] Deleting account from backend');
+      await _authRepository.deleteAccount(password: password);
       state = AuthState.unauthenticated();
       return true;
     } catch (e) {
       debugPrint('❌ [AUTH] Account deletion failed: $e');
-      state = state.copyWith(error: e.toString());
-      return false;
-    }
-  }
-
-  /// Continue as guest
-  Future<bool> continueAsGuest() async {
-    try {
-      debugPrint('👤 [AUTH] Continuing as guest');
-      final response = await _authRepository.continueAsGuest();
-      state = AuthState.authenticated(response.user);
-      return true;
-    } catch (e) {
-      debugPrint('❌ [AUTH] Guest login failed: $e');
       state = state.copyWith(error: e.toString());
       return false;
     }

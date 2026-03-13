@@ -8,10 +8,16 @@ class AppConstants {
   static const String appBuildNumber = '1';
 
   // API Configuration
-  // For Android Emulator use: http://10.0.2.2:3000/api
-  // For Physical Device use: http://YOUR_IP:3000/api
-  // For Production use: https://your-app.railway.app/api
-  static const String defaultBaseUrl = 'https://doc-backend-1-187r.onrender.com/api';
+  // Authentication Backend (Login/Register/User Management) - MongoDB on Render
+  // For Production: https://your-render-app-name.onrender.com/api
+  static const String defaultBaseUrl =
+      'https://docxpress-api.onrender.com/api'; // ← Replace with your Render URL
+
+  // Conversion/Compression Backend (Video compression, document conversion) - Old backend
+  // Uses the existing Render backend for document/video processing
+  // For Production: https://doc-backend-1-187r.onrender.com/api
+  static const String conversionBaseUrl =
+      'https://doc-backend-1-187r.onrender.com/api';
 
   static const Duration connectionTimeout = Duration(minutes: 2);
   static const Duration receiveTimeout = Duration(minutes: 5);

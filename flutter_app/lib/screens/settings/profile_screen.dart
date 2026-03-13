@@ -226,13 +226,51 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
 
     if (confirmed == true) {
-      try {
-        await ref.read(authStateProvider.notifier).deleteAccount();
-        if (mounted) {
-          context.go(AppRoutes.login);
+      // Show password confirmation dialog
+      final passwordController = TextEditingController();
+      final passwordConfirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Confirm Password'),
+            content: TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                hintText: 'Enter your password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                ),
+                child: const Text('Delete Account'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (passwordConfirmed == true && passwordController.text.isNotEmpty) {
+        try {
+          await ref.read(authStateProvider.notifier).deleteAccount(
+            password: passwordController.text,
+          );
+          if (mounted) {
+            context.go(AppRoutes.login);
+          }
+        } catch (e) {
+          _showSnackBar('Failed to delete account: $e', isSuccess: false);
         }
-      } catch (e) {
-        _showSnackBar('Failed to delete account: $e', isSuccess: false);
       }
     }
   }

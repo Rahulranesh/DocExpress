@@ -18,13 +18,30 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  late double averageRating = 0.0;
+  late int totalRatings = 0;
+
   @override
   void initState() {
     super.initState();
     // Load settings on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(appSettingsNotifierProvider.notifier).loadSettings();
+      _loadAverageRating();
     });
+  }
+
+  Future<void> _loadAverageRating() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final result = await authRepo.getAverageRating();
+      setState(() {
+        averageRating = result['averageRating'] as double;
+        totalRatings = result['totalRatings'] as int;
+      });
+    } catch (e) {
+      debugPrint('Failed to load average rating: $e');
+    }
   }
 
   void _showSnackBar(String message, {bool isSuccess = true}) {
@@ -390,14 +407,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _SettingsTile(
             icon: Icons.description_rounded,
             title: 'Terms of Service',
-            onTap: () => _launchUrl('https://docxpress.app/terms'),
+            onTap: () => _showTermsOfService(theme, isDark),
             isDark: isDark,
           ),
           _buildDivider(isDark),
           _SettingsTile(
             icon: Icons.privacy_tip_rounded,
             title: 'Privacy Policy',
-            onTap: () => _launchUrl('https://docxpress.app/privacy'),
+            onTap: () => _showPrivacyPolicy(theme, isDark),
             isDark: isDark,
           ),
           _buildDivider(isDark),
@@ -489,21 +506,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               const Text(
                   'If you enjoy using DocXpress, please take a moment to rate it. Your feedback helps us improve!'),
+              const SizedBox(height: 8),
+              if (totalRatings > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.star_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$averageRating ($totalRatings ratings)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.lightTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  5,
-                  (index) => IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showSnackBar(
-                          'Thank you for your ${index + 1}-star rating!');
-                    },
-                    icon: Icon(
-                      Icons.star_rounded,
-                      color: theme.colorScheme.primary,
-                      size: 32,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    5,
+                    (index) => SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          try {
+                            final authRepo = ref.read(authRepositoryProvider);
+                            await authRepo.rateApp(index + 1);
+                            _showSnackBar(
+                                'Thank you for your ${index + 1}-star rating!');
+                            // Reload average rating
+                            await _loadAverageRating();
+                          } catch (e) {
+                            _showSnackBar('Failed to save rating: $e',
+                                isSuccess: false);
+                          }
+                        },
+                        icon: Icon(
+                          Icons.star_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 28,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -998,6 +1056,108 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         );
       },
+    );
+  }
+
+  void _showTermsOfService(ThemeData theme, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Terms of Service'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTermsSection('1. Use License', 
+                  'Permission is granted to temporarily download one copy of the materials on DocXpress for personal, non-commercial transitory viewing only.'),
+                _buildTermsSection('2. Disclaimer',
+                  'The materials on DocXpress are provided without any representations or warranties, express or implied. DocXpress makes no representations or warranties in relation to the site.'),
+                _buildTermsSection('3. Limitations',
+                  'In no case shall DocXpress or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use of the materials.'),
+                _buildTermsSection('4. User Accounts',
+                  'If you create an account on DocXpress, you must provide accurate information and keep your password confidential. You are responsible for all activity under your account.'),
+                _buildTermsSection('5. Modifications',
+                  'DocXpress may revise these terms of service at any time. Your continued use of the site constitutes your acceptance of the new terms.'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPrivacyPolicy(ThemeData theme, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor:
+              isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Privacy Policy'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTermsSection('1. Information We Collect',
+                  'We collect information you provide directly to us such as when you create an account, including your name, email address, and account credentials.'),
+                _buildTermsSection('2. How We Use Your Information',
+                  'We use your information to provide, maintain, and improve our services, process transactions, send transactional and promotional communications, and comply with legal obligations.'),
+                _buildTermsSection('3. Data Security',
+                  'We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.'),
+                _buildTermsSection('4. Third-Party Sharing',
+                  'We do not sell, trade, or share your personal information with third parties except as required by law or as necessary to provide our services.'),
+                _buildTermsSection('5. Your Rights',
+                  'You have the right to access, correct, or delete your personal information. You can manage your account settings or contact us to exercise these rights.'),
+                _buildTermsSection('6. Policy Updates',
+                  'We may update this privacy policy periodically. Your continued use of the service constitutes acceptance of any updates.'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTermsSection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }

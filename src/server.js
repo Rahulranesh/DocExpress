@@ -1,15 +1,17 @@
 /**
- * DocXpress Simple Conversion API Server
- * Simplified backend for document conversions only
- * No MongoDB, no authentication - just simple conversions
+ * DocXpress API Server
+ * Backend with MongoDB authentication and document conversions
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const path = require('path');
+
+// Import database connection
+const connectDB = require('./config/database');
 
 // Import routes
 const routes = require('./routes');
@@ -27,11 +29,11 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - allow all origins for simple conversions
+// CORS configuration - allow all origins for API access with necessary methods
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Body parsing middleware with larger limits for file uploads
@@ -72,30 +74,51 @@ app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
 
-// Start server (no database needed!)
-app.listen(PORT, () => {
-  console.log('🚀 DocXpress Simple Conversion API');
-  console.log(`📍 Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${NODE_ENV}`);
-  console.log(`📍 API Base URL: http://localhost:${PORT}/api`);
-  console.log('\n✅ Available features:');
-  console.log('   • DOCX → PDF');
-  console.log('   • PPTX → PDF');
-  console.log('   • PDF → DOCX');
-  console.log('   • PDF → PPTX');
-  console.log('   • Extract Images from PDF');
-  console.log('\n📋 Endpoints:');
-  console.log('   GET  /api/health - Health check');
-  console.log('   GET  /api/simple-convert/health - Conversion service health');
-  console.log('   POST /api/simple-convert/docx-to-pdf - Convert DOCX to PDF');
-  console.log('   POST /api/simple-convert/pptx-to-pdf - Convert PPTX to PDF');
-  console.log('   POST /api/simple-convert/pdf-to-docx - Convert PDF to DOCX');
-  console.log('   POST /api/simple-convert/pdf-to-pptx - Convert PDF to PPTX');
-  console.log('   POST /api/simple-convert/pdf-extract-images - Extract images from PDF');
-  console.log('\n💡 No authentication required!');
-  console.log('💡 No database needed!');
-  console.log('💡 Just upload and convert!\n');
-});
+// Connect to MongoDB and start server
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDB();
+
+    // Start server
+    app.listen(PORT, () => {
+      console.log('🚀 DocXpress API Server');
+      console.log(`📍 Server running on port ${PORT}`);
+      console.log(`📍 Environment: ${NODE_ENV}`);
+      console.log(`📍 API Base URL: http://localhost:${PORT}/api`);
+      console.log('\n✅ Available features:');
+      console.log('   • User Authentication (Register/Login)');
+      console.log('   • Account Management (Update/Delete)');
+      console.log('   • DOCX → PDF');
+      console.log('   • PPTX → PDF');
+      console.log('   • PDF → DOCX');
+      console.log('   • PDF → PPTX');
+      console.log('   • Extract Images from PDF');
+      console.log('\n📋 Auth Endpoints:');
+      console.log('   POST /api/auth/register - Register new user');
+      console.log('   POST /api/auth/login - Login user');
+      console.log('   GET  /api/auth/me - Get current user (protected)');
+      console.log('   PUT  /api/auth/profile - Update profile (protected)');
+      console.log('   PUT  /api/auth/change-password - Change password (protected)');
+      console.log('   DELETE /api/auth/account - Delete account (protected)');
+      console.log('   POST /api/auth/rate-app - Rate the app (protected)');
+      console.log('   GET  /api/auth/average-rating - Get average app rating (public)');
+      console.log('\n📋 Conversion Endpoints:');
+      console.log('   GET  /api/health - Health check');
+      console.log('   GET  /api/simple-convert/health - Conversion service health');
+      console.log('   POST /api/simple-convert/docx-to-pdf - Convert DOCX to PDF');
+      console.log('   POST /api/simple-convert/pptx-to-pdf - Convert PPTX to PDF');
+      console.log('   POST /api/simple-convert/pdf-to-docx - Convert PDF to DOCX');
+      console.log('   POST /api/simple-convert/pdf-to-pptx - Convert PDF to PPTX');
+      console.log('   POST /api/simple-convert/pdf-extract-images - Extract images from PDF\n');
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Graceful shutdown
 const gracefulShutdown = (signal) => {
