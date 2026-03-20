@@ -98,10 +98,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   'assets/icons/app_icon.png',
                   fit: BoxFit.contain,
                 ),
-              )
-                  .animate()
-                  .fadeIn(duration: 600.ms)
-                  .scale(
+              ).animate().fadeIn(duration: 600.ms).scale(
                     begin: const Offset(0.5, 0.5),
                     duration: 600.ms,
                     curve: Curves.elasticOut,
@@ -168,9 +165,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
                   ],
                 ),
-              )
-                  .animate()
-                  .fadeIn(delay: 700.ms, duration: 500.ms),
+              ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
 
               const SizedBox(height: 48),
 
@@ -182,9 +177,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       ? Colors.white.withOpacity(0.3)
                       : AppTheme.lightTextHint.withOpacity(0.7),
                 ),
-              )
-                  .animate()
-                  .fadeIn(delay: 900.ms, duration: 500.ms),
+              ).animate().fadeIn(delay: 900.ms, duration: 500.ms),
 
               const SizedBox(height: 24),
             ],

@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late DateTime _lastTap;
-  
+
   @override
   void initState() {
     super.initState();
@@ -112,7 +112,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     size: 20,
                                   ),
                                 ),
-                              ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
+                              )
+                                  .animate()
+                                  .fadeIn(delay: 150.ms, duration: 400.ms),
                               const SizedBox(width: 10),
                               // Profile avatar
                               GestureDetector(
@@ -124,7 +126,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     gradient: LinearGradient(
                                       colors: [
                                         theme.colorScheme.primary,
-                                        theme.colorScheme.primary.withOpacity(0.7),
+                                        theme.colorScheme.primary
+                                            .withOpacity(0.7),
                                       ],
                                     ),
                                   ),
@@ -143,7 +146,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                   ),
                                 ),
-                              ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+                              )
+                                  .animate()
+                                  .fadeIn(delay: 200.ms, duration: 400.ms),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -156,19 +161,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   children: [
                                     Text(
                                       _getGreeting(),
-                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
                                         color: isDark
                                             ? AppTheme.darkTextSecondary
                                             : AppTheme.lightTextSecondary,
                                       ),
-                                    ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
+                                    ).animate().fadeIn(
+                                        delay: 250.ms, duration: 400.ms),
                                     const SizedBox(height: 2),
                                     Text(
                                       user?.name ?? 'User',
-                                      style: theme.textTheme.titleLarge?.copyWith(
+                                      style:
+                                          theme.textTheme.titleLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
-                                    ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+                                    ).animate().fadeIn(
+                                        delay: 300.ms, duration: 400.ms),
                                   ],
                                 ),
                               ),
@@ -548,7 +557,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                      color:
+                          isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -576,7 +586,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     return GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
@@ -590,7 +601,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                         return GestureDetector(
                           onTap: () {
-                            ref.read(colorPaletteProvider.notifier).setPalette(palette);
+                            ref
+                                .read(colorPaletteProvider.notifier)
+                                .setPalette(palette);
                             Navigator.pop(context);
                           },
                           child: AnimatedContainer(
@@ -606,7 +619,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
-                                        color: paletteColors.primary.withOpacity(0.3),
+                                        color: paletteColors.primary
+                                            .withOpacity(0.3),
                                         blurRadius: 12,
                                         spreadRadius: 0,
                                       ),

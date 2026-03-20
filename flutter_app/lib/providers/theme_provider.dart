@@ -87,7 +87,8 @@ final isDarkModeProvider = Provider<bool>((ref) {
 });
 
 /// Brightness provider based on current theme
-final brightnessProvider = Provider.family<Brightness, BuildContext>((ref, context) {
+final brightnessProvider =
+    Provider.family<Brightness, BuildContext>((ref, context) {
   final themeMode = ref.watch(themeModeProvider);
   switch (themeMode) {
     case ThemeMode.light:

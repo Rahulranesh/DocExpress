@@ -35,7 +35,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     // Debounce rapid taps
     final selectedIndex = _calculateSelectedIndex(context);
     if (selectedIndex == index) return; // Already on this page
-    
+
     switch (index) {
       case 0:
         context.go(AppRoutes.home);
@@ -87,7 +87,10 @@ class _MainShellState extends ConsumerState<MainShell> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.7)],
+                      colors: [
+                        colorScheme.primary,
+                        colorScheme.primary.withOpacity(0.7)
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),

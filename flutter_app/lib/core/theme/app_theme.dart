@@ -6,12 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 /// =============================================================================
 
 enum ColorPalette {
-  sunset,      // Orange/Yellow - Warm & Energetic
-  ocean,       // Blue/Teal - Calm & Professional
-  forest,      // Green/Emerald - Natural & Fresh
-  lavender,    // Purple/Violet - Creative & Premium
-  rose,        // Pink/Rose - Soft & Elegant
-  midnight,    // Dark Blue/Navy - Sleek & Modern
+  sunset, // Orange/Yellow - Warm & Energetic
+  ocean, // Blue/Teal - Calm & Professional
+  forest, // Green/Emerald - Natural & Fresh
+  lavender, // Purple/Violet - Creative & Premium
+  rose, // Pink/Rose - Soft & Elegant
+  midnight, // Dark Blue/Navy - Sleek & Modern
 }
 
 /// Color palette data class
@@ -55,86 +55,86 @@ class AppTheme {
     ColorPalette.sunset: PaletteColors(
       name: 'Sunset',
       emoji: '🌅',
-      primary: Color(0xFFF97316),       // Vibrant Orange
-      primaryLight: Color(0xFFFB923C),  // Light Orange
-      primaryDark: Color(0xFFEA580C),   // Deep Orange
-      secondary: Color(0xFFFBBF24),     // Golden Yellow
-      secondaryLight: Color(0xFFFCD34D),// Light Yellow
+      primary: Color(0xFFF97316), // Vibrant Orange
+      primaryLight: Color(0xFFFB923C), // Light Orange
+      primaryDark: Color(0xFFEA580C), // Deep Orange
+      secondary: Color(0xFFFBBF24), // Golden Yellow
+      secondaryLight: Color(0xFFFCD34D), // Light Yellow
       secondaryDark: Color(0xFFF59E0B), // Amber
-      accent: Color(0xFFFF6B35),        // Coral Orange
+      accent: Color(0xFFFF6B35), // Coral Orange
     ),
 
     // Ocean - Blue/Teal
     ColorPalette.ocean: PaletteColors(
       name: 'Ocean',
       emoji: '🌊',
-      primary: Color(0xFF0EA5E9),       // Sky Blue
-      primaryLight: Color(0xFF38BDF8),  // Light Blue
-      primaryDark: Color(0xFF0284C7),   // Deep Blue
-      secondary: Color(0xFF14B8A6),     // Teal
-      secondaryLight: Color(0xFF2DD4BF),// Light Teal
+      primary: Color(0xFF0EA5E9), // Sky Blue
+      primaryLight: Color(0xFF38BDF8), // Light Blue
+      primaryDark: Color(0xFF0284C7), // Deep Blue
+      secondary: Color(0xFF14B8A6), // Teal
+      secondaryLight: Color(0xFF2DD4BF), // Light Teal
       secondaryDark: Color(0xFF0D9488), // Deep Teal
-      accent: Color(0xFF06B6D4),        // Cyan
+      accent: Color(0xFF06B6D4), // Cyan
     ),
 
     // Forest - Green/Emerald
     ColorPalette.forest: PaletteColors(
       name: 'Forest',
       emoji: '🌲',
-      primary: Color(0xFF22C55E),       // Green
-      primaryLight: Color(0xFF4ADE80),  // Light Green
-      primaryDark: Color(0xFF16A34A),   // Deep Green
-      secondary: Color(0xFF10B981),     // Emerald
-      secondaryLight: Color(0xFF34D399),// Light Emerald
+      primary: Color(0xFF22C55E), // Green
+      primaryLight: Color(0xFF4ADE80), // Light Green
+      primaryDark: Color(0xFF16A34A), // Deep Green
+      secondary: Color(0xFF10B981), // Emerald
+      secondaryLight: Color(0xFF34D399), // Light Emerald
       secondaryDark: Color(0xFF059669), // Deep Emerald
-      accent: Color(0xFF84CC16),        // Lime
+      accent: Color(0xFF84CC16), // Lime
     ),
 
     // Lavender - Purple/Violet
     ColorPalette.lavender: PaletteColors(
       name: 'Lavender',
       emoji: '💜',
-      primary: Color(0xFF8B5CF6),       // Violet
-      primaryLight: Color(0xFFA78BFA),  // Light Violet
-      primaryDark: Color(0xFF7C3AED),   // Deep Violet
-      secondary: Color(0xFFEC4899),     // Pink
-      secondaryLight: Color(0xFFF472B6),// Light Pink
+      primary: Color(0xFF8B5CF6), // Violet
+      primaryLight: Color(0xFFA78BFA), // Light Violet
+      primaryDark: Color(0xFF7C3AED), // Deep Violet
+      secondary: Color(0xFFEC4899), // Pink
+      secondaryLight: Color(0xFFF472B6), // Light Pink
       secondaryDark: Color(0xFFDB2777), // Deep Pink
-      accent: Color(0xFFA855F7),        // Purple
+      accent: Color(0xFFA855F7), // Purple
     ),
 
     // Rose - Pink/Rose
     ColorPalette.rose: PaletteColors(
       name: 'Rose',
       emoji: '🌸',
-      primary: Color(0xFFF43F5E),       // Rose
-      primaryLight: Color(0xFFFB7185),  // Light Rose
-      primaryDark: Color(0xFFE11D48),   // Deep Rose
-      secondary: Color(0xFFEC4899),     // Pink
-      secondaryLight: Color(0xFFF472B6),// Light Pink
+      primary: Color(0xFFF43F5E), // Rose
+      primaryLight: Color(0xFFFB7185), // Light Rose
+      primaryDark: Color(0xFFE11D48), // Deep Rose
+      secondary: Color(0xFFEC4899), // Pink
+      secondaryLight: Color(0xFFF472B6), // Light Pink
       secondaryDark: Color(0xFFDB2777), // Deep Pink
-      accent: Color(0xFFFF6B9D),        // Coral Pink
+      accent: Color(0xFFFF6B9D), // Coral Pink
     ),
 
     // Midnight - Dark Blue/Navy
     ColorPalette.midnight: PaletteColors(
       name: 'Midnight',
       emoji: '🌙',
-      primary: Color(0xFF6366F1),       // Indigo
-      primaryLight: Color(0xFF818CF8),  // Light Indigo
-      primaryDark: Color(0xFF4F46E5),   // Deep Indigo
-      secondary: Color(0xFF3B82F6),     // Blue
-      secondaryLight: Color(0xFF60A5FA),// Light Blue
+      primary: Color(0xFF6366F1), // Indigo
+      primaryLight: Color(0xFF818CF8), // Light Indigo
+      primaryDark: Color(0xFF4F46E5), // Deep Indigo
+      secondary: Color(0xFF3B82F6), // Blue
+      secondaryLight: Color(0xFF60A5FA), // Light Blue
       secondaryDark: Color(0xFF2563EB), // Deep Blue
-      accent: Color(0xFF8B5CF6),        // Violet
+      accent: Color(0xFF8B5CF6), // Violet
     ),
   };
 
   // Current palette - this gets updated by the theme provider
   static ColorPalette _currentPalette = ColorPalette.ocean;
-  
+
   static ColorPalette get currentPalette => _currentPalette;
-  
+
   static void setPalette(ColorPalette palette) {
     _currentPalette = palette;
   }
@@ -209,28 +209,28 @@ class AppTheme {
   // ===========================================================================
 
   static List<BoxShadow> shadowSm(bool isDark) => [
-    BoxShadow(
-      color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
-      blurRadius: 4,
-      offset: const Offset(0, 2),
-    ),
-  ];
+        BoxShadow(
+          color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ];
 
   static List<BoxShadow> shadowMd(bool isDark) => [
-    BoxShadow(
-      color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
-      blurRadius: 8,
-      offset: const Offset(0, 4),
-    ),
-  ];
+        BoxShadow(
+          color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+      ];
 
   static List<BoxShadow> shadowLg(bool isDark) => [
-    BoxShadow(
-      color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
-      blurRadius: 16,
-      offset: const Offset(0, 8),
-    ),
-  ];
+        BoxShadow(
+          color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+      ];
 
   // ===========================================================================
   // TYPOGRAPHY
@@ -331,7 +331,7 @@ class AppTheme {
 
   static ThemeData buildLightTheme(ColorPalette palette) {
     final paletteColors = palettes[palette]!;
-    
+
     final colorScheme = ColorScheme.light(
       primary: paletteColors.primary,
       primaryContainer: paletteColors.primaryLight.withOpacity(0.2),
@@ -354,7 +354,6 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: lightBackground,
       textTheme: _buildTextTheme(lightTextPrimary),
-
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0.5,
@@ -369,7 +368,6 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: lightTextPrimary),
       ),
-
       cardTheme: CardThemeData(
         elevation: 0,
         color: lightCard,
@@ -380,7 +378,6 @@ class AppTheme {
         ),
         margin: EdgeInsets.zero,
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
@@ -398,7 +395,6 @@ class AppTheme {
           ),
         ),
       ),
-
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: paletteColors.primary,
@@ -413,7 +409,6 @@ class AppTheme {
           ),
         ),
       ),
-
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: paletteColors.primary,
@@ -427,7 +422,6 @@ class AppTheme {
           ),
         ),
       ),
-
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: 2,
         backgroundColor: paletteColors.primary,
@@ -436,11 +430,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusMd),
         ),
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: lightSurface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
           borderSide: const BorderSide(color: lightDivider),
@@ -470,7 +464,6 @@ class AppTheme {
           fontSize: 14,
         ),
       ),
-
       chipTheme: ChipThemeData(
         backgroundColor: lightSurface,
         selectedColor: paletteColors.primaryLight.withOpacity(0.2),
@@ -485,7 +478,6 @@ class AppTheme {
           side: const BorderSide(color: lightDivider),
         ),
       ),
-
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: lightSurface,
         elevation: 8,
@@ -501,7 +493,6 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: lightSurface,
         elevation: 0,
@@ -527,13 +518,11 @@ class AppTheme {
           return const IconThemeData(color: lightTextSecondary, size: 24);
         }),
       ),
-
       dividerTheme: const DividerThemeData(
         color: lightDivider,
         thickness: 1,
         space: 1,
       ),
-
       snackBarTheme: SnackBarThemeData(
         backgroundColor: lightTextPrimary,
         contentTextStyle: GoogleFonts.poppins(
@@ -545,7 +534,6 @@ class AppTheme {
         ),
         behavior: SnackBarBehavior.floating,
       ),
-
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: lightSurface,
         elevation: 0,
@@ -556,7 +544,6 @@ class AppTheme {
         dragHandleSize: Size(40, 4),
         showDragHandle: true,
       ),
-
       dialogTheme: DialogThemeData(
         backgroundColor: lightSurface,
         elevation: 0,
@@ -573,7 +560,6 @@ class AppTheme {
           color: lightTextSecondary,
         ),
       ),
-
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         shape: RoundedRectangleBorder(
@@ -589,10 +575,10 @@ class AppTheme {
           color: lightTextSecondary,
         ),
       ),
-
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return paletteColors.primary;
+          if (states.contains(WidgetState.selected))
+            return paletteColors.primary;
           return lightTextHint;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -602,13 +588,11 @@ class AppTheme {
           return lightDivider;
         }),
       ),
-
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: paletteColors.primary,
         linearTrackColor: lightDivider,
         circularTrackColor: lightDivider,
       ),
-
       sliderTheme: SliderThemeData(
         activeTrackColor: paletteColors.primary,
         inactiveTrackColor: lightDivider,
@@ -620,7 +604,6 @@ class AppTheme {
           fontSize: 12,
         ),
       ),
-
       tabBarTheme: TabBarThemeData(
         labelColor: paletteColors.primary,
         unselectedLabelColor: lightTextSecondary,
@@ -640,7 +623,7 @@ class AppTheme {
 
   static ThemeData buildDarkTheme(ColorPalette palette) {
     final paletteColors = palettes[palette]!;
-    
+
     final colorScheme = ColorScheme.dark(
       primary: paletteColors.primaryLight,
       primaryContainer: paletteColors.primaryDark.withOpacity(0.3),
@@ -663,7 +646,6 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: darkBackground,
       textTheme: _buildTextTheme(darkTextPrimary),
-
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0.5,
@@ -678,7 +660,6 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: darkTextPrimary),
       ),
-
       cardTheme: CardThemeData(
         elevation: 0,
         color: darkCard,
@@ -689,7 +670,6 @@ class AppTheme {
         ),
         margin: EdgeInsets.zero,
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
@@ -707,7 +687,6 @@ class AppTheme {
           ),
         ),
       ),
-
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: paletteColors.primaryLight,
@@ -722,7 +701,6 @@ class AppTheme {
           ),
         ),
       ),
-
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: paletteColors.primaryLight,
@@ -736,7 +714,6 @@ class AppTheme {
           ),
         ),
       ),
-
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: 2,
         backgroundColor: paletteColors.primaryLight,
@@ -745,11 +722,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusMd),
         ),
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: darkSurface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
           borderSide: const BorderSide(color: darkDivider),
@@ -779,7 +756,6 @@ class AppTheme {
           fontSize: 14,
         ),
       ),
-
       chipTheme: ChipThemeData(
         backgroundColor: darkSurface,
         selectedColor: paletteColors.primaryDark.withOpacity(0.3),
@@ -795,7 +771,6 @@ class AppTheme {
           side: const BorderSide(color: darkDivider),
         ),
       ),
-
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: darkSurface,
         elevation: 8,
@@ -811,7 +786,6 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: darkSurface,
         elevation: 0,
@@ -837,13 +811,11 @@ class AppTheme {
           return const IconThemeData(color: darkTextSecondary, size: 24);
         }),
       ),
-
       dividerTheme: const DividerThemeData(
         color: darkDivider,
         thickness: 1,
         space: 1,
       ),
-
       snackBarTheme: SnackBarThemeData(
         backgroundColor: darkCard,
         contentTextStyle: GoogleFonts.poppins(
@@ -855,7 +827,6 @@ class AppTheme {
         ),
         behavior: SnackBarBehavior.floating,
       ),
-
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: darkSurface,
         elevation: 0,
@@ -866,7 +837,6 @@ class AppTheme {
         dragHandleSize: Size(40, 4),
         showDragHandle: true,
       ),
-
       dialogTheme: DialogThemeData(
         backgroundColor: darkSurface,
         elevation: 0,
@@ -883,7 +853,6 @@ class AppTheme {
           color: darkTextSecondary,
         ),
       ),
-
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         shape: RoundedRectangleBorder(
@@ -899,10 +868,10 @@ class AppTheme {
           color: darkTextSecondary,
         ),
       ),
-
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return paletteColors.primaryLight;
+          if (states.contains(WidgetState.selected))
+            return paletteColors.primaryLight;
           return darkTextHint;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -912,13 +881,11 @@ class AppTheme {
           return darkDivider;
         }),
       ),
-
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: paletteColors.primaryLight,
         linearTrackColor: darkDivider,
         circularTrackColor: darkDivider,
       ),
-
       sliderTheme: SliderThemeData(
         activeTrackColor: paletteColors.primaryLight,
         inactiveTrackColor: darkDivider,
@@ -930,7 +897,6 @@ class AppTheme {
           fontSize: 12,
         ),
       ),
-
       tabBarTheme: TabBarThemeData(
         labelColor: paletteColors.primaryLight,
         unselectedLabelColor: darkTextSecondary,

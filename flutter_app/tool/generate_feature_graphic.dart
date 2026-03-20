@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   runApp(const FeatureGraphicGeneratorApp());
 }
 
@@ -28,43 +28,39 @@ class FeatureGraphicGeneratorApp extends StatelessWidget {
 
 class FeatureGraphicGeneratorScreen extends StatefulWidget {
   @override
-  State<FeatureGraphicGeneratorScreen> createState() => 
+  State<FeatureGraphicGeneratorScreen> createState() =>
       _FeatureGraphicGeneratorScreenState();
 }
 
-class _FeatureGraphicGeneratorScreenState 
+class _FeatureGraphicGeneratorScreenState
     extends State<FeatureGraphicGeneratorScreen> {
   final GlobalKey _graphicKey = GlobalKey();
   String _status = 'Tap button to generate feature graphic';
 
   Future<void> _generateGraphic() async {
     setState(() => _status = 'Generating...');
-    
+
     try {
       // Wait for widget to render
       await Future.delayed(const Duration(milliseconds: 500));
-      
-      RenderRepaintBoundary boundary = 
-          _graphicKey.currentContext!.findRenderObject() 
-          as RenderRepaintBoundary;
-      
+
+      RenderRepaintBoundary boundary = _graphicKey.currentContext!
+          .findRenderObject() as RenderRepaintBoundary;
+
       // Generate at 1024x500 (pixel ratio 1.0)
       ui.Image image = await boundary.toImage(pixelRatio: 1.0);
-      ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png
-      );
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
       Uint8List pngBytes = byteData!.buffer.asUint8List();
-      
+
       // Save to documents directory
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/feature_graphic.png');
       await file.writeAsBytes(pngBytes);
-      
-      setState(() => _status = 
-          'Feature Graphic saved to:\n${file.path}\n\n'
-          'Upload to Google Play Console > Store Listing > Graphics'
-      );
-      
+
+      setState(() => _status = 'Feature Graphic saved to:\n${file.path}\n\n'
+          'Upload to Google Play Console > Store Listing > Graphics');
+
       print('========================================');
       print('FEATURE GRAPHIC GENERATED!');
       print('Location: ${file.path}');
@@ -75,7 +71,6 @@ class _FeatureGraphicGeneratorScreenState
       print('2. Scroll to "Graphics"');
       print('3. Upload this file as "Feature Graphic"');
       print('========================================');
-      
     } catch (e) {
       setState(() => _status = 'Error: $e');
       print('Error: $e');
