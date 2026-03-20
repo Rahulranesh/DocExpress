@@ -131,7 +131,7 @@ class AppTheme {
   };
 
   // Current palette - this gets updated by the theme provider
-  static ColorPalette _currentPalette = ColorPalette.sunset;
+  static ColorPalette _currentPalette = ColorPalette.ocean;
   
   static ColorPalette get currentPalette => _currentPalette;
   

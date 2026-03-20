@@ -33,7 +33,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await ref.read(authStateProvider.notifier).initialize();
 
     // Small delay for splash animation
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
 
@@ -80,16 +80,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
               // Logo
               Container(
-                padding: const EdgeInsets.all(24),
+                width: 120,
+                height: 120,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.primary.withOpacity(0.7),
-                    ],
-                  ),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
@@ -99,10 +94,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.document_scanner_rounded,
-                  size: 72,
-                  color: Colors.white,
+                child: Image.asset(
+                  'assets/icons/app_icon.png',
+                  fit: BoxFit.contain,
                 ),
               )
                   .animate()

@@ -105,7 +105,7 @@ final brightnessProvider = Provider.family<Brightness, BuildContext>((ref, conte
 
 /// Color palette notifier - manages color palette state
 class ColorPaletteNotifier extends StateNotifier<ColorPalette> {
-  ColorPaletteNotifier() : super(ColorPalette.sunset) {
+  ColorPaletteNotifier() : super(ColorPalette.ocean) {
     _loadPalette();
   }
 
@@ -121,8 +121,8 @@ class ColorPaletteNotifier extends StateNotifier<ColorPalette> {
         AppTheme.setPalette(state);
       }
     } catch (e) {
-      state = ColorPalette.sunset;
-      AppTheme.setPalette(ColorPalette.sunset);
+      state = ColorPalette.ocean;
+      AppTheme.setPalette(ColorPalette.ocean);
     }
   }
 

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account - DocXpress</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-top: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            font-style: italic;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #34495e;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            border-left: 4px solid #e74c3c;
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #2c3e50;
+            font-size: 1.3em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .step-container {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .step-number {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: bold;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .step-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .warning-title {
+            color: #856404;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .info-box {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .data-table th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .highlight {
+            background-color: #fff9e6;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .contact-section {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 30px;
+        }
+
+        .contact-section h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .contact-info {
+            margin-top: 15px;
+            font-style: italic;
+            color: #34495e;
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #95a5a6;
+            font-size: 0.9em;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .faq-item {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .faq-question {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .faq-answer {
+            color: #555;
+            margin-left: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.4em;
+            }
+
+            .data-table {
+                font-size: 0.9em;
+            }
+
+            .data-table th, .data-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Delete Your DocXpress Account</h1>
+            <p class="subtitle">Complete Guide to Account Deletion and Data Removal</p>
+        </header>
+
+        <div class="content">
+            <!-- Overview Section -->
+            <section class="section">
+                <h2>Overview</h2>
+                <p>
+                    At <strong>DocXpress</strong>, we believe in empowering users with full control over their personal data. 
+                    This page provides complete instructions on how to permanently delete your account and all associated data.
+                </p>
+                <p>
+                    <strong>Important:</strong> Account deletion is a permanent action and cannot be undone. Please read this 
+                    entire guide before proceeding.
+                </p>
+            </section>
+
+            <!-- Methods to Delete Account -->
+            <section class="section">
+                <h2>How to Delete Your Account</h2>
+                <p>You can delete your DocXpress account using one of two methods:</p>
+
+                <h3>Method 1: In-App Deletion (Recommended)</h3>
+                <p>This is the quickest way to delete your account:</p>
+                
+                <div class="step-container">
+                    <div>
+                        <span class="step-number">1</span>
+                        <span class="step-title">Open the DocXpress App</span>
+                    </div>
+                    <p>Launch the DocXpress mobile application on your device.</p>
+                </div>
+
+                <div class="step-container">
+                    <div>
+                        <span class="step-number">2</span>
+                        <span class="step-title">Navigate to Settings</span>
+                    </div>
+                    <p>Tap the menu icon (☰) or open "Settings" from the navigation menu.</p>
+                </div>
+
+                <div class="step-container">
+                    <div>
+                        <span class="step-number">3</span>
+                        <span class="step-title">Go to Profile</span>
+                    </div>
+                    <p>Select "Profile" or "Account Settings" from the settings menu.</p>
+                </div>
+
+                <div class="step-container">
+                    <div>
+                        <span class="step-number">4</span>
+                        <span class="step-title">Select Delete Account</span>
+                    </div>
+                    <p>Scroll down and tap the <span class="highlight">Delete Account</span> button (usually at the bottom).</p>
+                </div>
+
+                <div class="step-container">
+                    <div>
+                        <span class="step-number">5</span>
+                        <span class="step-title">Confirm Action</span>
+                    </div>
+                    <p>A confirmation dialog will appear. Read the warning and tap <span class="highlight">Delete</span> to confirm.</p>
+                </div>
+
+                <div class="step-container">
+                    <div>
+                        <span class="step-number">6</span>
+                        <span class="step-title">Enter Your Password</span>
+                    </div>
+                    <p>For security purposes, you must enter your DocXpress account password to confirm the deletion.</p>
+                </div>
+
+                <div class="step-container">
+                    <div>
+                        <span class="step-number">7</span>
+                        <span class="step-title">Account Deleted</span>
+                    </div>
+                    <p>Your account and all associated data will be immediately deleted. You will be logged out of the app.</p>
+                </div>
+
+                <h3>Method 2: Email Request</h3>
+                <p>If you cannot access the app or prefer to request deletion via email, you can contact us directly:</p>
+                <div class="info-box">
+                    <p><strong>Email:</strong> support@docxpress.app</p>
+                    <p><strong>Subject:</strong> "Account Deletion Request"</p>
+                    <p><strong>Include:</strong> Your registered email address and account username</p>
+                    <p><strong>Response Time:</strong> We will process your request within 30 days</p>
+                </div>
+            </section>
+
+            <!-- What Gets Deleted -->
+            <section class="section">
+                <h2>What Data Is Deleted</h2>
+                <p>When you delete your account, the following data is permanently removed:</p>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data Type</th>
+                            <th>What Gets Deleted</th>
+                            <th>Deletion Timeline</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Account Information</strong></td>
+                            <td>Name, email address, password, account ID</td>
+                            <td>Immediately</td>
+                        </tr>
+                        <tr>
+                            <td><strong>App Ratings</strong></td>
+                            <td>Any ratings or reviews you submitted</td>
+                            <td>Immediately</td>
+                        </tr>
+                        <tr>
+                            <td><strong>User Activity Log</strong></td>
+                            <td>Login history, feature usage data</td>
+                            <td>Immediately</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cloud Sync Data</strong></td>
+                            <td>Any settings or preferences stored on our servers</td>
+                            <td>Immediately</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Authentication Tokens</strong></td>
+                            <td>JWT tokens and session data</td>
+                            <td>Immediately</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="info-box">
+                    <p>
+                        <strong>Note:</strong> Temporary files from document conversions are automatically deleted 
+                        immediately after download. We do not retain copies of documents you convert.
+                    </p>
+                </div>
+            </section>
+
+            <!-- What Gets Retained -->
+            <section class="section">
+                <h2>What Data Is NOT Deleted (Lawful Reasons)</h2>
+                <p>Due to legal requirements, the following may be retained:</p>
+
+                <ul>
+                    <li>
+                        <strong>System Logs:</strong> Anonymized server logs and analytics data for up to 90 days 
+                        (cannot be traced back to you)
+                    </li>
+                    <li>
+                        <strong>Legal Compliance:</strong> Data required to comply with laws, regulations, or legal obligations
+                    </li>
+                    <li>
+                        <strong>Fraud Prevention:</strong> Information necessary to detect and prevent fraud or security incidents
+                    </li>
+                </ul>
+
+                <p>
+                    This retained data is not personally identifiable and cannot be used to contact you or identify 
+                    you directly.
+                </p>
+            </section>
+
+            <!-- Important Warnings -->
+            <section class="section">
+                <h2>Important Information Before Deleting</h2>
+
+                <div class="warning-box">
+                    <div class="warning-title">⚠️ This Action Is Permanent</div>
+                    <p>
+                        Account deletion cannot be reversed. All your data, including purchase history, preferences, 
+                        and account information, will be permanently deleted from our systems. Make sure you have backed 
+                        up any important information before proceeding.
+                    </p>
+                </div>
+
+                <div class="warning-box">
+                    <div class="warning-title">⚠️ Email Address Cannot Be Reused Immediately</div>
+                    <p>
+                        Once deleted, your email address will be held for 30 days before it can be used to 
+                        create a new account. This is a security measure to protect your privacy.
+                    </p>
+                </div>
+
+                <div class="warning-box">
+                    <div class="warning-title">⚠️ Subscription and Payment Methods</div>
+                    <p>
+                        If you have an active subscription, it will be canceled upon account deletion. 
+                        No refunds will be issued for unused portions of your subscription.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Contact & Support -->
+            <section class="section">
+                <div class="contact-section">
+                    <h3>Need Help?</h3>
+                    <p>
+                        If you encounter any issues deleting your account or have questions about your data, 
+                        please contact our support team:
+                    </p>
+                    <div class="contact-info">
+                        <p><strong>Email:</strong> support@docxpress.app</p>
+                        <p><strong>Website:</strong> www.docxpress.app</p>
+                        <p><strong>Response Time:</strong> We typically respond within 24-48 hours</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FAQ -->
+            <section class="section">
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="faq-item">
+                    <div class="faq-question">Q: Can I recover my account after deleting it?</div>
+                    <div class="faq-answer">
+                        A: No, account deletion is permanent and cannot be reversed. Once deleted, all your data 
+                        is permanently removed from our servers. If you wish to use DocXpress again, you will need 
+                        to create a new account.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Q: How long does it take for my data to be deleted?</div>
+                    <div class="faq-answer">
+                        A: Personal account data is deleted immediately upon confirmation. System logs and analytics 
+                        data may persist for up to 90 days but are anonymized and cannot identify you.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Q: Will my documents be deleted?</div>
+                    <div class="faq-answer">
+                        A: Yes. Any documents you uploaded or processed will be deleted. Additionally, temporary files 
+                        from conversions are already deleted immediately after download, so they won't be retained.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Q: Can I delete only some of my data without deleting my account?</div>
+                    <div class="faq-answer">
+                        A: Currently, DocXpress requires full account deletion to remove data. You cannot selectively 
+                        delete individual data types. If you want to delete only specific information, please contact 
+                        our support team for assistance.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Q: What if I forgot my password?</div>
+                    <div class="faq-answer">
+                        A: If you cannot access your account due to a forgotten password, you can use the "Forgot Password" 
+                        option to reset it. Alternatively, contact support@docxpress.app to request account deletion.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Q: Is my data secure during the deletion process?</div>
+                    <div class="faq-answer">
+                        A: Yes. All data transmission is encrypted with HTTPS/SSL. Password verification adds 
+                        an additional layer of security to ensure only you can delete your account.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">Q: How long can I use my account before deciding to delete it?</div>
+                    <div class="faq-answer">
+                        A: You can delete your account at any time. There is no minimum usage period. If you delete 
+                        your account, it will have no impact on other users or the app's functionality.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Privacy & Legal -->
+            <section class="section">
+                <h2>Privacy & Legal</h2>
+                <p>
+                    For more information about how we handle your data, please review our 
+                    <a href="privacy-policy.html" style="color: #3498db; text-decoration: none;">Privacy Policy</a> and 
+                    <a href="terms-of-service.html" style="color: #3498db; text-decoration: none;">Terms of Service</a>.
+                </p>
+                <p>
+                    If you have questions about data protection laws or your rights, please contact us at 
+                    support@docxpress.app.
+                </p>
+            </section>
+
+            <div class="last-updated">
+                <p>Last Updated: March 20, 2026</p>
+                <p>For the most current information, please visit this page regularly.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

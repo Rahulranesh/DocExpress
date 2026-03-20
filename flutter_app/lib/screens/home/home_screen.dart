@@ -18,10 +18,22 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late DateTime _lastTap;
+  
   @override
   void initState() {
     super.initState();
+    _lastTap = DateTime.now();
     _loadData();
+  }
+
+  bool _isDebounced() {
+    final now = DateTime.now();
+    final isDebounced = now.difference(_lastTap).inMilliseconds < 300;
+    if (!isDebounced) {
+      _lastTap = now;
+    }
+    return isDebounced;
   }
 
   Future<void> _loadData() async {
@@ -42,7 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(),
           slivers: [
             // App Bar
             SliverAppBar(

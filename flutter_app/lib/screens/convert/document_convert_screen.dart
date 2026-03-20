@@ -429,7 +429,7 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    ref.watch(colorPaletteProvider);
+    // Removed colorPaletteProvider watch - eliminates glitch
     final info = _conversionInfo;
 
     return Scaffold(

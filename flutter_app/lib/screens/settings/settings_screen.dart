@@ -62,8 +62,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final themeMode = ref.watch(themeModeProvider);
-    // Watch palette for reactive color updates
-    ref.watch(colorPaletteProvider);
 
     return Scaffold(
       body: SafeArea(

@@ -31,7 +31,11 @@ class _MainShellState extends ConsumerState<MainShell> {
     return 0;
   }
 
-  void _onDestinationSelected(int index) {
+  Future<void> _onDestinationSelected(int index) async {
+    // Debounce rapid taps
+    final selectedIndex = _calculateSelectedIndex(context);
+    if (selectedIndex == index) return; // Already on this page
+    
     switch (index) {
       case 0:
         context.go(AppRoutes.home);
@@ -62,8 +66,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideScreen = screenWidth > 600;
-    // Watch palette for reactive updates
-    ref.watch(colorPaletteProvider);
+    // Removed colorPaletteProvider watch - reduces glitch on navigation
 
     if (isWideScreen) {
       // Tablet/Desktop layout with NavigationRail
