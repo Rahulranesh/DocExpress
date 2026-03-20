@@ -116,11 +116,10 @@ class ColorPaletteNotifier extends StateNotifier<ColorPalette> {
   Future<void> _loadPalette() async {
     try {
       final box = Hive.box('settings');
-      final index = box.get(_paletteKey, defaultValue: 0);
-      if (index >= 0 && index < ColorPalette.values.length) {
-        state = ColorPalette.values[index];
-        AppTheme.setPalette(state);
-      }
+      const startupPalette = ColorPalette.ocean;
+      state = startupPalette;
+      AppTheme.setPalette(startupPalette);
+      await box.put(_paletteKey, startupPalette.index);
     } catch (e) {
       state = ColorPalette.ocean;
       AppTheme.setPalette(ColorPalette.ocean);

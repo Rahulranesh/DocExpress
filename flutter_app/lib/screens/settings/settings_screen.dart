@@ -8,7 +8,6 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
-import '../../services/storage_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -482,9 +481,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      final didLaunch = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      if (!didLaunch) {
         _showSnackBar('Could not open URL', isSuccess: false);
       }
     } catch (e) {
@@ -597,10 +595,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.email_rounded),
                 title: const Text('Email Support'),
-                subtitle: const Text('support@docxpress.app'),
+                subtitle: const Text('berryloopofficial@gmail.com'),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchUrl('mailto:support@docxpress.app');
+                  _launchUrl('mailto:berryloopofficial@gmail.com?subject=DocXpress%20Support');
                 },
               ),
               ListTile(
@@ -608,7 +606,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Report a Bug'),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchUrl('mailto:bugs@docxpress.app?subject=Bug%20Report');
+                  _launchUrl('mailto:berryloopofficial@gmail.com?subject=DocXpress%20Bug%20Report');
                 },
               ),
               ListTile(
@@ -616,8 +614,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Feature Request'),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchUrl(
-                      'mailto:feedback@docxpress.app?subject=Feature%20Request');
+                  _launchUrl('mailto:berryloopofficial@gmail.com?subject=DocXpress%20Feature%20Request');
                 },
               ),
             ],

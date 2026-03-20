@@ -7,6 +7,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/app_logo.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -94,10 +95,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
                   ],
                 ),
-                child: Image.asset(
-                  'assets/icons/app_icon.png',
-                  fit: BoxFit.contain,
-                ),
+                child: const AppLogoIcon(size: 96),
               ).animate().fadeIn(duration: 600.ms).scale(
                     begin: const Offset(0.5, 0.5),
                     duration: 600.ms,

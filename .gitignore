@@ -47,6 +47,7 @@ coverage/
 
 # Debug
 .debug/
+*.hprof
 
 # Optional npm cache
 .npm/
