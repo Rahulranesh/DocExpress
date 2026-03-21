@@ -45,6 +45,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    ref.read(authStateProvider.notifier).clearError();
+
+    final success = await ref.read(authStateProvider.notifier).loginWithGoogle();
+
+    if (success && mounted) {
+      context.go(AppRoutes.home);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -286,6 +296,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
 
                   const SizedBox(height: 32),
+
+                  // Google login button
+                  SecondaryButton(
+                    text: 'Continue with Google',
+                    icon: Icons.account_circle_outlined,
+                    isLoading: authState.isLoading,
+                    onPressed: _handleGoogleLogin,
+                  ).animate().fadeIn(delay: 725.ms, duration: 500.ms),
+
+                  const SizedBox(height: 20),
 
                   // Register link
                   Center(

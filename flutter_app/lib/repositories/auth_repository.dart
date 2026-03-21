@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import '../core/constants/app_constants.dart';
 import '../core/exceptions/app_exception.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -81,6 +83,57 @@ class AuthRepository {
       return authResponse;
     } catch (e) {
       debugPrint('❌ [API] Auth: Login failed - $e');
+      if (e is AppException) rethrow;
+      throw AppException(message: e.toString());
+    }
+  }
+
+  /// Login with Google account
+  Future<AuthResponse> loginWithGoogle() async {
+    debugPrint('🔐 [API] Auth: Logging in with Google');
+    try {
+      final googleSignIn = GoogleSignIn(
+        scopes: const ['email', 'profile'],
+        serverClientId: AppConstants.googleWebClientId.isNotEmpty
+            ? AppConstants.googleWebClientId
+            : null,
+      );
+
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        throw AppException(message: 'Google sign-in cancelled');
+      }
+
+      final authentication = await account.authentication;
+      final idToken = authentication.idToken;
+
+      if (idToken == null || idToken.isEmpty) {
+        throw AppException(
+          message:
+              'Google sign-in failed: missing ID token. Set GOOGLE_WEB_CLIENT_ID in app build.',
+        );
+      }
+
+      final response = await _apiService.post(
+        '/auth/google',
+        data: {
+          'idToken': idToken,
+        },
+      );
+
+      if (response.data == null) {
+        throw AppException(message: 'Google login failed');
+      }
+
+      final authResponse = AuthResponse.fromJson(response.data);
+
+      await _storageService.saveToken(authResponse.token);
+      await _storageService.saveUser(authResponse.user);
+
+      debugPrint('✅ [API] Auth: Google login successful');
+      return authResponse;
+    } catch (e) {
+      debugPrint('❌ [API] Auth: Google login failed - $e');
       if (e is AppException) rethrow;
       throw AppException(message: e.toString());
     }

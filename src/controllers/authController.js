@@ -3,7 +3,11 @@
  */
 
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
 /**
  * Generate JWT Token
@@ -13,6 +17,15 @@ const generateToken = (id) => {
     expiresIn: process.env.JWT_EXPIRE || '7d',
   });
 };
+
+const formatUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
 
 /**
  * @desc    Register new user
@@ -55,14 +68,7 @@ exports.register = async (req, res) => {
       message: 'Registration successful',
       data: {
         token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        user: formatUser(user),
       },
     });
   } catch (error) {
@@ -128,14 +134,7 @@ exports.login = async (req, res) => {
       message: 'Login successful',
       data: {
         token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        user: formatUser(user),
       },
     });
   } catch (error) {
@@ -143,6 +142,106 @@ exports.login = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Login failed',
+    });
+  }
+};
+
+/**
+ * @desc    Login or register user with Google
+ * @route   POST /api/auth/google
+ * @access  Public
+ */
+exports.googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google ID token is required',
+      });
+    }
+
+    if (!process.env.GOOGLE_WEB_CLIENT_ID) {
+      return res.status(500).json({
+        success: false,
+        message: 'Google login is not configured on server',
+      });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_WEB_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email || !payload.sub) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Google token payload',
+      });
+    }
+
+    if (payload.email_verified === false) {
+      return res.status(401).json({
+        success: false,
+        message: 'Google account email is not verified',
+      });
+    }
+
+    const email = payload.email.toLowerCase();
+    let user = await User.findOne({ email });
+
+    if (user) {
+      if (!user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account has been deactivated',
+        });
+      }
+
+      const updates = {};
+      if (user.authProvider !== 'google') {
+        updates.authProvider = 'google';
+      }
+      if (user.googleId !== payload.sub) {
+        updates.googleId = payload.sub;
+      }
+      if (payload.name && payload.name !== user.name) {
+        updates.name = payload.name;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        user = await User.findByIdAndUpdate(user._id, updates, {
+          new: true,
+          runValidators: true,
+        });
+      }
+    } else {
+      user = await User.create({
+        name: payload.name || email.split('@')[0],
+        email,
+        authProvider: 'google',
+        googleId: payload.sub,
+        password: crypto.randomBytes(32).toString('hex'),
+      });
+    }
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Google login successful',
+      data: {
+        token,
+        user: formatUser(user),
+      },
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Google authentication failed',
     });
   }
 };
@@ -159,14 +258,7 @@ exports.getMe = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        user: formatUser(user),
       },
     });
   } catch (error) {
@@ -214,14 +306,7 @@ exports.updateProfile = async (req, res) => {
       success: true,
       message: 'Profile updated successfully',
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        user: formatUser(user),
       },
     });
   } catch (error) {

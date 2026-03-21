@@ -13,6 +13,11 @@ class AppConstants {
   static const String defaultBaseUrl =
       'https://docxpress-api.onrender.com/api'; // ← Replace with your Render URL
 
+    // Google Sign-In
+    // Pass via --dart-define=GOOGLE_WEB_CLIENT_ID=xxx.apps.googleusercontent.com
+    static const String googleWebClientId =
+      String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+
   // Conversion/Compression Backend (Video compression, document conversion) - Old backend
   // Uses the existing Render backend for document/video processing
   // For Production: https://doc-backend-1-187r.onrender.com/api
