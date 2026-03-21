@@ -347,9 +347,37 @@ class LocalPdfService {
 
     List<String> results = [];
 
-    if (pages != null && pages.isNotEmpty) {
+    if (pageCount != null && pageCount > 0) {
+      // Split into chunks of N pages each (interval mode)
+      for (int start = 1; start <= totalPages; start += pageCount) {
+        final end = (start + pageCount - 1).clamp(1, totalPages);
+
+        final newDoc = sf.PdfDocument();
+        for (int pageNum = start; pageNum <= end; pageNum++) {
+          final sourcePage = sourceDocument.pages[pageNum - 1];
+          final template = sourcePage.createTemplate();
+          final newPage = newDoc.pages.add();
+          newPage.graphics.drawPdfTemplate(
+            template,
+            Offset.zero,
+            sourcePage.getClientSize(),
+          );
+        }
+
+        final outputPath = path.join(
+          outputDir.path,
+          'split_pages${start}-${end}_${_uuid.v4()}.pdf',
+        );
+        final outputBytes = await newDoc.save();
+        await File(outputPath).writeAsBytes(outputBytes);
+        newDoc.dispose();
+
+        results.add(outputPath);
+      }
+    } else if (pages != null && pages.isNotEmpty) {
       // Extract specific pages
-      for (final pageNum in pages) {
+      final uniquePages = pages.toSet().toList()..sort();
+      for (final pageNum in uniquePages) {
         if (pageNum < 1 || pageNum > totalPages) continue;
 
         final newDoc = sf.PdfDocument();
@@ -376,9 +404,11 @@ class LocalPdfService {
       // Extract page range
       final start = (startPage ?? 1).clamp(1, totalPages);
       final end = (endPage ?? totalPages).clamp(1, totalPages);
+      final actualStart = start <= end ? start : end;
+      final actualEnd = start <= end ? end : start;
 
       final newDoc = sf.PdfDocument();
-      for (int i = start; i <= end; i++) {
+      for (int i = actualStart; i <= actualEnd; i++) {
         final sourcePage = sourceDocument.pages[i - 1];
         final template = sourcePage.createTemplate();
         final newPage = newDoc.pages.add();
@@ -391,7 +421,7 @@ class LocalPdfService {
 
       final outputPath = path.join(
         outputDir.path,
-        'split_pages$start-${end}_${_uuid.v4()}.pdf',
+        'split_pages$actualStart-${actualEnd}_${_uuid.v4()}.pdf',
       );
       final outputBytes = await newDoc.save();
       await File(outputPath).writeAsBytes(outputBytes);

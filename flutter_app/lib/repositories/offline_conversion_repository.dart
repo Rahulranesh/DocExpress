@@ -633,6 +633,7 @@ class OfflineConversionRepository {
     String? fileId,
     String? filePath,
     List<int>? pages,
+    int? pageCount,
     int? startPage,
     int? endPage,
   }) async {
@@ -654,32 +655,51 @@ class OfflineConversionRepository {
     final job = await _jobsService.createJob(
       type: 'pdf_split',
       inputFileName: inputFileName,
-      options: {'pages': pages, 'startPage': startPage, 'endPage': endPage},
+      options: {
+        'pages': pages,
+        'pageCount': pageCount,
+        'startPage': startPage,
+        'endPage': endPage,
+      },
     );
 
     try {
-      final outputPath = await _pdfService.splitPdfSingle(
+      final outputPaths = await _pdfService.splitPdf(
         pdfPath: actualPath,
         pages: pages,
+        pageCount: pageCount,
         startPage: startPage,
         endPage: endPage,
       );
 
-      final savedFile = await _fileService.saveFile(File(outputPath));
+      if (outputPaths.isEmpty) {
+        throw Exception('No split files were created');
+      }
+
+      final savedFiles = <String>[];
+      String? firstFileId;
+      String? firstPath;
+
+      for (final outputPath in outputPaths) {
+        final savedFile = await _fileService.saveFile(File(outputPath));
+        savedFiles.add(savedFile.name);
+        firstFileId ??= savedFile.id;
+        firstPath ??= savedFile.path;
+      }
 
       await _jobsService.updateJob(
         job.id,
         status: 'completed',
-        outputFileId: savedFile.id,
-        outputFileName: savedFile.name,
+        outputFileId: firstFileId,
+        outputFileName: savedFiles.first,
         progress: 100,
       );
 
       return ConversionResult(
         success: true,
-        outputPath: savedFile.path,
-        fileId: savedFile.id,
-        message: 'Successfully split PDF',
+        outputPath: firstPath,
+        fileId: firstFileId,
+        message: 'Successfully split PDF into ${savedFiles.length} file(s)',
       );
     } catch (e) {
       await _jobsService.updateJob(job.id,
@@ -689,6 +709,23 @@ class OfflineConversionRepository {
         message: 'PDF split failed: $e',
       );
     }
+  }
+
+  /// Get total page count for a local PDF file
+  Future<int?> getPdfPageCount({
+    String? fileId,
+    String? filePath,
+  }) async {
+    String? actualPath = filePath;
+    if (fileId != null && actualPath == null) {
+      actualPath = await getFilePath(fileId);
+    }
+
+    if (actualPath == null) {
+      return null;
+    }
+
+    return _pdfService.getPageCount(actualPath);
   }
 
   /// Reorder PDF pages (limited offline support)

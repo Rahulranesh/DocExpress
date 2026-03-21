@@ -46,15 +46,28 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
           _isLoadingPdf = true;
         });
 
-        // Simulate loading PDF info (in real app, call API to get page count)
-        await Future.delayed(const Duration(seconds: 1));
+        final conversionRepo = ref.read(conversionRepositoryProvider);
+        final pageCount = await conversionRepo.getPdfPageCount(
+          filePath: _selectedFilePath,
+        );
+
+        if (pageCount == null || pageCount <= 0) {
+          throw Exception('Unable to read PDF page count');
+        }
+
         setState(() {
-          _totalPages = 10; // This would come from the API
+          _totalPages = pageCount;
+          _startPage = 1;
           _endPage = _totalPages;
+          _intervalPages = 1;
+          _selectedPages.clear();
           _isLoadingPdf = false;
         });
       }
     } catch (e) {
+      setState(() {
+        _isLoadingPdf = false;
+      });
       _showSnackBar('Failed to pick PDF: $e', isSuccess: false);
     }
   }
@@ -85,6 +98,7 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
 
       // Determine pages based on split mode
       List<int>? pages;
+      int? splitPageCount;
       int? splitStartPage;
       int? splitEndPage;
 
@@ -97,11 +111,7 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
           pages = List<int>.from(_selectedPages);
           break;
         case 'interval':
-          // Generate page list from interval
-          pages = [];
-          for (int i = 1; i <= _totalPages; i += _intervalPages) {
-            pages.add(i);
-          }
+          splitPageCount = _intervalPages;
           break;
       }
 
@@ -109,6 +119,7 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
       final result = await conversionRepo.splitPdf(
         filePath: _selectedFilePath,
         pages: pages,
+        pageCount: splitPageCount,
         startPage: splitStartPage,
         endPage: splitEndPage,
       );
