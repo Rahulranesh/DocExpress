@@ -103,7 +103,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         isDark ? AppTheme.darkTextHint : AppTheme.lightTextHint,
                   ),
                 ),
-                style: theme.textTheme.bodyLarge,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.lightTextPrimary,
+                ),
                 onChanged: _onSearch,
               )
             : const Text('Notes'),

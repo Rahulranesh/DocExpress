@@ -170,9 +170,9 @@ class AppTheme {
   static const Color lightSurface = Color(0xFFFFFDF9);
   static const Color lightCard = Color(0xFFFFFDF9);
   static const Color lightDivider = Color(0xFFD1D5DB);
-  static const Color lightTextPrimary = Color(0xFF451A03);
-  static const Color lightTextSecondary = Color(0xFF92400E);
-  static const Color lightTextHint = Color(0xFFC2762E);
+  static const Color lightTextPrimary = Color(0xFF111827);
+  static const Color lightTextSecondary = Color(0xFF4B5563);
+  static const Color lightTextHint = Color(0xFF9CA3AF);
 
   // ===========================================================================
   // DARK THEME COLORS
@@ -182,9 +182,9 @@ class AppTheme {
   static const Color darkSurface = Color(0xFF2C211A);
   static const Color darkCard = Color(0xFF2C211A);
   static const Color darkDivider = Color(0xFF4B5563);
-  static const Color darkTextPrimary = Color(0xFFFFF7ED);
-  static const Color darkTextSecondary = Color(0xFFFED7AA);
-  static const Color darkTextHint = Color(0xFFC2762E);
+  static const Color darkTextPrimary = Color(0xFFF9FAFB);
+  static const Color darkTextSecondary = Color(0xFFD1D5DB);
+  static const Color darkTextHint = Color(0xFF9AA4B2);
 
   // ===========================================================================
   // DESIGN TOKENS

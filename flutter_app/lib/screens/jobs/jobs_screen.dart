@@ -229,6 +229,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         ),
         child: TextField(
           controller: _searchController,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color:
+                isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
+          ),
           onChanged: (value) {
             setState(() {
               _searchQuery = value;
@@ -236,6 +240,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           },
           decoration: InputDecoration(
             hintText: 'Search jobs...',
+            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark ? AppTheme.darkTextHint : AppTheme.lightTextHint,
+            ),
             prefixIcon: Icon(
               Icons.search_rounded,
               color: isDark

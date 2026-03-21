@@ -165,6 +165,10 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
               ),
               child: TextField(
                 controller: _searchController,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color:
+                      isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
+                ),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
@@ -172,6 +176,10 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Search files...',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color:
+                        isDark ? AppTheme.darkTextHint : AppTheme.lightTextHint,
+                  ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
                     color: isDark
