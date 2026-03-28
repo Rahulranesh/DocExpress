@@ -70,6 +70,7 @@ class SecondaryButton extends StatelessWidget {
   final bool isLoading;
   final bool isExpanded;
   final IconData? icon;
+  final Widget? leading;
   final double? height;
 
   const SecondaryButton({
@@ -79,6 +80,7 @@ class SecondaryButton extends StatelessWidget {
     this.isLoading = false,
     this.isExpanded = true,
     this.icon,
+    this.leading,
     this.height,
   });
 
@@ -103,8 +105,8 @@ class SecondaryButton extends StatelessWidget {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 20),
+                if (leading != null || icon != null) ...[
+                  leading ?? Icon(icon, size: 20),
                   const SizedBox(width: 8),
                 ],
                 Flexible(

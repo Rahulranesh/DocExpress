@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:video_compress/video_compress.dart';
 
 /// Local Compression Service - handles image and video compression locally
@@ -225,23 +226,35 @@ class LocalCompressionService {
     int quality = 80,
   }) async {
     debugPrint('🗜️ [LOCAL PROCESSING] PDF Compression: $inputPath');
-
-    // PDF compression is complex and typically requires:
-    // - Re-encoding images within the PDF
-    // - Removing unused objects
-    // - Optimizing fonts
-
-    // For a basic implementation, we just copy the file
-    // Full PDF compression would require a package like pdf_manipulator
-
-    debugPrint('⚠️ [LOCAL PROCESSING] PDF compression is limited offline');
-
     final inputFile = File(inputPath);
+    if (!await inputFile.exists()) {
+      throw Exception('Input file not found: $inputPath');
+    }
+
     final outputDir = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final outputPath = path.join(outputDir.path, 'compressed_$timestamp.pdf');
 
-    await inputFile.copy(outputPath);
+    try {
+      final bytes = await inputFile.readAsBytes();
+      final document = sf.PdfDocument(inputBytes: bytes);
+      final outputBytes = await document.save();
+      document.dispose();
+
+      await File(outputPath).writeAsBytes(outputBytes, flush: true);
+
+      final originalSize = await inputFile.length();
+      final compressedSize = await File(outputPath).length();
+      final savings = originalSize > 0
+          ? ((1 - compressedSize / originalSize) * 100).toStringAsFixed(1)
+          : '0.0';
+      debugPrint(
+          '✅ [LOCAL PROCESSING] PDF Compression: ${_formatBytes(originalSize)} -> ${_formatBytes(compressedSize)} ($savings% saved)');
+    } catch (e) {
+      debugPrint(
+          '⚠️ [LOCAL PROCESSING] PDF rewrite failed, using copy fallback: $e');
+      await inputFile.copy(outputPath);
+    }
 
     return outputPath;
   }

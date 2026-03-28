@@ -81,9 +81,13 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
 
     try {
       final compressionRepo = ref.read(compressionRepositoryProvider);
-      final totalSteps = _selectedImages.length * 2; // Simulated steps for progress
+      final totalSteps =
+          _selectedImages.length * 2; // Simulated steps for progress
       int currentStep = 0;
       String? lastJobId;
+      int totalOriginalSize = 0;
+      int totalCompressedSize = 0;
+      int successCount = 0;
 
       // Compress each image locally
       for (final image in _selectedImages) {
@@ -96,6 +100,12 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
         );
         currentStep += 2; // Count as 2 steps (upload+compress combined)
         lastJobId = result.outputPath; // Use output path as job reference
+
+        if (result.success) {
+          successCount++;
+          totalOriginalSize += result.originalSize ?? image.size;
+          totalCompressedSize += result.compressedSize ?? 0;
+        }
 
         if (mounted) {
           setState(() {
@@ -110,10 +120,17 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
         });
 
         // Show success dialog with options
+        final savings = totalOriginalSize - totalCompressedSize;
+        final savingsPercent =
+            totalOriginalSize > 0 ? (savings / totalOriginalSize * 100) : 0.0;
         final result = await ConversionSuccessDialog.show(
           context,
           title: 'Compression Complete!',
-          message: 'Your images have been compressed successfully.',
+          message: successCount > 0
+              ? '$successCount of ${_selectedImages.length} images compressed. '
+                  'Actual: ${_formatFileSize(totalOriginalSize)} → ${_formatFileSize(totalCompressedSize)} '
+                  '(${savingsPercent.toStringAsFixed(0)}% saved).'
+              : 'No images were compressed successfully.',
           jobId: lastJobId,
         );
 
@@ -862,7 +879,7 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Estimated Results',
+                'Estimated Results (Preview)',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

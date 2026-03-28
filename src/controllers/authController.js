@@ -9,6 +9,8 @@ const User = require('../models/User');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
+
 /**
  * Generate JWT Token
  */
@@ -35,9 +37,10 @@ const formatUser = (user) => ({
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     // Validation
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide name, email and password',
@@ -45,9 +48,9 @@ exports.register = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         message: 'Email already registered',
       });
@@ -56,7 +59,7 @@ exports.register = async (req, res) => {
     // Create user
     const user = await User.create({
       name,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password,
     });
 
@@ -73,6 +76,14 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error('Register error:', error);
+
+    if (error?.code === 11000 && error?.keyPattern?.email) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already registered',
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || 'Registration failed',
@@ -88,9 +99,10 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     // Validation
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide email and password',
@@ -98,7 +110,7 @@ exports.login = async (req, res) => {
     }
 
     // Find user and include password
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
+    const user = await User.findOne({ email: normalizedEmail }).select(
       '+password'
     );
 
@@ -189,7 +201,7 @@ exports.googleLogin = async (req, res) => {
       });
     }
 
-    const email = payload.email.toLowerCase();
+    const email = normalizeEmail(payload.email);
     let user = await User.findOne({ email });
 
     if (user) {
@@ -239,6 +251,14 @@ exports.googleLogin = async (req, res) => {
     });
   } catch (error) {
     console.error('Google login error:', error);
+
+    if (error?.code === 11000 && error?.keyPattern?.email) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already registered',
+      });
+    }
+
     res.status(401).json({
       success: false,
       message: 'Google authentication failed',
@@ -278,19 +298,20 @@ exports.getMe = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { name, email } = req.body;
+    const normalizedEmail = email ? normalizeEmail(email) : null;
 
     const fieldsToUpdate = {};
     if (name) fieldsToUpdate.name = name;
-    if (email) fieldsToUpdate.email = email.toLowerCase();
+    if (normalizedEmail) fieldsToUpdate.email = normalizedEmail;
 
     // Check if email is already taken
-    if (email) {
+    if (normalizedEmail) {
       const existingUser = await User.findOne({
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         _id: { $ne: req.user.id },
       });
       if (existingUser) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
           message: 'Email already in use',
         });
@@ -311,9 +332,75 @@ exports.updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
+
+    if (error?.code === 11000 && error?.keyPattern?.email) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already in use',
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Failed to update profile',
+    });
+  }
+};
+
+/**
+ * @desc    Forgot password (reset by email)
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and new password',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found for this email',
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account has been deactivated',
+      });
+    }
+
+    user.password = newPassword;
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful. Please login with your new password.',
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password',
     });
   }
 };

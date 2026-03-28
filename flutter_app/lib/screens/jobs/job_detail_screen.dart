@@ -79,7 +79,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
 
       final fileName =
           file.originalName.isNotEmpty ? file.originalName : file.filename;
-      final savePath = '${downloadsDir.path}/$fileName';
+      final savePath = await _buildUniqueSavePath(downloadsDir.path, fileName);
 
       // Download the file
       await filesRepo.downloadFile(file.id, savePath);
@@ -96,6 +96,26 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         });
       }
     }
+  }
+
+  Future<String> _buildUniqueSavePath(
+      String directoryPath, String fileName) async {
+    final baseName = fileName.contains('.')
+        ? fileName.substring(0, fileName.lastIndexOf('.'))
+        : fileName;
+    final extension = fileName.contains('.')
+        ? fileName.substring(fileName.lastIndexOf('.'))
+        : '';
+
+    var candidate = '$directoryPath/$fileName';
+    var counter = 1;
+
+    while (await File(candidate).exists()) {
+      candidate = '$directoryPath/${baseName}_$counter$extension';
+      counter++;
+    }
+
+    return candidate;
   }
 
   /// Download and open a file

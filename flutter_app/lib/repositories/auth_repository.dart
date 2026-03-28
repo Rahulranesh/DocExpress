@@ -249,6 +249,28 @@ class AuthRepository {
     }
   }
 
+  /// Forgot password (email + new password)
+  Future<void> forgotPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    debugPrint('🔐 [API] Auth: Forgot password for $email');
+    try {
+      await _apiService.post(
+        '/auth/forgot-password',
+        data: {
+          'email': email,
+          'newPassword': newPassword,
+        },
+      );
+      debugPrint('✅ [API] Auth: Password reset successful');
+    } catch (e) {
+      debugPrint('❌ [API] Auth: Forgot password failed - $e');
+      if (e is AppException) rethrow;
+      throw AppException(message: e.toString());
+    }
+  }
+
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {
     final token = await _storageService.getToken();

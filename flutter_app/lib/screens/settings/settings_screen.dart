@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/offline_service_manager.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -598,7 +599,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: const Text('berryloopofficial@gmail.com'),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchUrl('mailto:berryloopofficial@gmail.com?subject=DocXpress%20Support');
+                  _launchUrl(
+                      'mailto:berryloopofficial@gmail.com?subject=DocXpress%20Support');
                 },
               ),
               ListTile(
@@ -606,7 +608,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Report a Bug'),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchUrl('mailto:berryloopofficial@gmail.com?subject=DocXpress%20Bug%20Report');
+                  _launchUrl(
+                      'mailto:berryloopofficial@gmail.com?subject=DocXpress%20Bug%20Report');
                 },
               ),
               ListTile(
@@ -614,7 +617,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Feature Request'),
                 onTap: () {
                   Navigator.pop(context);
-                  _launchUrl('mailto:berryloopofficial@gmail.com?subject=DocXpress%20Feature%20Request');
+                  _launchUrl(
+                      'mailto:berryloopofficial@gmail.com?subject=DocXpress%20Feature%20Request');
                 },
               ),
             ],
@@ -966,6 +970,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 try {
                   final storageService = ref.read(storageServiceProvider);
                   await storageService.clearLocalStorage();
+                  await offlineServices.ensureInitialized();
+                  await offlineServices.fileService.clearAllFiles();
+                  await offlineServices.jobsService.clearAllJobs();
+                  await offlineServices.notesService.clearAllNotes();
                   _showSnackBar('Cache cleared successfully');
                 } catch (e) {
                   _showSnackBar('Failed to clear cache', isSuccess: false);
@@ -1003,6 +1011,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 try {
                   final storageService = ref.read(storageServiceProvider);
                   await storageService.clearAll();
+                  await offlineServices.ensureInitialized();
+                  await offlineServices.fileService.clearAllFiles();
+                  await offlineServices.jobsService.clearAllJobs();
+                  await offlineServices.notesService.clearAllNotes();
                   _showSnackBar('All data deleted');
                   // Log out the user after clearing data
                   if (mounted) {

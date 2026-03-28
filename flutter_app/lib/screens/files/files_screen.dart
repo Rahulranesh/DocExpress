@@ -861,7 +861,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
         dir = downloadsDir ?? await getApplicationDocumentsDirectory();
       }
 
-      final savePath = '${dir.path}/${file.originalName}';
+      final savePath = await _buildUniqueSavePath(dir.path, file.originalName);
       final repository = ref.read(filesRepositoryProvider);
       await repository.downloadFile(file.id, savePath);
 
@@ -887,6 +887,26 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     } catch (e) {
       _showSnackBar('Failed to share: $e', isSuccess: false);
     }
+  }
+
+  Future<String> _buildUniqueSavePath(
+      String directoryPath, String fileName) async {
+    final baseName = fileName.contains('.')
+        ? fileName.substring(0, fileName.lastIndexOf('.'))
+        : fileName;
+    final extension = fileName.contains('.')
+        ? fileName.substring(fileName.lastIndexOf('.'))
+        : '';
+
+    var candidate = '$directoryPath/$fileName';
+    var counter = 1;
+
+    while (await File(candidate).exists()) {
+      candidate = '$directoryPath/${baseName}_$counter$extension';
+      counter++;
+    }
+
+    return candidate;
   }
 
   Future<void> _toggleFavorite(FileModel file) async {

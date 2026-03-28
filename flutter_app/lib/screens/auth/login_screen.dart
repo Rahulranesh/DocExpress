@@ -48,11 +48,160 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleGoogleLogin() async {
     ref.read(authStateProvider.notifier).clearError();
 
-    final success = await ref.read(authStateProvider.notifier).loginWithGoogle();
+    final success =
+        await ref.read(authStateProvider.notifier).loginWithGoogle();
 
     if (success && mounted) {
       context.go(AppRoutes.home);
     }
+  }
+
+  Future<void> _showForgotPasswordDialog() async {
+    final emailController = TextEditingController(text: _emailController.text);
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
+    final didReset = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final formKey = GlobalKey<FormState>();
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Reset Password'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value.trim())) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: newPasswordController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'New Password',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureNew
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setStateDialog(() {
+                              obscureNew = !obscureNew;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a new password';
+                        }
+                        if (value.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: confirmPasswordController,
+                      obscureText: obscureConfirm,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureConfirm
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () {
+                            setStateDialog(() {
+                              obscureConfirm = !obscureConfirm;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please confirm your password';
+                        }
+                        if (value != newPasswordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) {
+                      return;
+                    }
+                    final success = await ref
+                        .read(authStateProvider.notifier)
+                        .forgotPassword(
+                          email: emailController.text.trim(),
+                          newPassword: newPasswordController.text,
+                        );
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop(true);
+                    }
+                  },
+                  child: const Text('Reset'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (didReset == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Password reset successful. Please sign in.'),
+          backgroundColor: AppTheme.successColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+
+    emailController.dispose();
+    newPasswordController.dispose();
+    confirmPasswordController.dispose();
   }
 
   @override
@@ -237,15 +386,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Implement forgot password
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Forgot password coming soon!'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
+                      onPressed: _showForgotPasswordDialog,
                       child: const Text('Forgot Password?'),
                     ),
                   ).animate().fadeIn(delay: 600.ms, duration: 500.ms),
@@ -300,7 +441,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // Google login button
                   SecondaryButton(
                     text: 'Continue with Google',
-                    icon: Icons.account_circle_outlined,
+                    leading: Image.asset(
+                      'assets/icons/google_logo.png',
+                      width: 20,
+                      height: 20,
+                    ),
                     isLoading: authState.isLoading,
                     onPressed: _handleGoogleLogin,
                   ).animate().fadeIn(delay: 725.ms, duration: 500.ms),

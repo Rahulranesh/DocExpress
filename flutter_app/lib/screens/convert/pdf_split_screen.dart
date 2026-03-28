@@ -89,6 +89,28 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
       return;
     }
 
+    if (_totalPages <= 0) {
+      _showSnackBar('Unable to read PDF pages. Please reselect the file.',
+          isSuccess: false);
+      return;
+    }
+
+    if (_splitMode == 'single' && _selectedPages.isEmpty) {
+      _showSnackBar('Please select at least one page', isSuccess: false);
+      return;
+    }
+
+    if (_splitMode == 'range' && (_startPage < 1 || _endPage > _totalPages)) {
+      _showSnackBar('Selected page range is invalid', isSuccess: false);
+      return;
+    }
+
+    if (_splitMode == 'interval' &&
+        (_intervalPages < 1 || _intervalPages > _totalPages)) {
+      _showSnackBar('Pages-per-file value is invalid', isSuccess: false);
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
