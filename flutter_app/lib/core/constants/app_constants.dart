@@ -11,12 +11,13 @@ class AppConstants {
   // Authentication Backend (Login/Register/User Management) - MongoDB on Render
   // For Production: https://your-render-app-name.onrender.com/api
   static const String defaultBaseUrl =
-      'https://docxpress-api.onrender.com/api'; // ← Replace with your Render URL
+      'https://docback-5lxm.onrender.com/api'; // ← LOCAL TESTING: Using your computer's IP
 
-    // Google Sign-In
-    // Pass via --dart-define=GOOGLE_WEB_CLIENT_ID=xxx.apps.googleusercontent.com
-    static const String googleWebClientId =
-      String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+  // Google Sign-In
+  // Web Client ID from Google Cloud Console (for Flutter app sign-in)
+  // Get this from: console.cloud.google.com → Credentials → OAuth 2.0 Client IDs (Web)
+  static const String googleWebClientId =
+      '899847738933-281fmb8ovdie9c00aojlpa7kalgtn1mb.apps.googleusercontent.com';
 
   // Conversion/Compression Backend (Video compression, document conversion) - Old backend
   // Uses the existing Render backend for document/video processing

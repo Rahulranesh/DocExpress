@@ -13,6 +13,8 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/permission_service.dart';
+import '../../services/storage_paths.dart';
 import '../../widgets/common_widgets.dart';
 
 class FilesScreen extends ConsumerStatefulWidget {
@@ -221,6 +223,19 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                       ? Icons.view_list_rounded
                       : Icons.grid_view_rounded,
                 ),
+                style: IconButton.styleFrom(
+                  backgroundColor:
+                      isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
+                  foregroundColor: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () {
+                  _showStoragePath(context);
+                },
+                icon: const Icon(Icons.info_outline_rounded),
+                tooltip: 'Download location',
                 style: IconButton.styleFrom(
                   backgroundColor:
                       isDark ? AppTheme.darkSurface : AppTheme.lightBackground,
@@ -594,6 +609,131 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     );
   }
 
+  Future<void> _showStoragePath(BuildContext context) async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final pathInfo = await StoragePaths.getPathInfo();
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Download Location',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Friendly Name
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Location:',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      pathInfo['friendlyName'] ?? 'Unknown',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Full Path
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Full Path:',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      pathInfo['fullPath'] ?? 'Unknown',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Platform Info
+              Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Platform: ${pathInfo['platform'] ?? 'Unknown'}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Close Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showSortOptions(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -838,36 +978,89 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
 
   Future<void> _downloadFile(FileModel file) async {
     try {
-      _showSnackBar('Downloading...', isSuccess: true);
+      _showSnackBar('Requesting storage permission...', isSuccess: true);
 
-      // Get downloads directory - use app documents for reliability
-      Directory dir;
-      if (Platform.isAndroid) {
-        // Use external storage directory on Android
-        final extDir = await getExternalStorageDirectory();
-        if (extDir != null) {
-          // Create a Downloads folder in the app's external directory
-          dir = Directory('${extDir.path}/Downloads');
-          if (!await dir.exists()) {
-            await dir.create(recursive: true);
-          }
-        } else {
-          dir = await getApplicationDocumentsDirectory();
-        }
-      } else if (Platform.isIOS) {
-        dir = await getApplicationDocumentsDirectory();
-      } else {
-        final downloadsDir = await getDownloadsDirectory();
-        dir = downloadsDir ?? await getApplicationDocumentsDirectory();
+      // Request storage permissions
+      final hasPermission = await PermissionService.requestStoragePermission();
+
+      if (!hasPermission) {
+        _showSnackBar(
+          'Storage permission denied. Please grant permission in app settings.',
+          isSuccess: false,
+        );
+        await PermissionService.openAppSettings();
+        return;
       }
 
-      final savePath = await _buildUniqueSavePath(dir.path, file.originalName);
+      _showSnackBar('Preparing download...', isSuccess: true);
+
+      // Get the correct Downloads directory
+      Directory? downloadsDir;
+      
+      try {
+        // For Android 11+, use getDownloadsDirectory() which handles scoped storage
+        downloadsDir = await getDownloadsDirectory();
+        
+        // If that fails, create Downloads folder in app cache
+        if (downloadsDir == null || !await downloadsDir.exists()) {
+          final baseDir = await getExternalStorageDirectory();
+          if (baseDir != null) {
+            // Create a Downloads folder in the app's external files directory
+            downloadsDir = Directory('${baseDir.path}/Downloads');
+            if (!await downloadsDir.exists()) {
+              await downloadsDir.create(recursive: true);
+              print('📁 Created Downloads folder: ${downloadsDir.path}');
+            }
+          } else {
+            // Last resort: use app documents directory
+            downloadsDir = await getApplicationDocumentsDirectory();
+            print('⚠️ Using app documents directory: ${downloadsDir.path}');
+          }
+        }
+      } catch (e) {
+        print('❌ Error getting downloads directory: $e');
+        downloadsDir = await getApplicationDocumentsDirectory();
+      }
+
+      if (downloadsDir == null) {
+        _showSnackBar('Cannot access download directory', isSuccess: false);
+        return;
+      }
+
+      // Ensure directory exists
+      if (!await downloadsDir.exists()) {
+        await downloadsDir.create(recursive: true);
+      }
+
+      final savePath = await _buildUniqueSavePath(downloadsDir.path, file.originalName);
+      
+      print('📥 Starting download: ${file.originalName}');
+      print('📂 Save path: $savePath');
+
       final repository = ref.read(filesRepositoryProvider);
       await repository.downloadFile(file.id, savePath);
 
-      _showSnackBar('File saved to Downloads', isSuccess: true);
+      // Verify file was actually saved
+      final savedFile = File(savePath);
+      if (!await savedFile.exists()) {
+        print('❌ File not found after download: $savePath');
+        _showSnackBar(
+          'Download completed but file not found. Check file structure.',
+          isSuccess: false,
+        );
+        return;
+      }
+
+      final fileSize = await savedFile.length();
+      print('✅ File downloaded successfully: ${file.originalName} (${fileSize} bytes)');
+
+      _showSnackBar(
+        '✓ File saved to Downloads (${_formatFileSize(fileSize)})',
+        isSuccess: true,
+      );
     } catch (e) {
-      _showSnackBar('Failed to download: $e', isSuccess: false);
+      print('❌ Download error: $e');
+      _showSnackBar('Download failed: $e', isSuccess: false);
     }
   }
 
@@ -887,6 +1080,13 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     } catch (e) {
       _showSnackBar('Failed to share: $e', isSuccess: false);
     }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   Future<String> _buildUniqueSavePath(
@@ -1048,15 +1248,6 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
 
   Color _getFileTypeColor(BuildContext context) {
     return Theme.of(context).colorScheme.primary;
-  }
-
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }
 

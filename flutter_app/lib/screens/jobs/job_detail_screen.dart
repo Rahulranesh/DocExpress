@@ -14,6 +14,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/permission_service.dart';
 import '../../widgets/common_widgets.dart';
 
 class JobDetailScreen extends ConsumerStatefulWidget {
@@ -64,29 +65,85 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         _downloadingFileId = file.id;
       });
 
+      // Request storage permissions
+      final hasPermission = await PermissionService.requestStoragePermission();
+
+      if (!hasPermission) {
+        _showSnackBar(
+          'Storage permission denied. Please grant permission in app settings.',
+          isSuccess: false,
+        );
+        await PermissionService.openAppSettings();
+        return null;
+      }
+
       final filesRepo = ref.read(filesRepositoryProvider);
 
-      // Get downloads directory
-      final Directory? downloadsDir;
-      if (Platform.isAndroid) {
-        downloadsDir = Directory('/storage/emulated/0/Download');
-        if (!await downloadsDir.exists()) {
-          await downloadsDir.create(recursive: true);
+      // Get the correct Downloads directory
+      Directory? downloadsDir;
+      
+      try {
+        // For Android 11+, use getDownloadsDirectory() which handles scoped storage
+        downloadsDir = await getDownloadsDirectory();
+        
+        // If that fails, create Downloads folder in app cache
+        if (downloadsDir == null || !await downloadsDir.exists()) {
+          final baseDir = await getExternalStorageDirectory();
+          if (baseDir != null) {
+            // Create a Downloads folder in the app's external files directory
+            downloadsDir = Directory('${baseDir.path}/Downloads');
+            if (!await downloadsDir.exists()) {
+              await downloadsDir.create(recursive: true);
+              debugPrint('📁 Created Downloads folder: ${downloadsDir.path}');
+            }
+          } else {
+            // Last resort: use app documents directory
+            downloadsDir = await getApplicationDocumentsDirectory();
+            debugPrint('⚠️ Using app documents directory: ${downloadsDir.path}');
+          }
         }
-      } else {
+      } catch (e) {
+        debugPrint('❌ Error getting downloads directory: $e');
         downloadsDir = await getApplicationDocumentsDirectory();
+      }
+
+      if (downloadsDir == null) {
+        _showSnackBar('Cannot access download directory', isSuccess: false);
+        return null;
+      }
+
+      // Ensure directory exists
+      if (!await downloadsDir.exists()) {
+        await downloadsDir.create(recursive: true);
       }
 
       final fileName =
           file.originalName.isNotEmpty ? file.originalName : file.filename;
       final savePath = await _buildUniqueSavePath(downloadsDir.path, fileName);
 
+      debugPrint('📥 Starting download: $fileName');
+      debugPrint('📂 Save path: $savePath');
+
       // Download the file
       await filesRepo.downloadFile(file.id, savePath);
 
+      // Verify file was actually saved
+      final savedFile = File(savePath);
+      if (!await savedFile.exists()) {
+        debugPrint('❌ File not found after download: $savePath');
+        _showSnackBar(
+          'Download completed but file not found.',
+          isSuccess: false,
+        );
+        return null;
+      }
+
+      final fileSize = await savedFile.length();
+      debugPrint('✅ File downloaded successfully: $fileName (${fileSize} bytes)');
+
       return savePath;
     } catch (e) {
-      debugPrint('Download error: $e');
+      debugPrint('❌ Download error: $e');
       return null;
     } finally {
       if (mounted) {
@@ -145,7 +202,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       return;
     }
 
-    _showSnackBar('Saved to: $localPath', isSuccess: true);
+    _showSnackBar('✓ File saved: ${file.originalName}', isSuccess: true);
   }
 
   /// Share a file

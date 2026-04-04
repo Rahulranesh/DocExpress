@@ -47,9 +47,20 @@ class AuthRepository {
 
       debugPrint('✅ [API] Auth: User registered successfully');
       return authResponse;
+    } on AppException catch (e) {
+      debugPrint('❌ [API] Auth: Registration failed with AppException');
+      debugPrint('❌ [API] Auth: Error message - ${e.message}');
+      debugPrint('❌ [API] Auth: Error statusCode - ${e.statusCode}');
+      rethrow; // Re-throw as-is to preserve the message
     } catch (e) {
       debugPrint('❌ [API] Auth: Registration failed - $e');
-      if (e is AppException) rethrow;
+      debugPrint('❌ [API] Auth: Error type - ${e.runtimeType}');
+      
+      // If it's already an AppException, just rethrow
+      if (e is AppException) {
+        rethrow;
+      }
+      
       throw AppException(message: e.toString());
     }
   }
@@ -97,8 +108,11 @@ class AuthRepository {
         serverClientId: AppConstants.googleWebClientId.isNotEmpty
             ? AppConstants.googleWebClientId
             : null,
+        forceCodeForRefreshToken: true,
       );
 
+      // Sign out first to show account picker
+      await googleSignIn.signOut();
       final account = await googleSignIn.signIn();
       if (account == null) {
         throw AppException(message: 'Google sign-in cancelled');

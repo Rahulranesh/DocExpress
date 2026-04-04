@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
@@ -34,6 +35,7 @@ class LocalCompressionService {
       throw Exception('Input file not found: $inputPath');
     }
 
+    final originalSize = await inputFile.length();
     final bytes = await inputFile.readAsBytes();
     var image = img.decodeImage(bytes);
 
@@ -41,25 +43,19 @@ class LocalCompressionService {
       throw Exception('Failed to decode image');
     }
 
-    // Resize if dimensions specified
-    if (maxWidth != null || maxHeight != null) {
-      final targetWidth = maxWidth ?? image.width;
-      final targetHeight = maxHeight ?? image.height;
+    // Always resize to reduce size - scale down to max 1920x1080
+    final targetMaxWidth = maxWidth ?? 1920;
+    final targetMaxHeight = maxHeight ?? 1080;
 
-      // Calculate proportional dimensions
-      double ratio = 1.0;
-      if (image.width > targetWidth || image.height > targetHeight) {
-        final widthRatio = targetWidth / image.width;
-        final heightRatio = targetHeight / image.height;
-        ratio = widthRatio < heightRatio ? widthRatio : heightRatio;
-      }
+    if (image.width > targetMaxWidth || image.height > targetMaxHeight) {
+      final widthRatio = targetMaxWidth / image.width;
+      final heightRatio = targetMaxHeight / image.height;
+      final ratio = widthRatio < heightRatio ? widthRatio : heightRatio;
 
-      if (ratio < 1.0) {
-        final newWidth = (image.width * ratio).round();
-        final newHeight = (image.height * ratio).round();
-        image = img.copyResize(image, width: newWidth, height: newHeight);
-        debugPrint('   Resized to: ${newWidth}x$newHeight');
-      }
+      final newWidth = (image.width * ratio).round();
+      final newHeight = (image.height * ratio).round();
+      image = img.copyResize(image, width: newWidth, height: newHeight);
+      debugPrint('   Resized to: ${newWidth}x$newHeight');
     }
 
     // Determine output format
@@ -73,25 +69,30 @@ class LocalCompressionService {
         path.join(outputDir.path, 'compressed_$timestamp.$format');
 
     List<int> compressedBytes;
+    
+    // Use LOWER quality for aggressive compression
+    final compressionQuality = quality <= 30 ? quality : max(30, quality - 20);
+    
     switch (format) {
       case 'jpg':
       case 'jpeg':
-        compressedBytes = img.encodeJpg(image, quality: quality);
+        // JPEG: quality 30-80 for good compression
+        compressedBytes = img.encodeJpg(image, quality: compressionQuality);
         break;
       case 'png':
-        compressedBytes = img.encodePng(image, level: (100 - quality) ~/ 10);
+        // PNG: use high compression level (0-9) and palette
+        compressedBytes = img.encodePng(image, level: 9);
         break;
       case 'webp':
-        // WebP not directly supported, fallback to jpg
-        compressedBytes = img.encodeJpg(image, quality: quality);
+        // Convert to JPEG instead of WebP for better size reduction
+        compressedBytes = img.encodeJpg(image, quality: compressionQuality);
         break;
       default:
-        compressedBytes = img.encodeJpg(image, quality: quality);
+        compressedBytes = img.encodeJpg(image, quality: compressionQuality);
     }
 
     await File(outputPath).writeAsBytes(compressedBytes);
 
-    final originalSize = await inputFile.length();
     final compressedSize = compressedBytes.length;
     final savings =
         ((1 - compressedSize / originalSize) * 100).toStringAsFixed(1);
@@ -99,6 +100,11 @@ class LocalCompressionService {
     debugPrint('✅ [LOCAL PROCESSING] Compression: Complete');
     debugPrint(
         '   Original: ${_formatBytes(originalSize)}, Compressed: ${_formatBytes(compressedSize)} ($savings% saved)');
+
+    if (compressedSize >= originalSize) {
+      debugPrint('⚠️ [LOCAL PROCESSING] Compression not effective, using original');
+      return inputPath; // Return original if compression didn't help
+    }
 
     return outputPath;
   }
@@ -220,7 +226,7 @@ class LocalCompressionService {
 
   // ==================== PDF Compression ====================
 
-  /// Compress PDF (basic - reduces image quality within PDF)
+  /// Compress PDF (reduces size via document optimization)
   Future<String> compressPdf({
     required String inputPath,
     int quality = 80,
@@ -231,6 +237,8 @@ class LocalCompressionService {
       throw Exception('Input file not found: $inputPath');
     }
 
+    final originalSize = await inputFile.length();
+
     final outputDir = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final outputPath = path.join(outputDir.path, 'compressed_$timestamp.pdf');
@@ -238,25 +246,37 @@ class LocalCompressionService {
     try {
       final bytes = await inputFile.readAsBytes();
       final document = sf.PdfDocument(inputBytes: bytes);
+      
+      // Note: syncfusion_flutter_pdf has limited compression options
+      // The library optimizes streams but doesn't compress images directly
       final outputBytes = await document.save();
       document.dispose();
 
       await File(outputPath).writeAsBytes(outputBytes, flush: true);
 
-      final originalSize = await inputFile.length();
       final compressedSize = await File(outputPath).length();
       final savings = originalSize > 0
           ? ((1 - compressedSize / originalSize) * 100).toStringAsFixed(1)
           : '0.0';
+      
+      debugPrint('ℹ️ [LOCAL PROCESSING] PDF: Document optimization attempted');
       debugPrint(
-          '✅ [LOCAL PROCESSING] PDF Compression: ${_formatBytes(originalSize)} -> ${_formatBytes(compressedSize)} ($savings% saved)');
+          '   Original: ${_formatBytes(originalSize)} → Processed: ${_formatBytes(compressedSize)} ($savings%)');
+
+      // If compression didn't help significantly (less than 5%), return original
+      if (compressedSize > (originalSize * 0.95)) {
+        debugPrint('ℹ️ [LOCAL PROCESSING] PDF: Compression ineffective, using original');
+        return inputPath;
+      }
+
+      debugPrint(
+          '✅ [LOCAL PROCESSING] PDF Compression: Complete (${_formatBytes(originalSize)} → ${_formatBytes(compressedSize)})');
+      return outputPath;
     } catch (e) {
       debugPrint(
-          '⚠️ [LOCAL PROCESSING] PDF rewrite failed, using copy fallback: $e');
-      await inputFile.copy(outputPath);
+          '❌ [LOCAL PROCESSING] PDF: Optimization failed ($e), using original');
+      return inputPath; // Return original on error
     }
-
-    return outputPath;
   }
 
   // ==================== Utility Methods ====================

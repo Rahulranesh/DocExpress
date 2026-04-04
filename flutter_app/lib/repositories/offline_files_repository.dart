@@ -243,19 +243,67 @@ class OfflineFilesRepository {
 
   /// Download file (for offline, this copies to the specified path)
   Future<void> downloadFile(String id, String savePath) async {
-    debugPrint('📁 [LOCAL STORAGE] Files: Copying file $id to $savePath');
-    final localFile = await _fileService.getFile(id);
-    if (localFile == null) {
-      throw Exception('File not found');
-    }
+    debugPrint('📁 [LOCAL STORAGE] Files: Downloading file $id to $savePath');
+    
+    try {
+      final localFile = await _fileService.getFile(id);
+      if (localFile == null) {
+        throw Exception('File not found in local storage with ID: $id');
+      }
 
-    final sourceFile = File(localFile.path);
-    if (!await sourceFile.exists()) {
-      throw Exception('Source file not found at ${localFile.path}');
-    }
+      final sourceFile = File(localFile.path);
+      if (!await sourceFile.exists()) {
+        throw Exception('Source file not found at path: ${localFile.path}. File may have been deleted.');
+      }
 
-    await sourceFile.copy(savePath);
-    debugPrint('✅ [LOCAL STORAGE] Files: File copied to $savePath');
+      final sourceSize = await sourceFile.length();
+      if (sourceSize == 0) {
+        throw Exception('Source file is empty (0 bytes)');
+      }
+
+      debugPrint('📥 Source file: ${localFile.path} (${_formatBytes(sourceSize)})');
+
+      // Ensure destination directory exists
+      final destDir = File(savePath).parent;
+      if (!await destDir.exists()) {
+        await destDir.create(recursive: true);
+        debugPrint('📁 Created destination directory: ${destDir.path}');
+      }
+
+      // Check if destination file already exists
+      final destFile = File(savePath);
+      if (await destFile.exists()) {
+        await destFile.delete();
+        debugPrint('🗑️ Replaced existing file: $savePath');
+      }
+
+      // Copy file
+      await sourceFile.copy(savePath);
+
+      // Verify copy was successful
+      final copiedFile = File(savePath);
+      if (!await copiedFile.exists()) {
+        throw Exception('File copy verification failed - destination file does not exist');
+      }
+
+      final copiedSize = await copiedFile.length();
+      if (copiedSize != sourceSize) {
+        throw Exception('File copy verification failed - size mismatch. Source: $sourceSize, Copied: $copiedSize');
+      }
+
+      debugPrint('✅ [LOCAL STORAGE] Files: File successfully copied to $savePath (${_formatBytes(copiedSize)})');
+    } catch (e) {
+      debugPrint('❌ [LOCAL STORAGE] Files: Download failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Helper to format bytes
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   /// Convert LocalFile to FileModel (for compatibility with existing UI)

@@ -137,7 +137,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Allow splash screen always
       if (isSplash) return null;
 
-      // If still loading, stay on splash
+      // Allow auth routes (login/register) - don't redirect away even if loading
+      if (isAuthRoute) return null;
+
+      // If still loading (but not on auth route), stay on splash
       if (isLoading) return AppRoutes.splash;
 
       // If not logged in and not on auth route, redirect to login

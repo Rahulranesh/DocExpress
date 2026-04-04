@@ -297,13 +297,37 @@ class ApiService {
         break;
       case DioExceptionType.badResponse:
         final data = error.response?.data;
+        debugPrint('🔴 Bad Response Data: $data');
+        debugPrint('🔴 Status Code: $statusCode');
+        debugPrint('🔴 Response Data Type: ${data.runtimeType}');
+        
         if (data is Map<String, dynamic>) {
-          message = data['error']?['message'] ??
-              data['message'] ??
-              'Server error occurred';
-          code = data['error']?['code'];
+          // Try multiple paths to extract error message (in order of preference)
+          message = data['message'] ??           // First try direct message field
+              data['error']?['message'] ??      // Then nested error.message
+              data['error'] ??                  // Then just error object as string
+              data['errors']?.toString() ??     // Then errors array
+              data['msg'] ??                    // Alternative message field
+              'Server error occurred';          // Default fallback
+          
+          code = data['error']?['code'] ?? 
+                 data['code'] ?? 
+                 data['error_code'];
+          
+          debugPrint('🔴 Extracted Error Message: $message');
+          debugPrint('🔴 Extracted Code: $code');
+          
+          // For duplicate account errors (409), prioritize the message field
+          if (statusCode == 409 && data['message'] != null) {
+            message = data['message'];
+            debugPrint('🔴 409 Conflict - Using message field: $message');
+          }
+        } else if (data is String) {
+          message = data;
+          debugPrint('🔴 String Error Message: $message');
         } else {
           message = 'Server error occurred';
+          debugPrint('🔴 Could not extract error message, using default');
         }
         break;
       case DioExceptionType.cancel:

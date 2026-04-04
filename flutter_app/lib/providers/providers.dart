@@ -222,9 +222,17 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       debugPrint('❌ [AUTH] Registration failed: $e');
+      String errorMsg = e.toString();
+      // Remove exception class name prefixes
+      errorMsg = errorMsg
+          .replaceAll('Exception: ', '')
+          .replaceAll('ApiException: ', '')
+          .replaceAll('AppException: ', '')
+          .trim();
+      debugPrint('❌ [AUTH] Final error message: $errorMsg');
       state = state.copyWith(
         isLoading: false,
-        error: e.toString().replaceAll('Exception: ', ''),
+        error: errorMsg,
       );
       return false;
     }
@@ -244,8 +252,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> refreshUser() async {
     try {
       final user = await _authRepository.getCurrentUser();
-      state = state.copyWith(user: user);
-    } catch (_) {}
+      // Only update if successful - don't overwrite error state
+      state = state.copyWith(user: user, error: null);
+    } catch (e) {
+      debugPrint('⚠️ [AUTH] Refresh user failed: $e');
+      // Don't update error state on refresh failures to preserve existing errors
+    }
   }
 
   /// Update profile

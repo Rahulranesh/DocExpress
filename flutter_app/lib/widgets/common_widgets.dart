@@ -33,10 +33,10 @@ class PrimaryButton extends StatelessWidget {
       ),
       child: isLoading
           ? const SizedBox(
-              width: 24,
-              height: 24,
+              width: 16,
+              height: 16,
               child: CircularProgressIndicator(
-                strokeWidth: 2.5,
+                strokeWidth: 1.5,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             )
@@ -93,12 +93,12 @@ class SecondaryButton extends StatelessWidget {
       ),
       child: isLoading
           ? SizedBox(
-              width: 24,
-              height: 24,
+              width: 16,
+              height: 16,
               child: CircularProgressIndicator(
-                strokeWidth: 2.5,
+                strokeWidth: 1.5,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withOpacity(0.7),
                 ),
               ),
             )
@@ -521,16 +521,22 @@ class LoadingOverlay extends StatelessWidget {
             child: Center(
               child: Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(),
+                      const SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      ),
                       if (message != null) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         Text(
                           message!,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
                     ],

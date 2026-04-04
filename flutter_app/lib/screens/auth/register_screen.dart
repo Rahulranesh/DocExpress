@@ -39,6 +39,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     // Clear any previous error
     ref.read(authStateProvider.notifier).clearError();
+    debugPrint('🔐 [REGISTER] Starting registration process');
 
     final success = await ref.read(authStateProvider.notifier).register(
           name: _nameController.text.trim(),
@@ -46,8 +47,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           password: _passwordController.text,
         );
 
+    debugPrint('🔐 [REGISTER] Registration result: $success');
     if (success && mounted) {
+      debugPrint('🔐 [REGISTER] Registration successful, navigating to home');
       context.go(AppRoutes.home);
+    } else if (!success && mounted) {
+      debugPrint('🔐 [REGISTER] Registration failed, checking auth state for error');
+      // The error is now in authState.error and will be displayed via the listener
     }
   }
 
@@ -62,16 +68,53 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     // Show error snackbar if there's an error
     ref.listen<AuthState>(authStateProvider, (previous, next) {
       if (next.error != null && next.error != previous?.error) {
+        debugPrint('🔴 [REGISTER] Error state listener triggered: ${next.error}');
+        debugPrint('🔴 [REGISTER] Previous error: ${previous?.error}');
+        
+        // Dismiss any existing snackbars first
+        ScaffoldMessenger.of(context).clearSnackBars();
+        
+        // Ensure we have a valid error message
+        final errorMessage = next.error ?? 'An error occurred';
+        debugPrint('🔴 [REGISTER] Showing SnackBar with message: $errorMessage');
+        
+        // Show enhanced error snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.error!),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    errorMessage,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: AppTheme.errorColor,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6), // Extended duration for longer messages
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            action: SnackBarAction(
+              label: 'Dismiss',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
           ),
         );
+      } else if (next.error == null && previous?.error != null) {
+        debugPrint('🔴 [REGISTER] Error cleared in auth state');
       }
     });
 
@@ -171,6 +214,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       fillColor: isDark
                           ? Colors.white.withOpacity(0.05)
                           : Colors.grey.withOpacity(0.05),
+                      // Show error border if there's an email-related error
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: authState.error != null && 
+                          (authState.error!.toLowerCase().contains('email') ||
+                           authState.error!.toLowerCase().contains('registered'))
+                          ? const BorderSide(color: Colors.red, width: 2)
+                          : BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: authState.error != null && 
+                          (authState.error!.toLowerCase().contains('email') ||
+                           authState.error!.toLowerCase().contains('registered'))
+                          ? const BorderSide(color: Colors.red, width: 2)
+                          : BorderSide.none,
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -186,6 +246,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         begin: -0.1,
                         duration: 500.ms,
                       ),
+
+                  // Show inline error if email-related
+                  if (authState.error != null && 
+                      (authState.error!.toLowerCase().contains('email') ||
+                       authState.error!.toLowerCase().contains('registered')))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info, 
+                            size: 16, 
+                            color: Colors.red,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              authState.error!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 300.ms),
 
                   const SizedBox(height: 20),
 
