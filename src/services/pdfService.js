@@ -6,12 +6,34 @@
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const pdfParse = require('pdf-parse');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const sharp = require('sharp');
+const { promisify } = require('util');
+const { execFile } = require('child_process');
 const { getTempPath } = require('../utils/tempPath');
 const AppError = require('../utils/AppError');
 
+const execFileAsync = promisify(execFile);
+
 class PdfService {
+  _resolvePdfCompressionSetting(quality) {
+    if (typeof quality === 'number' && Number.isFinite(quality)) {
+      if (quality >= 85) return '/printer';
+      if (quality >= 65) return '/ebook';
+      return '/screen';
+    }
+
+    const normalized = String(quality || '').toLowerCase();
+    const qualityToSetting = {
+      low: '/screen',
+      medium: '/ebook',
+      high: '/printer',
+    };
+
+    return qualityToSetting[normalized] || '/ebook';
+  }
+
   /**
    * Merge multiple PDFs into one
    * @param {string[]} inputPaths - Array of paths to PDF files
@@ -354,19 +376,59 @@ class PdfService {
       const { quality = 'medium' } = options;
 
       const originalStats = await fs.stat(inputPath);
-      const pdfBytes = await fs.readFile(inputPath);
-      const pdf = await PDFDocument.load(pdfBytes);
 
-      // pdf-lib doesn't have direct compression options
-      // We save with default settings which may slightly reduce size
-      // TODO: For better compression, use ghostscript or similar
+      const pdfSetting = this._resolvePdfCompressionSetting(quality);
 
-      // Save with options
-      const compressedBytes = await pdf.save({
-        useObjectStreams: true, // Reduces size slightly
-      });
+      const ghostscriptCandidates = process.platform === 'win32'
+        ? ['gswin64c', 'gswin32c']
+        : ['gs'];
 
-      await fs.writeFile(outputPath, compressedBytes);
+      let usedMethod = 'pdf-lib';
+      let gsSucceeded = false;
+
+      for (const gsBinary of ghostscriptCandidates) {
+        try {
+          if (!fsSync.existsSync(inputPath)) {
+            throw new Error(`Input file missing: ${inputPath}`);
+          }
+
+          await execFileAsync(gsBinary, [
+            '-sDEVICE=pdfwrite',
+            '-dCompatibilityLevel=1.4',
+            `-dPDFSETTINGS=${pdfSetting}`,
+            '-dNOPAUSE',
+            '-dQUIET',
+            '-dBATCH',
+            '-dDetectDuplicateImages=true',
+            '-dCompressFonts=true',
+            '-dSubsetFonts=true',
+            `-sOutputFile=${outputPath}`,
+            inputPath,
+          ]);
+
+          usedMethod = `ghostscript:${gsBinary}`;
+          gsSucceeded = true;
+          break;
+        } catch (gsError) {
+          if (fsSync.existsSync(outputPath)) {
+            try { await fs.unlink(outputPath); } catch (_) {}
+          }
+        }
+      }
+
+      if (!gsSucceeded) {
+        const pdfBytes = await fs.readFile(inputPath);
+        const pdf = await PDFDocument.load(pdfBytes);
+
+        // Fallback optimization using pdf-lib. This is a compatibility path,
+        // but real compression is handled by Ghostscript when available.
+        const compressedBytes = await pdf.save({
+          useObjectStreams: true,
+        });
+
+        await fs.writeFile(outputPath, compressedBytes);
+      }
+
       const compressedStats = await fs.stat(outputPath);
 
       return {
@@ -374,6 +436,7 @@ class PdfService {
         originalSize: originalStats.size,
         compressedSize: compressedStats.size,
         reduction: Math.round((1 - compressedStats.size / originalStats.size) * 100),
+        method: usedMethod,
       };
     } catch (error) {
       throw AppError.internal(`PDF compression failed: ${error.message}`);

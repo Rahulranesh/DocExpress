@@ -511,8 +511,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
   void _downloadJobResult(Job job) async {
     try {
-      // Implement download logic
-      _showSnackBar('Download started', isSuccess: true);
+      context.openJobDetail(job.id);
+      _showSnackBar('Open the job to download or open the result file', isSuccess: true);
     } catch (e) {
       _showSnackBar('Download failed: $e', isSuccess: false);
     }
@@ -550,10 +550,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                ref.read(jobsListProvider.notifier).clearAllJobs();
-                _showSnackBar('History cleared', isSuccess: true);
+                try {
+                  await ref.read(jobsRepositoryProvider).clearAllJobs();
+                  await ref.read(jobsListProvider.notifier).loadJobs(refresh: true);
+                  _showSnackBar('History cleared', isSuccess: true);
+                } catch (e) {
+                  _showSnackBar('Failed to clear history: $e', isSuccess: false);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
@@ -771,10 +776,6 @@ class _JobCard extends StatelessWidget {
       default:
         return Icons.work_rounded;
     }
-  }
-
-  Color _getJobColor(BuildContext context) {
-    return Theme.of(context).colorScheme.primary;
   }
 
   String _formatDate(DateTime date) {

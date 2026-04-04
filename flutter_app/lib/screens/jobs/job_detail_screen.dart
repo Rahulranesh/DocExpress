@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -15,6 +14,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/permission_service.dart';
+import '../../services/storage_paths.dart';
 import '../../widgets/common_widgets.dart';
 
 class JobDetailScreen extends ConsumerStatefulWidget {
@@ -66,51 +66,17 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       });
 
       // Request storage permissions
-      final hasPermission = await PermissionService.requestStoragePermission();
-
-      if (!hasPermission) {
-        _showSnackBar(
-          'Storage permission denied. Please grant permission in app settings.',
-          isSuccess: false,
-        );
-        await PermissionService.openAppSettings();
-        return null;
-      }
+      await PermissionService.requestStoragePermission();
 
       final filesRepo = ref.read(filesRepositoryProvider);
 
-      // Get the correct Downloads directory
-      Directory? downloadsDir;
-      
-      try {
-        // For Android 11+, use getDownloadsDirectory() which handles scoped storage
-        downloadsDir = await getDownloadsDirectory();
-        
-        // If that fails, create Downloads folder in app cache
-        if (downloadsDir == null || !await downloadsDir.exists()) {
-          final baseDir = await getExternalStorageDirectory();
-          if (baseDir != null) {
-            // Create a Downloads folder in the app's external files directory
-            downloadsDir = Directory('${baseDir.path}/Downloads');
-            if (!await downloadsDir.exists()) {
-              await downloadsDir.create(recursive: true);
-              debugPrint('📁 Created Downloads folder: ${downloadsDir.path}');
-            }
-          } else {
-            // Last resort: use app documents directory
-            downloadsDir = await getApplicationDocumentsDirectory();
-            debugPrint('⚠️ Using app documents directory: ${downloadsDir.path}');
-          }
-        }
-      } catch (e) {
-        debugPrint('❌ Error getting downloads directory: $e');
-        downloadsDir = await getApplicationDocumentsDirectory();
-      }
-
-      if (downloadsDir == null) {
+      final downloadsPath = await StoragePaths.getDownloadsPath();
+      if (downloadsPath == null) {
         _showSnackBar('Cannot access download directory', isSuccess: false);
         return null;
       }
+
+      final downloadsDir = Directory(downloadsPath);
 
       // Ensure directory exists
       if (!await downloadsDir.exists()) {
@@ -202,7 +168,13 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       return;
     }
 
-    _showSnackBar('✓ File saved: ${file.originalName}', isSuccess: true);
+    final savedFile = File(localPath);
+    final fileSize = await savedFile.length();
+    await _showDownloadSavedPrompt(
+      fileName: file.originalName,
+      savePath: localPath,
+      fileSize: fileSize,
+    );
   }
 
   /// Share a file
@@ -215,7 +187,17 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       return;
     }
 
-    await Share.shareXFiles([XFile(localPath)]);
+    if (!mounted) return;
+
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box == null || !box.attached
+        ? null
+        : (box.localToGlobal(Offset.zero) & box.size);
+
+    await Share.shareXFiles(
+      [XFile(localPath)],
+      sharePositionOrigin: origin,
+    );
   }
 
   /// Download all output files
@@ -230,13 +212,62 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       }
     }
 
+    final displayPath = await StoragePaths.getDisplayPath();
     if (successCount == files.length) {
-      _showSnackBar('All files downloaded to Downloads folder',
+      _showSnackBar('All files downloaded to $displayPath',
           isSuccess: true);
     } else {
-      _showSnackBar('Downloaded $successCount of ${files.length} files',
+      _showSnackBar('Downloaded $successCount of ${files.length} files to $displayPath',
           isSuccess: false);
     }
+  }
+
+  Future<void> _showDownloadSavedPrompt({
+    required String fileName,
+    required String savePath,
+    required int fileSize,
+  }) async {
+    final displayPath = await StoragePaths.getDisplayPath();
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Saved $fileName (${_formatFileSize(fileSize)}) to $displayPath',
+        ),
+        backgroundColor: AppTheme.successColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Open',
+          textColor: Colors.white,
+          onPressed: () {
+            OpenFilex.open(savePath).then((result) {
+              if (!mounted) return;
+              if (result.type != ResultType.done) {
+                _showSnackBar(
+                  'Could not open file: ${result.message}',
+                  isSuccess: false,
+                );
+              }
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   Future<void> _retryJob() async {

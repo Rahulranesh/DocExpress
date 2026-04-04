@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,17 +26,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _initializeApp() async {
-    // Initialize storage service
-    final storageService = ref.read(storageServiceProvider);
-    await storageService.init();
-
     // Note: No API service needed - app runs fully offline
 
-    // Initialize auth state
-    await ref.read(authStateProvider.notifier).initialize();
+    // Initialize auth state using cached local data first.
+    try {
+      await ref.read(authStateProvider.notifier).initialize();
+    } on TimeoutException {
+      debugPrint('⚠️ [SPLASH] Auth initialization timed out, continuing');
+    }
 
-    // Small delay for splash animation
-    await Future.delayed(const Duration(milliseconds: 800));
+    // Small delay for splash animation only
+    await Future.delayed(const Duration(milliseconds: 300));
 
     if (!mounted) return;
 

@@ -427,6 +427,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
 
+                  Center(
+                    child: TextButton(
+                      onPressed: () => context.go(AppRoutes.login),
+                      child: const Text('Forgot Password? Go to Sign In'),
+                    ),
+                  ).animate().fadeIn(delay: 730.ms, duration: 500.ms),
+
                   const SizedBox(height: 24),
                 ],
               ),

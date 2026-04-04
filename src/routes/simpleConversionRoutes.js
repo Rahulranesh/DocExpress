@@ -226,6 +226,54 @@ router.post('/pdf-to-pptx', upload.single('file'), async (req, res) => {
 });
 
 /**
+ * POST /api/simple-convert/pdf-compress
+ * Compress PDF - accepts file upload directly
+ */
+router.post('/pdf-compress', upload.single('file'), async (req, res) => {
+  let inputPath = null;
+  let outputPath = null;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'No file uploaded' },
+      });
+    }
+
+    inputPath = req.file.path;
+    const quality = Number(req.body?.quality || 75);
+    console.log('📄 Compressing PDF:', req.file.originalname);
+
+    const tempOutput = path.join('uploads/temp', `compressed_${Date.now()}.pdf`);
+    await pdfService.compressPdf(inputPath, tempOutput, { quality });
+    outputPath = tempOutput;
+
+    res.download(outputPath, req.file.originalname.replace(/\.pdf$/i, '_compressed.pdf'), (err) => {
+      if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+      if (outputPath && fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+
+      if (err) {
+        console.error('❌ Download error:', err);
+      }
+    });
+  } catch (error) {
+    console.error('❌ PDF compression failed:', error);
+
+    if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+    if (outputPath && fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.message || 'PDF compression failed',
+        code: 'COMPRESSION_ERROR',
+      },
+    });
+  }
+});
+
+/**
  * POST /api/simple-convert/pdf-extract-images
  * Extract images from PDF - accepts file upload directly
  */
@@ -305,6 +353,7 @@ router.get('/health', (req, res) => {
       'PPTX → PDF',
       'PDF → DOCX',
       'PDF → PPTX',
+      'PDF → Compress',
       'PDF → Extract Images',
     ],
   });

@@ -58,34 +58,52 @@ class LocalCompressionService {
       debugPrint('   Resized to: ${newWidth}x$newHeight');
     }
 
-    // Determine output format
-    final format = outputFormat?.toLowerCase() ??
+    // Determine output format and a compatible output extension.
+    // Keep extension aligned with the actual encoder so gallery/apps read it correctly.
+    final requestedFormat = outputFormat?.toLowerCase() ??
         path.extension(inputPath).replaceFirst('.', '').toLowerCase();
+
+    String encoder;
+    String outputExtension;
+    switch (requestedFormat) {
+      case 'png':
+        encoder = 'png';
+        outputExtension = 'png';
+        break;
+      case 'jpg':
+      case 'jpeg':
+        encoder = 'jpg';
+        outputExtension = 'jpg';
+        break;
+      case 'webp':
+        encoder = 'jpg';
+        outputExtension = 'jpg';
+        break;
+      default:
+        encoder = 'jpg';
+        outputExtension = 'jpg';
+    }
 
     // Compress and save
     final outputDir = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final outputPath =
-        path.join(outputDir.path, 'compressed_$timestamp.$format');
+      path.join(outputDir.path, 'compressed_$timestamp.$outputExtension');
 
     List<int> compressedBytes;
     
-    // Use LOWER quality for aggressive compression
-    final compressionQuality = quality <= 30 ? quality : max(30, quality - 20);
+    // Use lower quality for practical compression while staying in valid JPEG range.
+    final compressionQuality = min(95, max(10, quality <= 30 ? quality : quality - 20));
     
-    switch (format) {
+    switch (encoder) {
       case 'jpg':
-      case 'jpeg':
         // JPEG: quality 30-80 for good compression
         compressedBytes = img.encodeJpg(image, quality: compressionQuality);
         break;
       case 'png':
-        // PNG: use high compression level (0-9) and palette
-        compressedBytes = img.encodePng(image, level: 9);
-        break;
-      case 'webp':
-        // Convert to JPEG instead of WebP for better size reduction
-        compressedBytes = img.encodeJpg(image, quality: compressionQuality);
+        // PNG compression level 0-9 (higher = smaller/slower)
+        final level = ((100 - compressionQuality) / 100 * 9).round().clamp(0, 9);
+        compressedBytes = img.encodePng(image, level: level);
         break;
       default:
         compressedBytes = img.encodeJpg(image, quality: compressionQuality);
@@ -102,8 +120,7 @@ class LocalCompressionService {
         '   Original: ${_formatBytes(originalSize)}, Compressed: ${_formatBytes(compressedSize)} ($savings% saved)');
 
     if (compressedSize >= originalSize) {
-      debugPrint('⚠️ [LOCAL PROCESSING] Compression not effective, using original');
-      return inputPath; // Return original if compression didn't help
+      debugPrint('⚠️ [LOCAL PROCESSING] Compression not effective, keeping processed output for consistency');
     }
 
     return outputPath;
@@ -263,19 +280,19 @@ class LocalCompressionService {
       debugPrint(
           '   Original: ${_formatBytes(originalSize)} → Processed: ${_formatBytes(compressedSize)} ($savings%)');
 
-      // If compression didn't help significantly (less than 5%), return original
       if (compressedSize > (originalSize * 0.95)) {
-        debugPrint('ℹ️ [LOCAL PROCESSING] PDF: Compression ineffective, using original');
-        return inputPath;
+        debugPrint(
+          'ℹ️ [LOCAL PROCESSING] PDF: Compression gain is small; '
+          'backend optimization is preferred for real reduction',
+        );
       }
 
       debugPrint(
           '✅ [LOCAL PROCESSING] PDF Compression: Complete (${_formatBytes(originalSize)} → ${_formatBytes(compressedSize)})');
       return outputPath;
     } catch (e) {
-      debugPrint(
-          '❌ [LOCAL PROCESSING] PDF: Optimization failed ($e), using original');
-      return inputPath; // Return original on error
+      debugPrint('❌ [LOCAL PROCESSING] PDF: Optimization failed ($e)');
+      rethrow;
     }
   }
 

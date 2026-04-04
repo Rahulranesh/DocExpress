@@ -36,7 +36,7 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
     _loadFiles();
     // Set initial filter based on allowed types
     if (widget.allowedTypes != null && widget.allowedTypes!.length == 1) {
-      _selectedFilter = widget.allowedTypes!.first;
+      _selectedFilter = _normalizeType(widget.allowedTypes!.first);
     }
   }
 
@@ -80,22 +80,29 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
   }
 
   bool _matchesType(FileModel file, String type) {
-    switch (type.toLowerCase()) {
+    switch (_normalizeType(type)) {
       case 'images':
-      case 'image':
         return file.isImage;
       case 'documents':
-      case 'document':
         return file.isDocument;
       case 'pdfs':
-      case 'pdf':
         return file.isPdf;
       case 'videos':
-      case 'video':
         return file.isVideo;
       default:
         return true;
     }
+  }
+
+  String _normalizeType(String type) {
+    final value = type.toLowerCase();
+    if (value == 'image' || value == 'images') return 'images';
+    if (value == 'document' || value == 'documents' || value == 'doc') {
+      return 'documents';
+    }
+    if (value == 'pdf' || value == 'pdfs') return 'pdfs';
+    if (value == 'video' || value == 'videos') return 'videos';
+    return value;
   }
 
   void _toggleSelection(FileModel file) {
@@ -268,8 +275,10 @@ class _FilePickerScreenState extends ConsumerState<FilePickerScreen> {
 
   bool _shouldShowFilter(String type) {
     if (widget.allowedTypes == null) return true;
+    final normalizedFilter = _normalizeType(type);
     return widget.allowedTypes!
-        .any((t) => t.toLowerCase().contains(type.toLowerCase()));
+      .map(_normalizeType)
+      .contains(normalizedFilter);
   }
 
   Widget _buildFilterChip(
@@ -551,14 +560,6 @@ class _FilePickerItem extends StatelessWidget {
     if (file.isVideo) return Icons.videocam_rounded;
     if (file.isDocument) return Icons.description_rounded;
     return Icons.insert_drive_file_rounded;
-  }
-
-  Color _getFileColor() {
-    if (file.isImage) return Colors.blue;
-    if (file.isPdf) return Colors.red;
-    if (file.isVideo) return Colors.purple;
-    if (file.isDocument) return Colors.orange;
-    return Colors.grey;
   }
 
   String _formatFileSize(int bytes) {

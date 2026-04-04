@@ -879,12 +879,21 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Estimated Results (Preview)',
+                'Estimated Results (Preview Only)',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Actual saved size can vary slightly on device.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark
+                  ? AppTheme.darkTextSecondary
+                  : AppTheme.lightTextSecondary,
+            ),
           ),
           const SizedBox(height: 16),
           Row(

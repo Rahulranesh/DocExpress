@@ -25,7 +25,7 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
   bool _isLoadingPdf = false;
 
   // Split options
-  String _splitMode = 'range'; // 'range', 'single', 'interval'
+  String _splitMode = 'all'; // 'all', 'range', 'single', 'interval'
   int _startPage = 1;
   int _endPage = 1;
   int _intervalPages = 1;
@@ -100,7 +100,10 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
       return;
     }
 
-    if (_splitMode == 'range' && (_startPage < 1 || _endPage > _totalPages)) {
+    if (_splitMode == 'range' &&
+        (_startPage < 1 ||
+            _endPage > _totalPages ||
+            _startPage > _endPage)) {
       _showSnackBar('Selected page range is invalid', isSuccess: false);
       return;
     }
@@ -125,6 +128,9 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
       int? splitEndPage;
 
       switch (_splitMode) {
+        case 'all':
+          // Split every page into its own PDF file.
+          break;
         case 'range':
           splitStartPage = _startPage;
           splitEndPage = _endPage;
@@ -407,6 +413,17 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
           children: [
             Expanded(
               child: _SplitModeOption(
+                title: 'All Pages',
+                description: 'Split every page',
+                icon: Icons.pages_rounded,
+                isSelected: _splitMode == 'all',
+                onTap: () => setState(() => _splitMode = 'all'),
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SplitModeOption(
                 title: 'Range',
                 description: 'Extract page range',
                 icon: Icons.linear_scale_rounded,
@@ -445,6 +462,8 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
 
   Widget _buildSplitOptions(ThemeData theme, bool isDark) {
     switch (_splitMode) {
+      case 'all':
+        return _buildAllPagesOptions(theme, isDark);
       case 'range':
         return _buildRangeOptions(theme, isDark);
       case 'single':
@@ -454,6 +473,64 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildAllPagesOptions(ThemeData theme, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All Pages',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Creates one PDF file per page in the document.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark
+                  ? AppTheme.darkTextSecondary
+                  : AppTheme.lightTextSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.picture_as_pdf_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Will create $_totalPages PDF file(s)',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 300.ms, duration: 300.ms);
   }
 
   Widget _buildRangeOptions(ThemeData theme, bool isDark) {
@@ -838,6 +915,9 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
   Widget _buildBottomBar(ThemeData theme, bool isDark) {
     bool canProceed = false;
     switch (_splitMode) {
+      case 'all':
+        canProceed = true;
+        break;
       case 'range':
         canProceed = _startPage <= _endPage;
         break;

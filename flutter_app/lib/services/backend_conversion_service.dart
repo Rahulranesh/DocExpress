@@ -251,4 +251,47 @@ class BackendConversionService {
       throw ApiException(message: 'Extract images failed: ${e.toString()}');
     }
   }
+
+  /// Compress PDF using backend service
+  Future<String> compressPdf({
+    required String pdfPath,
+    String? outputName,
+    int quality = 75,
+  }) async {
+    debugPrint('📄 [BACKEND SERVICE] Compressing PDF via backend');
+
+    try {
+      final file = File(pdfPath);
+      if (!await file.exists()) {
+        throw Exception('PDF file not found: $pdfPath');
+      }
+
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          pdfPath,
+          filename: path.basename(pdfPath),
+        ),
+        'quality': quality,
+      });
+
+      final response = await _apiService.dio.post(
+        '/simple-convert/pdf-compress',
+        data: formData,
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      final filename = outputName ??
+          '${path.basenameWithoutExtension(pdfPath)}_compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final outputPath = await _saveDownloadedFile(response.data, filename);
+
+      debugPrint('✅ [BACKEND SERVICE] PDF compression completed: $outputPath');
+      return outputPath;
+    } catch (e) {
+      debugPrint('❌ [BACKEND SERVICE] PDF compression failed: $e');
+      throw ApiException(message: 'PDF compression failed: ${e.toString()}');
+    }
+  }
 }
