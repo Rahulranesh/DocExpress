@@ -15,6 +15,7 @@ import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/permission_service.dart';
 import '../../services/storage_paths.dart';
+import '../../services/media_scanner_service.dart';
 import '../../widgets/common_widgets.dart';
 
 class JobDetailScreen extends ConsumerStatefulWidget {
@@ -107,6 +108,12 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       final fileSize = await savedFile.length();
       debugPrint('✅ File downloaded successfully: $fileName (${fileSize} bytes)');
 
+      // Scan file to make it visible in gallery/file managers
+      final scanSuccess = await MediaScannerService.scanFile(savePath, file.mimeType);
+      if (scanSuccess) {
+        debugPrint('✅ File scanned and visible in device storage');
+      }
+
       return savePath;
     } catch (e) {
       debugPrint('❌ Download error: $e');
@@ -170,10 +177,18 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
 
     final savedFile = File(localPath);
     final fileSize = await savedFile.length();
+    
+    // Scan file to make it visible in gallery/file managers
+    final scanSuccess = await MediaScannerService.scanFile(localPath, file.mimeType);
+    if (scanSuccess) {
+      debugPrint('✅ File scanned and visible in device storage');
+    }
+    
     await _showDownloadSavedPrompt(
       fileName: file.originalName,
       savePath: localPath,
       fileSize: fileSize,
+      mimeType: file.mimeType,
     );
   }
 
@@ -226,17 +241,23 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
     required String fileName,
     required String savePath,
     required int fileSize,
+    required String mimeType,
   }) async {
     final displayPath = await StoragePaths.getDisplayPath();
+    
+    // Customize message based on file type
+    String message = 'Saved $fileName (${_formatFileSize(fileSize)}) to $displayPath';
+    if (MediaScannerService.shouldSaveToGallery(mimeType)) {
+      message = 'Saved $fileName (${_formatFileSize(fileSize)}) to Gallery and Downloads';
+    }
+    
     if (!mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        content: Text(
-          'Saved $fileName (${_formatFileSize(fileSize)}) to $displayPath',
-        ),
+        content: Text(message),
         backgroundColor: AppTheme.successColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

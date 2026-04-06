@@ -94,10 +94,18 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
 
         if (result.success) {
           // Show success dialog with options
+          String message = result.message;
+          if (result.compressedSize != null) {
+            message += ' Result: ${_formatFileSize(result.compressedSize!)}';
+            if (result.originalSize != null) {
+              message += ' (from ${_formatFileSize(result.originalSize!)})';
+            }
+          }
+          
           final dialogResult = await ConversionSuccessDialog.show(
             context,
             title: 'Conversion Complete!',
-            message: result.message,
+            message: message,
           );
 
           if (!mounted) return;
@@ -143,6 +151,15 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
         .toString()
         .replaceAll('Exception: ', '')
         .replaceAll('ApiException: ', '');
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   void _showSnackBar(String message, {required bool isSuccess}) {

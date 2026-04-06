@@ -290,9 +290,10 @@ class LocalPdfService {
     }
 
     final outputDir = await _getOutputDir();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
     final outputPath = path.join(
       outputDir.path,
-      '${title ?? 'merged'}_${_uuid.v4()}.pdf',
+      '${title ?? 'merged_pdfs'}_$timestamp.pdf',
     );
 
     // Create a new PDF document for merging
@@ -344,6 +345,10 @@ class LocalPdfService {
     final bytes = await inputFile.readAsBytes();
     final sourceDocument = sf.PdfDocument(inputBytes: bytes);
     final totalPages = sourceDocument.pages.count;
+    
+    // Get original filename without extension
+    final originalName = path.basenameWithoutExtension(pdfPath);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     List<String> results = [];
 
@@ -366,7 +371,7 @@ class LocalPdfService {
 
         final outputPath = path.join(
           outputDir.path,
-          'split_pages${start}-${end}_${_uuid.v4()}.pdf',
+          '${originalName}_pages${start}-${end}_$timestamp.pdf',
         );
         final outputBytes = await newDoc.save();
         await File(outputPath).writeAsBytes(outputBytes);
@@ -392,7 +397,7 @@ class LocalPdfService {
 
         final outputPath = path.join(
           outputDir.path,
-          'split_page${pageNum}_${_uuid.v4()}.pdf',
+          '${originalName}_page${pageNum}_$timestamp.pdf',
         );
         final outputBytes = await newDoc.save();
         await File(outputPath).writeAsBytes(outputBytes);
@@ -421,7 +426,7 @@ class LocalPdfService {
 
       final outputPath = path.join(
         outputDir.path,
-        'split_pages$actualStart-${actualEnd}_${_uuid.v4()}.pdf',
+        '${originalName}_pages$actualStart-${actualEnd}_$timestamp.pdf',
       );
       final outputBytes = await newDoc.save();
       await File(outputPath).writeAsBytes(outputBytes);
@@ -443,7 +448,7 @@ class LocalPdfService {
 
         final outputPath = path.join(
           outputDir.path,
-          'split_page${i + 1}_${_uuid.v4()}.pdf',
+          '${originalName}_page${i + 1}_$timestamp.pdf',
         );
         final outputBytes = await newDoc.save();
         await File(outputPath).writeAsBytes(outputBytes);

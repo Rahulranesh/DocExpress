@@ -353,11 +353,24 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
         });
 
         // Show success dialog with options
+        String message = 'Your files have been converted. You can view them in Files or convert more.';
+        
+        // Add size information if available
+        if (result != null && result.compressedSize != null) {
+          final totalInputSize = _selectedFiles.fold<int>(0, (sum, file) => sum + file.size);
+          final resultSize = result.compressedSize!;
+          
+          if (widget.conversionType == 'IMAGE_MERGE') {
+            message = 'Images merged successfully. Result: ${_formatFileSize(resultSize)} (from ${_formatFileSize(totalInputSize)})';
+          } else {
+            message = 'Conversion complete. Result: ${_formatFileSize(resultSize)}';
+          }
+        }
+        
         final dialogResult = await ConversionSuccessDialog.show(
           context,
           title: 'Conversion Complete!',
-          message:
-              'Your files have been converted. You can view them in Files or convert more.',
+          message: message,
           jobId: null,
         );
 

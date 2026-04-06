@@ -86,9 +86,10 @@ class LocalCompressionService {
 
     // Compress and save
     final outputDir = await getTemporaryDirectory();
+    final inputFileName = path.basenameWithoutExtension(inputPath);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final outputPath =
-      path.join(outputDir.path, 'compressed_$timestamp.$outputExtension');
+      path.join(outputDir.path, '${inputFileName}_compressed_$timestamp.$outputExtension');
 
     List<int> compressedBytes;
     

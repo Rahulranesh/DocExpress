@@ -18,15 +18,29 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _dataLoaded = false;
+
   @override
   void initState() {
     super.initState();
+    // Defer data loading to after first frame renders for faster UI display
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_dataLoaded) {
+        setState(() {
+          _dataLoaded = true;
+        });
+        // Trigger data loading after UI is displayed
+        _loadData();
+      }
+    });
   }
 
   Future<void> _loadData() async {
     // Refresh only the data shown on Home instead of reloading full lists.
-    ref.invalidate(recentJobsProvider);
-    ref.invalidate(fileStatsProvider);
+    await Future.wait([
+      ref.refresh(recentJobsProvider.future),
+      ref.refresh(fileStatsProvider.future),
+    ]);
   }
 
   @override
@@ -326,6 +340,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildRecentJobs(BuildContext context) {
+    // Only load data after UI is displayed
+    if (!_dataLoaded) {
+      return Column(
+        children: List.generate(
+          3,
+          (index) => const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: ShimmerLoading(
+              height: 72,
+              borderRadius: AppTheme.radiusMd,
+            ),
+          ),
+        ),
+      ).animate().fadeIn();
+    }
+
     final recentJobsAsync = ref.watch(recentJobsProvider);
 
     return recentJobsAsync.when(
@@ -410,9 +440,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildStorageStats(BuildContext context) {
-    final fileStatsAsync = ref.watch(fileStatsProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    // Only load data after UI is displayed
+    if (!_dataLoaded) {
+      return const ShimmerLoading(
+        height: 160,
+        borderRadius: AppTheme.radiusMd,
+      ).animate().fadeIn();
+    }
+
+    final fileStatsAsync = ref.watch(fileStatsProvider);
 
     return fileStatsAsync.when(
       data: (stats) {

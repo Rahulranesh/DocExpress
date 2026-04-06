@@ -84,6 +84,8 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
     try {
       final conversionRepo = ref.read(conversionRepositoryProvider);
       int successCount = 0;
+      int totalOriginalSize = 0;
+      int totalResultSize = 0;
 
       for (int i = 0; i < _selectedFiles.length; i++) {
         // Convert image format locally using file path
@@ -95,6 +97,12 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
 
         if (result.success) {
           successCount++;
+          if (result.originalSize != null) {
+            totalOriginalSize += result.originalSize!;
+          }
+          if (result.compressedSize != null) {
+            totalResultSize += result.compressedSize!;
+          }
         }
 
         setState(() {
@@ -103,7 +111,14 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
       }
 
       if (successCount > 0) {
-        _showSnackBar('$successCount of ${_selectedFiles.length} images converted successfully!', isError: false);
+        String message = '$successCount of ${_selectedFiles.length} images converted successfully!';
+        if (totalResultSize > 0) {
+          message += ' Result: ${_formatFileSize(totalResultSize)}';
+          if (totalOriginalSize > 0) {
+            message += ' (from ${_formatFileSize(totalOriginalSize)})';
+          }
+        }
+        _showSnackBar(message, isError: false);
       } else {
         _showSnackBar('Conversion failed for all files', isError: true);
       }
@@ -119,6 +134,15 @@ class _ImageFormatScreenState extends ConsumerState<ImageFormatScreen> {
         _isConverting = false;
       });
     }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   String _getErrorMessage(dynamic error) {

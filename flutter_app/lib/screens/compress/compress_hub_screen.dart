@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 
 class CompressHubScreen extends ConsumerWidget {
@@ -30,7 +31,7 @@ class CompressHubScreen extends ConsumerWidget {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   // Stats card
-                  _buildStatsCard(theme, isDark),
+                  _StatsCardWidget(),
                   const SizedBox(height: 24),
 
                   // Compression tools
@@ -111,112 +112,6 @@ class CompressHubScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsCard(ThemeData theme, bool isDark) {
-    final primaryColor = theme.colorScheme.primary;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            primaryColor.withOpacity(0.15),
-            primaryColor.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.compress_rounded,
-                  color: primaryColor,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Smart Compression',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'AI-powered compression for best results',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: isDark
-                            ? AppTheme.darkTextSecondary
-                            : AppTheme.lightTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _StatItem(
-                  label: 'Files Compressed',
-                  value: '124',
-                  icon: Icons.folder_zip_rounded,
-                  isDark: isDark,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: primaryColor.withOpacity(0.3),
-              ),
-              Expanded(
-                child: _StatItem(
-                  label: 'Space Saved',
-                  value: '2.4 GB',
-                  icon: Icons.storage_rounded,
-                  isDark: isDark,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: primaryColor.withOpacity(0.3),
-              ),
-              Expanded(
-                child: _StatItem(
-                  label: 'Avg. Reduction',
-                  value: '65%',
-                  icon: Icons.trending_down_rounded,
-                  isDark: isDark,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ).animate().fadeIn(delay: 150.ms, duration: 300.ms).scale(
-          begin: const Offset(0.95, 0.95),
-          duration: 300.ms,
-        );
-  }
-
   Widget _buildTipsSection(ThemeData theme, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,6 +145,272 @@ class CompressHubScreen extends ConsumerWidget {
         ),
       ],
     ).animate().fadeIn(delay: 400.ms, duration: 300.ms);
+  }
+}
+
+/// Stats card widget with dynamic data from job statistics
+class _StatsCardWidget extends ConsumerWidget {
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB'];
+    var i = 0;
+    double dbytes = bytes.toDouble();
+    while (dbytes >= 1024 && i < suffixes.length - 1) {
+      dbytes /= 1024;
+      i++;
+    }
+    return '${dbytes.toStringAsFixed(1)} ${suffixes[i]}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+    
+    // Watch job list to get compression data
+    final jobsState = ref.watch(jobsListProvider);
+    
+    try {
+      // Filter compression jobs from all jobs
+      final compressionJobs = jobsState.jobs
+          .where((job) => job.type.startsWith('COMPRESS_'))
+          .toList();
+      
+      // Calculate statistics
+      int filesCompressed = compressionJobs.length;
+      int totalSavedBytes = 0;
+      int totalReductionPercent = 0;
+      
+      for (final job in compressionJobs) {
+        // Calculate input size
+        int inputSize = job.inputFiles.fold<int>(0, (sum, f) => sum + f.size);
+        // Calculate output size
+        int outputSize = job.outputFiles.fold<int>(0, (sum, f) => sum + f.size);
+        
+        if (inputSize > 0 && outputSize > 0) {
+          totalSavedBytes += (inputSize - outputSize).abs();
+          int reduction = ((1 - (outputSize / inputSize)) * 100).toInt();
+          totalReductionPercent += reduction;
+        }
+      }
+      
+      // Calculate average reduction
+      int avgReduction = compressionJobs.isNotEmpty && totalReductionPercent > 0
+          ? (totalReductionPercent / compressionJobs.length).toInt()
+          : 0;
+      
+      String savedText = _formatBytes(totalSavedBytes);
+      
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              primaryColor.withOpacity(0.15),
+              primaryColor.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: primaryColor.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.compress_rounded,
+                    color: primaryColor,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Smart Compression',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        filesCompressed == 0
+                            ? 'Start compressing files to see stats'
+                            : 'AI-powered compression for best results',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.lightTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatItem(
+                    label: 'Files Compressed',
+                    value: filesCompressed.toString(),
+                    icon: Icons.folder_zip_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: primaryColor.withOpacity(0.3),
+                ),
+                Expanded(
+                  child: _StatItem(
+                    label: 'Space Saved',
+                    value: savedText,
+                    icon: Icons.storage_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: primaryColor.withOpacity(0.3),
+                ),
+                Expanded(
+                  child: _StatItem(
+                    label: 'Avg. Reduction',
+                    value: '$avgReduction%',
+                    icon: Icons.trending_down_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ).animate().fadeIn(delay: 150.ms, duration: 300.ms).scale(
+            begin: const Offset(0.95, 0.95),
+            duration: 300.ms,
+          );
+    } catch (e) {
+      // Show error state
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              primaryColor.withOpacity(0.15),
+              primaryColor.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: primaryColor.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.compress_rounded,
+                    color: primaryColor,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Smart Compression',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Track your compression progress',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.lightTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatItem(
+                    label: 'Files Compressed',
+                    value: '0',
+                    icon: Icons.folder_zip_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: primaryColor.withOpacity(0.3),
+                ),
+                Expanded(
+                  child: _StatItem(
+                    label: 'Space Saved',
+                    value: '0 B',
+                    icon: Icons.storage_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: primaryColor.withOpacity(0.3),
+                ),
+                Expanded(
+                  child: _StatItem(
+                    label: 'Avg. Reduction',
+                    value: '0%',
+                    icon: Icons.trending_down_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ).animate().fadeIn(delay: 150.ms, duration: 300.ms).scale(
+            begin: const Offset(0.95, 0.95),
+            duration: 300.ms,
+          );
+    }
   }
 }
 
