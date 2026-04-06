@@ -52,7 +52,15 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'Email already registered',
+        message: 'You already have an account with this email. Please sign in instead.',
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
       });
     }
 
@@ -80,7 +88,7 @@ exports.register = async (req, res) => {
     if (error?.code === 11000 && error?.keyPattern?.email) {
       return res.status(409).json({
         success: false,
-        message: 'Email already registered',
+        message: 'You already have an account with this email. Please sign in instead.',
       });
     }
 
