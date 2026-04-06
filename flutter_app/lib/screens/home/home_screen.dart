@@ -18,28 +18,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  late DateTime _lastTap;
-
   @override
   void initState() {
     super.initState();
-    _lastTap = DateTime.now();
-    _loadData();
-  }
-
-  bool _isDebounced() {
-    final now = DateTime.now();
-    final isDebounced = now.difference(_lastTap).inMilliseconds < 300;
-    if (!isDebounced) {
-      _lastTap = now;
-    }
-    return isDebounced;
   }
 
   Future<void> _loadData() async {
-    // Refresh data when screen loads
-    ref.read(jobsListProvider.notifier).loadJobs(refresh: true);
-    ref.read(filesListProvider.notifier).loadFiles(refresh: true);
+    // Refresh only the data shown on Home instead of reloading full lists.
+    ref.invalidate(recentJobsProvider);
+    ref.invalidate(fileStatsProvider);
   }
 
   @override

@@ -851,9 +851,18 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Estimated Results',
+            'Estimated Results (Preview Only)',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Actual saved size can vary based on document structure.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark
+                  ? AppTheme.darkTextSecondary
+                  : AppTheme.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 16),

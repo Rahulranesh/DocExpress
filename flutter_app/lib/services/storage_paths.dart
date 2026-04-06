@@ -7,6 +7,14 @@ class StoragePaths {
   static Future<String?> getDownloadsPath() async {
     try {
       if (Platform.isAndroid) {
+        // Prefer public Downloads so files are visible to the user.
+        const publicDownloads = '/storage/emulated/0/Download';
+        final publicDir = Directory(publicDownloads);
+        if (await publicDir.exists()) {
+          print('✅ Using public Downloads: $publicDownloads');
+          return publicDownloads;
+        }
+
         // First, try to use getDownloadsDirectory() which is the recommended API
         final downloadsDir = await getDownloadsDirectory();
         if (downloadsDir != null && await downloadsDir.exists()) {

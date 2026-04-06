@@ -48,11 +48,16 @@ exports.register = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({ email: normalizedEmail }).collation({
+      locale: 'en',
+      strength: 2,
+    });
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'You already have an account with this email. Please sign in instead.',
+        message:
+          'Email already registered. Please login or use Forgot Password to reset your password.',
+        code: 'EMAIL_ALREADY_EXISTS',
       });
     }
 
@@ -88,7 +93,9 @@ exports.register = async (req, res) => {
     if (error?.code === 11000 && error?.keyPattern?.email) {
       return res.status(409).json({
         success: false,
-        message: 'You already have an account with this email. Please sign in instead.',
+        message:
+          'Email already registered. Please login or use Forgot Password to reset your password.',
+        code: 'EMAIL_ALREADY_EXISTS',
       });
     }
 
@@ -118,9 +125,9 @@ exports.login = async (req, res) => {
     }
 
     // Find user and include password
-    const user = await User.findOne({ email: normalizedEmail }).select(
-      '+password'
-    );
+    const user = await User.findOne({ email: normalizedEmail })
+      .sort({ createdAt: -1 })
+      .select('+password');
 
     if (!user) {
       return res.status(401).json({
@@ -379,7 +386,9 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail })
+      .sort({ createdAt: -1 })
+      .select('+password');
 
     if (!user) {
       return res.status(404).json({

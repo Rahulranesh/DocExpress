@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +16,12 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox('settings');
 
-  // Initialize offline services (replaces backend API)
-  await offlineServices.init();
+  // Initialize offline services in background to avoid blocking first frame
+  unawaited(
+    offlineServices.init().catchError((error, stackTrace) {
+      debugPrint('⚠️ [STARTUP] Offline services init failed: $error');
+    }),
+  );
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

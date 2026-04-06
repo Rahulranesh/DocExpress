@@ -78,6 +78,24 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Ensure email is always normalized before validation/save.
+userSchema.pre('validate', function (next) {
+  if (typeof this.email === 'string') {
+    this.email = this.email.trim().toLowerCase();
+  }
+  next();
+});
+
+// Case-insensitive unique index for email to prevent duplicate accounts.
+userSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    name: 'unique_email_ci',
+    collation: { locale: 'en', strength: 2 },
+  }
+);
+
 // Hash password before saving
 userSchema.pre('save', async function () {
   // Only hash if password is modified

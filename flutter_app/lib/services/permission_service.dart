@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 class PermissionService {
   /// Request storage permissions based on Android version
@@ -10,17 +11,22 @@ class PermissionService {
     }
 
     try {
-      // Check if permission is already granted
-      final status = await Permission.manageExternalStorage.status;
-      
-      if (status.isGranted) {
+      final manageStatus = await Permission.manageExternalStorage.status;
+      final storageStatus = await Permission.storage.status;
+
+      if (manageStatus.isGranted || storageStatus.isGranted) {
         return true;
       }
 
-      // Request permission
-      final result = await Permission.manageExternalStorage.request();
-      
-      return result.isGranted;
+      // Try regular storage permission first for better compatibility.
+      final storageResult = await Permission.storage.request();
+      if (storageResult.isGranted) {
+        return true;
+      }
+
+      // Fallback to manage external storage if needed.
+      final manageResult = await Permission.manageExternalStorage.request();
+      return manageResult.isGranted;
     } catch (e) {
       print('❌ Storage permission error: $e');
       return false;
@@ -64,8 +70,9 @@ class PermissionService {
     }
 
     try {
-      final status = await Permission.manageExternalStorage.status;
-      return status.isGranted;
+      final manageStatus = await Permission.manageExternalStorage.status;
+      final storageStatus = await Permission.storage.status;
+      return manageStatus.isGranted || storageStatus.isGranted;
     } catch (e) {
       print('❌ Storage permission check error: $e');
       return false;
@@ -74,6 +81,6 @@ class PermissionService {
 
   /// Open app settings to allow user to grant permission manually
   static Future<void> openAppSettings() async {
-    await openAppSettings();
+    await ph.openAppSettings();
   }
 }

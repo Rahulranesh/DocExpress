@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_theme.dart';
@@ -58,6 +59,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     ref.read(notesListProvider.notifier).search(query);
   }
 
+  Rect? _shareOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return null;
+    final topLeft = box.localToGlobal(Offset.zero);
+    return topLeft & box.size;
+  }
+
   Future<void> _deleteNote(Note note) async {
     final confirmed = await ConfirmDialog.show(
       context,
@@ -78,6 +86,29 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _shareNote(Note note) async {
+    try {
+      final title = note.title.trim().isEmpty ? 'Untitled Note' : note.title.trim();
+      final tagText = note.tags.isEmpty ? '' : '\n\nTags: ${note.tags.join(', ')}';
+      final content = note.content.trim().isEmpty ? '(No content)' : note.content.trim();
+
+      final shareText = '$title\n\n$content$tagText';
+      await Share.share(
+        shareText,
+        subject: title,
+        sharePositionOrigin: _shareOrigin(),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to share note: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -248,6 +279,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       note: note,
                       onTap: () => context.openNoteEditor(noteId: note.id),
                       onDelete: () => _deleteNote(note),
+                      onShare: () => _shareNote(note),
                       onTogglePin: () {
                         ref.read(notesListProvider.notifier).togglePin(note.id);
                       },
@@ -294,6 +326,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       note: note,
                       onTap: () => context.openNoteEditor(noteId: note.id),
                       onDelete: () => _deleteNote(note),
+                      onShare: () => _shareNote(note),
                       onTogglePin: () {
                         ref.read(notesListProvider.notifier).togglePin(note.id);
                       },
@@ -331,12 +364,14 @@ class _NoteCard extends StatelessWidget {
   final Note note;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
+  final VoidCallback? onShare;
   final VoidCallback? onTogglePin;
 
   const _NoteCard({
     required this.note,
     this.onTap,
     this.onDelete,
+    this.onShare,
     this.onTogglePin,
   });
 
@@ -355,6 +390,14 @@ class _NoteCard extends StatelessWidget {
             foregroundColor: Colors.white,
             icon: note.pinned ? Icons.push_pin_outlined : Icons.push_pin,
             label: note.pinned ? 'Unpin' : 'Pin',
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          ),
+          SlidableAction(
+            onPressed: (_) => onShare?.call(),
+            backgroundColor: AppTheme.infoColor,
+            foregroundColor: Colors.white,
+            icon: Icons.share_rounded,
+            label: 'Share',
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           ),
           SlidableAction(

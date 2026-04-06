@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -96,8 +97,10 @@ final conversionRepositoryProvider =
 /// Compression repository provider (fully offline - Local processing)
 final compressionRepositoryProvider =
     Provider<OfflineCompressionRepository>((ref) {
-  debugPrint('🔧 [PROVIDER] Compression: Using LOCAL processing');
-  return OfflineCompressionRepository();
+  debugPrint('🔧 [PROVIDER] Compression: Using LOCAL processing with BACKEND fallback');
+  return OfflineCompressionRepository(
+    apiService: ref.watch(apiServiceProvider),
+  );
 });
 
 // ==================== Auth State ====================
@@ -148,13 +151,27 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 
   /// Initialize auth state - check for existing user
   Future<void> initialize() async {
-    state = AuthState.loading();
-
     try {
-      debugPrint('🔐 [AUTH] Checking authentication...');
-      final user = await _authRepository.getCurrentUser();
-      debugPrint('✅ [AUTH] User authenticated: ${user.email}');
-      state = AuthState.authenticated(user);
+      final hasSession = await _authRepository.isLoggedIn();
+      if (!hasSession) {
+        debugPrint('ℹ️ [AUTH] No existing session token found');
+        state = AuthState.unauthenticated();
+        return;
+      }
+
+      debugPrint('🔐 [AUTH] Loading cached user...');
+      final cachedUser = await _authRepository.getStoredUser();
+
+      if (cachedUser != null) {
+        debugPrint('✅ [AUTH] Cached user found: ${cachedUser.email}');
+        state = AuthState.authenticated(cachedUser);
+
+        // Refresh in the background without blocking startup.
+        unawaited(refreshUser());
+      } else {
+        debugPrint('ℹ️ [AUTH] Token exists but no cached user found');
+        state = AuthState.unauthenticated();
+      }
     } catch (e) {
       debugPrint('ℹ️ [AUTH] Not authenticated or error: $e');
       state = AuthState.unauthenticated();

@@ -21,6 +21,19 @@ class BackendConversionRepository {
     }
   }
 
+  /// Compress PDF
+  Future<String> compressPdf(String pdfPath, {int quality = 75}) async {
+    try {
+      return await _backendService.compressPdf(
+        pdfPath: pdfPath,
+        quality: quality,
+      );
+    } catch (e) {
+      debugPrint('❌ [REPOSITORY] PDF compression failed: $e');
+      rethrow;
+    }
+  }
+
   /// Convert DOCX to PDF
   Future<String> convertDocxToPdf(String docxPath, {String? outputName}) async {
     try {

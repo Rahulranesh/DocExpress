@@ -6,6 +6,8 @@ import '../services/local_compression_service.dart';
 import '../services/local_file_service.dart';
 import '../services/local_jobs_service.dart';
 import '../services/offline_service_manager.dart';
+import '../services/api_service.dart';
+import 'backend_conversion_repository.dart';
 
 /// Offline Compression Repository - replaces API-based compression repository
 /// All compression operations are performed locally on the device
@@ -13,14 +15,19 @@ class OfflineCompressionRepository {
   final LocalCompressionService _compressionService;
   final LocalFileService _fileService;
   final LocalJobsService _jobsService;
+  final BackendConversionRepository? _backendRepository;
 
   OfflineCompressionRepository({
     LocalCompressionService? compressionService,
     LocalFileService? fileService,
     LocalJobsService? jobsService,
+    ApiService? apiService,
   })  : _compressionService = compressionService ?? offlineServices.compressionService,
         _fileService = fileService ?? offlineServices.fileService,
-        _jobsService = jobsService ?? offlineServices.jobsService;
+      _jobsService = jobsService ?? offlineServices.jobsService,
+      _backendRepository = apiService != null
+        ? BackendConversionRepository(apiService)
+        : null;
 
   // ==================== Image Compression ====================
 
@@ -51,8 +58,14 @@ class OfflineCompressionRepository {
         outputFormat: format,
       );
 
+      final outputFile = File(outputPath);
+      if (!await outputFile.exists()) {
+        throw Exception('Compressed image file not found');
+      }
+
       // Save to file service
       final savedFile = await _fileService.saveFile(File(outputPath));
+      final compressedSize = savedFile.size;
 
       // Update job
       await _jobsService.updateJob(
@@ -70,7 +83,7 @@ class OfflineCompressionRepository {
         outputPath: savedFile.path,
         fileId: savedFile.id,
         originalSize: File(filePath).lengthSync(),
-        compressedSize: savedFile.size,
+        compressedSize: compressedSize,
         message: 'Image compressed successfully',
       );
     } catch (e) {
@@ -199,12 +212,90 @@ class OfflineCompressionRepository {
     );
 
     try {
-      final outputPath = await _compressionService.compressPdf(
-        inputPath: filePath,
-        quality: quality,
-      );
+      final originalSize = File(filePath).lengthSync();
+
+      Future<String> runLocalCompression() async {
+        return _compressionService.compressPdf(
+          inputPath: filePath,
+          quality: quality,
+        );
+      }
+
+      String outputPath;
+      final backendRepository = _backendRepository;
+
+      if (backendRepository != null) {
+        try {
+          debugPrint('🌐 [BACKEND] Trying backend PDF compression first...');
+          final backendOutputPath = await backendRepository.compressPdf(
+            filePath,
+            quality: quality,
+          );
+
+          final backendFile = File(backendOutputPath);
+          if (await backendFile.exists()) {
+            final backendSize = await backendFile.length();
+
+            if (backendSize < originalSize) {
+              outputPath = backendOutputPath;
+            } else {
+              debugPrint(
+                '⚠️ [BACKEND] Compression output is not smaller; trying local fallback...',
+              );
+
+              try {
+                final localOutputPath = await runLocalCompression();
+                final localFile = File(localOutputPath);
+                final localSize = await localFile.length();
+                outputPath = localSize < backendSize
+                    ? localOutputPath
+                    : backendOutputPath;
+              } catch (localError) {
+                debugPrint('⚠️ [LOCAL FALLBACK] Local compression failed: $localError');
+                outputPath = backendOutputPath;
+              }
+            }
+          } else {
+            throw Exception('Backend compressed PDF file not found');
+          }
+        } catch (backendError) {
+          debugPrint('⚠️ [BACKEND] PDF compression failed: $backendError');
+          debugPrint('🛠️ [LOCAL FALLBACK] Trying local PDF optimization...');
+          outputPath = await runLocalCompression();
+        }
+      } else {
+        outputPath = await runLocalCompression();
+      }
+
+      final outputFile = File(outputPath);
+      if (!await outputFile.exists()) {
+        throw Exception('Compressed PDF file not found');
+      }
 
       final savedFile = await _fileService.saveFile(File(outputPath));
+      final savedSize = savedFile.size;
+
+      if (savedSize >= originalSize) {
+        debugPrint(
+          '⚠️ [LOCAL PROCESSING] PDF compression did not reduce size: '
+          '${(originalSize / 1024).toStringAsFixed(1)} KB -> '
+          '${(savedSize / 1024).toStringAsFixed(1)} KB',
+        );
+
+        await _jobsService.updateJob(
+          job.id,
+          status: 'failed',
+          error: 'Compression completed but file size did not reduce',
+        );
+
+        return CompressionResult(
+          success: false,
+          originalSize: originalSize,
+          compressedSize: savedSize,
+          message:
+              'Unable to reduce PDF size for this file. Try a higher compression level.',
+        );
+      }
 
       await _jobsService.updateJob(
         job.id,
@@ -218,7 +309,9 @@ class OfflineCompressionRepository {
         success: true,
         outputPath: savedFile.path,
         fileId: savedFile.id,
-        message: 'PDF compressed (limited compression available offline)',
+        originalSize: originalSize,
+        compressedSize: savedSize,
+        message: 'PDF compression completed',
       );
     } catch (e) {
       await _jobsService.updateJob(job.id, status: 'failed', error: e.toString());

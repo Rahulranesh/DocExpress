@@ -16,8 +16,15 @@ class AppConstants {
   // Google Sign-In
   // Web Client ID from Google Cloud Console (for Flutter app sign-in)
   // Get this from: console.cloud.google.com → Credentials → OAuth 2.0 Client IDs (Web)
-  static const String googleWebClientId =
-      '899847738933-281fmb8ovdie9c00aojlpa7kalgtn1mb.apps.googleusercontent.com';
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue:
+        '899847738933-281fmb8ovdie9c00aojlpa7kalgtn1mb.apps.googleusercontent.com',
+  );
+  static const String googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+    defaultValue: '',
+  );
 
   // Conversion/Compression Backend (Video compression, document conversion) - Old backend
   // Uses the existing Render backend for document/video processing

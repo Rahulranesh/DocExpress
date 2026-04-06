@@ -419,7 +419,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
       children: [
         _buildFileListOrGrid(filteredFiles, theme, isDark),
         _buildFileListOrGrid(
-          filteredFiles..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+          [...filteredFiles]..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
           theme,
           isDark,
         ),
@@ -978,54 +978,19 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
 
   Future<void> _downloadFile(FileModel file) async {
     try {
-      _showSnackBar('Requesting storage permission...', isSuccess: true);
-
-      // Request storage permissions
-      final hasPermission = await PermissionService.requestStoragePermission();
-
-      if (!hasPermission) {
-        _showSnackBar(
-          'Storage permission denied. Please grant permission in app settings.',
-          isSuccess: false,
-        );
-        await PermissionService.openAppSettings();
-        return;
-      }
-
       _showSnackBar('Preparing download...', isSuccess: true);
 
-      // Get the correct Downloads directory
-      Directory? downloadsDir;
-      
-      try {
-        // For Android 11+, use getDownloadsDirectory() which handles scoped storage
-        downloadsDir = await getDownloadsDirectory();
-        
-        // If that fails, create Downloads folder in app cache
-        if (downloadsDir == null || !await downloadsDir.exists()) {
-          final baseDir = await getExternalStorageDirectory();
-          if (baseDir != null) {
-            // Create a Downloads folder in the app's external files directory
-            downloadsDir = Directory('${baseDir.path}/Downloads');
-            if (!await downloadsDir.exists()) {
-              await downloadsDir.create(recursive: true);
-              print('📁 Created Downloads folder: ${downloadsDir.path}');
-            }
-          } else {
-            // Last resort: use app documents directory
-            downloadsDir = await getApplicationDocumentsDirectory();
-            print('⚠️ Using app documents directory: ${downloadsDir.path}');
-          }
-        }
-      } catch (e) {
-        print('❌ Error getting downloads directory: $e');
-        downloadsDir = await getApplicationDocumentsDirectory();
-      }
+      // Request permission when needed, but don't hard-fail if unavailable.
+      // We can still save inside app-accessible storage.
+      await PermissionService.requestStoragePermission();
 
-      if (downloadsDir == null) {
+      final downloadsPath = await StoragePaths.getDownloadsPath();
+      if (downloadsPath == null) {
         _showSnackBar('Cannot access download directory', isSuccess: false);
         return;
       }
+
+      final downloadsDir = Directory(downloadsPath);
 
       // Ensure directory exists
       if (!await downloadsDir.exists()) {
@@ -1053,15 +1018,54 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
 
       final fileSize = await savedFile.length();
       print('✅ File downloaded successfully: ${file.originalName} (${fileSize} bytes)');
-
-      _showSnackBar(
-        '✓ File saved to Downloads (${_formatFileSize(fileSize)})',
-        isSuccess: true,
+      await _showDownloadSavedPrompt(
+        fileName: file.originalName,
+        savePath: savePath,
+        fileSize: fileSize,
       );
     } catch (e) {
       print('❌ Download error: $e');
       _showSnackBar('Download failed: $e', isSuccess: false);
     }
+  }
+
+  Future<void> _showDownloadSavedPrompt({
+    required String fileName,
+    required String savePath,
+    required int fileSize,
+  }) async {
+    final displayPath = await StoragePaths.getDisplayPath();
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Saved $fileName (${_formatFileSize(fileSize)}) to $displayPath',
+        ),
+        backgroundColor: AppTheme.successColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Open',
+          textColor: Colors.white,
+          onPressed: () {
+            OpenFilex.open(savePath).then((result) {
+              if (!mounted) return;
+              if (result.type != ResultType.done) {
+                _showSnackBar(
+                  'Could not open file: ${result.message}',
+                  isSuccess: false,
+                );
+              }
+            });
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _shareFile(FileModel file) async {
@@ -1073,9 +1077,17 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
       final repository = ref.read(filesRepositoryProvider);
       await repository.downloadFile(file.id, savePath);
 
+        if (!mounted) return;
+
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box == null || !box.attached
+          ? null
+          : (box.localToGlobal(Offset.zero) & box.size);
+
       await Share.shareXFiles(
         [XFile(savePath)],
         text: 'Sharing ${file.originalName}',
+        sharePositionOrigin: origin,
       );
     } catch (e) {
       _showSnackBar('Failed to share: $e', isSuccess: false);
@@ -1246,9 +1258,6 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     return Icons.insert_drive_file_rounded;
   }
 
-  Color _getFileTypeColor(BuildContext context) {
-    return Theme.of(context).colorScheme.primary;
-  }
 }
 
 // Grid item widget for files
@@ -1382,10 +1391,6 @@ class _FileGridItem extends StatelessWidget {
     return Icons.insert_drive_file_rounded;
   }
 
-  Color _getFileColor(BuildContext context) {
-    return Theme.of(context).colorScheme.primary;
-  }
-
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -1509,10 +1514,6 @@ class _FileListItem extends StatelessWidget {
     if (file.isVideo) return Icons.videocam_rounded;
     if (file.isDocument) return Icons.description_rounded;
     return Icons.insert_drive_file_rounded;
-  }
-
-  Color _getFileColor(BuildContext context) {
-    return Theme.of(context).colorScheme.primary;
   }
 
   String _formatFileSize(int bytes) {
