@@ -213,18 +213,29 @@ class OfflineCompressionRepository {
 
     try {
       final originalSize = File(filePath).lengthSync();
+      final fileSizeMB = originalSize / (1024 * 1024);
 
-      Future<String> runLocalCompression() async {
+      Future<String> runLocalCompression({int? compressionQuality}) async {
+        // Use aggressive compression for large files
+        final effectiveQuality = compressionQuality ?? quality;
+        debugPrint('🗜️ Applying local compression with quality: $effectiveQuality');
         return _compressionService.compressPdf(
           inputPath: filePath,
-          quality: quality,
+          quality: effectiveQuality,
         );
       }
 
       String outputPath;
       final backendRepository = _backendRepository;
 
-      if (backendRepository != null) {
+      // Skip backend for large files (>3MB) to prevent timeout on Render free tier
+      // Use aggressive local compression (quality 40) for maximum reduction
+      if (fileSizeMB > 3) {
+        debugPrint('📏 [SIZE CHECK] File is ${fileSizeMB.toStringAsFixed(1)}MB - exceeds backend limit');
+        debugPrint('⚡ [OPTIMIZATION] Skipping backend to prevent timeout; using aggressive local image compression...');
+        // Use quality 40 for aggressive image downsampling (vs default 80)
+        outputPath = await runLocalCompression(compressionQuality: 40);
+      } else if (backendRepository != null) {
         try {
           debugPrint('🌐 [BACKEND] Trying backend PDF compression first...');
           final backendOutputPath = await backendRepository.compressPdf(

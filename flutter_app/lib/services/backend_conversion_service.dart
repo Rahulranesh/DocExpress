@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -259,39 +260,74 @@ class BackendConversionService {
     int quality = 75,
   }) async {
     debugPrint('📄 [BACKEND SERVICE] Compressing PDF via backend');
+    const maxRetries = 2;
+    // 120s timeout - sufficient for small PDFs
+    // Large files (>3MB) are filtered out at repository level
+    const timeoutDuration = Duration(seconds: 120);
 
-    try {
-      final file = File(pdfPath);
-      if (!await file.exists()) {
-        throw Exception('PDF file not found: $pdfPath');
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final file = File(pdfPath);
+        if (!await file.exists()) {
+          throw Exception('PDF file not found: $pdfPath');
+        }
+
+        debugPrint('🔄 [BACKEND SERVICE] Compression attempt $attempt/$maxRetries...');
+
+        final formData = FormData.fromMap({
+          'file': await MultipartFile.fromFile(
+            pdfPath,
+            filename: path.basename(pdfPath),
+          ),
+          'quality': quality,
+        });
+
+        final response = await _apiService.dio.post(
+          '/simple-convert/pdf-compress',
+          data: formData,
+          options: Options(
+            responseType: ResponseType.bytes,
+            contentType: 'multipart/form-data',
+            sendTimeout: timeoutDuration,
+            receiveTimeout: timeoutDuration,
+          ),
+        ).timeout(
+          timeoutDuration,
+          onTimeout: () => throw TimeoutException(
+            'Backend PDF compression timeout (${timeoutDuration.inSeconds}s). '
+            'File may be too large or server is overloaded. Try again or use local compression.',
+          ),
+        );
+
+        if (response.statusCode != 200 || (response.data as List).isEmpty) {
+          throw DioException(
+            requestOptions: response.requestOptions,
+            response: response,
+            type: DioExceptionType.badResponse,
+            error: 'Empty or invalid response from backend',
+          );
+        }
+
+        final filename = outputName ??
+            '${path.basenameWithoutExtension(pdfPath)}_compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        final outputPath = await _saveDownloadedFile(response.data, filename);
+
+        debugPrint('✅ [BACKEND SERVICE] PDF compression completed: $outputPath');
+        return outputPath;
+      } catch (e) {
+        final isLastAttempt = attempt == maxRetries;
+        final errorMsg = e.toString();
+        if (isLastAttempt) {
+          debugPrint('❌ [BACKEND SERVICE] PDF compression failed after $maxRetries attempts: $errorMsg');
+          throw ApiException(message: 'PDF compression failed: $errorMsg');
+        } else {
+          debugPrint('⚠️ [BACKEND SERVICE] Attempt $attempt failed: $errorMsg');
+          debugPrint('⏳ [BACKEND SERVICE] Retrying in 2 seconds...');
+          await Future.delayed(const Duration(seconds: 2));
+        }
       }
-
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          pdfPath,
-          filename: path.basename(pdfPath),
-        ),
-        'quality': quality,
-      });
-
-      final response = await _apiService.dio.post(
-        '/simple-convert/pdf-compress',
-        data: formData,
-        options: Options(
-          responseType: ResponseType.bytes,
-          contentType: 'multipart/form-data',
-        ),
-      );
-
-      final filename = outputName ??
-          '${path.basenameWithoutExtension(pdfPath)}_compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final outputPath = await _saveDownloadedFile(response.data, filename);
-
-      debugPrint('✅ [BACKEND SERVICE] PDF compression completed: $outputPath');
-      return outputPath;
-    } catch (e) {
-      debugPrint('❌ [BACKEND SERVICE] PDF compression failed: $e');
-      throw ApiException(message: 'PDF compression failed: ${e.toString()}');
     }
+    // Should never reach here due to exception or return above
+    throw StateError('PDF compression loop exited unexpectedly');
   }
 }
