@@ -97,9 +97,9 @@ final conversionRepositoryProvider =
 /// Compression repository provider (fully offline - Local processing)
 final compressionRepositoryProvider =
     Provider<OfflineCompressionRepository>((ref) {
-  debugPrint('🔧 [PROVIDER] Compression: Using LOCAL processing with BACKEND fallback');
+  debugPrint('🔧 [PROVIDER] Compression: Using LOCAL processing with NEW BACKEND fallback');
   return OfflineCompressionRepository(
-    apiService: ref.watch(apiServiceProvider),
+    apiService: ref.watch(conversionApiServiceProvider),
   );
 });
 
