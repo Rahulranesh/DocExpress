@@ -364,12 +364,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildDivider(isDark),
 
           // Storage usage
-          _SettingsTile(
-            icon: Icons.pie_chart_rounded,
-            title: 'Storage Usage',
-            subtitle: '245 MB used',
-            onTap: () => _showStorageDetails(theme, isDark),
-            isDark: isDark,
+          Consumer(
+            builder: (context, ref, child) {
+              final fileStatsAsync = ref.watch(fileStatsProvider);
+              final storageText = fileStatsAsync.when(
+                data: (stats) => '${_formatBytes(stats.totalSize)} used',
+                loading: () => '- used',
+                error: (_, __) => '0 B used',
+              );
+              return _SettingsTile(
+                icon: Icons.pie_chart_rounded,
+                title: 'Storage Usage',
+                subtitle: storageText,
+                onTap: () => _showStorageDetails(theme, isDark),
+                isDark: isDark,
+              );
+            },
           ),
           _buildDivider(isDark),
 
@@ -885,64 +895,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color:
-                        isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Text(
-                  'Storage Usage',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _StorageItem(
-                  icon: Icons.image_rounded,
-                  label: 'Images',
-                  size: '120 MB',
-                  color: theme.colorScheme.primary,
-                  isDark: isDark,
-                ),
-                _StorageItem(
-                  icon: Icons.picture_as_pdf_rounded,
-                  label: 'PDFs',
-                  size: '85 MB',
-                  color: theme.colorScheme.primary,
-                  isDark: isDark,
-                ),
-                _StorageItem(
-                  icon: Icons.videocam_rounded,
-                  label: 'Videos',
-                  size: '28 MB',
-                  color: theme.colorScheme.primary,
-                  isDark: isDark,
-                ),
-                _StorageItem(
-                  icon: Icons.folder_rounded,
-                  label: 'Other',
-                  size: '12 MB',
-                  color: Colors.grey,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (context) => _StorageDetailsSheet(theme: theme, isDark: isDark),
     );
   }
 
@@ -1169,6 +1122,179 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
+      ),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+}
+
+class _StorageDetailsSheet extends ConsumerWidget {
+  final ThemeData theme;
+  final bool isDark;
+
+  const _StorageDetailsSheet({
+    required this.theme,
+    required this.isDark,
+  });
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fileStatsAsync = ref.watch(fileStatsProvider);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              'Storage Usage',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            fileStatsAsync.when(
+              data: (stats) {
+                final imageSize = stats.byType['image']?.size ?? 0;
+                final pdfSize = stats.byType['pdf']?.size ?? 0;
+                final videoSize = stats.byType['video']?.size ?? 0;
+                final otherSize = stats.byType['other']?.size ?? 0;
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _StorageItem(
+                      icon: Icons.image_rounded,
+                      label: 'Images',
+                      size: _formatBytes(imageSize),
+                      color: theme.colorScheme.primary,
+                      isDark: isDark,
+                    ),
+                    _StorageItem(
+                      icon: Icons.picture_as_pdf_rounded,
+                      label: 'PDFs',
+                      size: _formatBytes(pdfSize),
+                      color: theme.colorScheme.primary,
+                      isDark: isDark,
+                    ),
+                    _StorageItem(
+                      icon: Icons.videocam_rounded,
+                      label: 'Videos',
+                      size: _formatBytes(videoSize),
+                      color: theme.colorScheme.primary,
+                      isDark: isDark,
+                    ),
+                    _StorageItem(
+                      icon: Icons.folder_rounded,
+                      label: 'Other',
+                      size: _formatBytes(otherSize),
+                      color: Colors.grey,
+                      isDark: isDark,
+                    ),
+                  ],
+                );
+              },
+              loading: () => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _StorageItem(
+                    icon: Icons.image_rounded,
+                    label: 'Images',
+                    size: '-',
+                    color: theme.colorScheme.primary,
+                    isDark: isDark,
+                  ),
+                  _StorageItem(
+                    icon: Icons.picture_as_pdf_rounded,
+                    label: 'PDFs',
+                    size: '-',
+                    color: theme.colorScheme.primary,
+                    isDark: isDark,
+                  ),
+                  _StorageItem(
+                    icon: Icons.videocam_rounded,
+                    label: 'Videos',
+                    size: '-',
+                    color: theme.colorScheme.primary,
+                    isDark: isDark,
+                  ),
+                  _StorageItem(
+                    icon: Icons.folder_rounded,
+                    label: 'Other',
+                    size: '-',
+                    color: Colors.grey,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+              error: (_, __) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _StorageItem(
+                    icon: Icons.image_rounded,
+                    label: 'Images',
+                    size: '0 B',
+                    color: theme.colorScheme.primary,
+                    isDark: isDark,
+                  ),
+                  _StorageItem(
+                    icon: Icons.picture_as_pdf_rounded,
+                    label: 'PDFs',
+                    size: '0 B',
+                    color: theme.colorScheme.primary,
+                    isDark: isDark,
+                  ),
+                  _StorageItem(
+                    icon: Icons.videocam_rounded,
+                    label: 'Videos',
+                    size: '0 B',
+                    color: theme.colorScheme.primary,
+                    isDark: isDark,
+                  ),
+                  _StorageItem(
+                    icon: Icons.folder_rounded,
+                    label: 'Other',
+                    size: '0 B',
+                    color: Colors.grey,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

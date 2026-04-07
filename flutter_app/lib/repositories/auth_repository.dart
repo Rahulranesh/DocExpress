@@ -17,7 +17,8 @@ class AuthRepository {
   final ApiService _apiService;
   final StorageService _storageService;
 
-  static const Duration _authRequestTimeout = Duration(seconds: 30);
+  // Increased timeout for auth requests (backend cold start can be slow)
+  static const Duration _authRequestTimeout = Duration(seconds: 90);
 
   AuthRepository({
     required ApiService apiService,

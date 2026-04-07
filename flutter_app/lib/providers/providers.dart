@@ -194,9 +194,22 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       debugPrint('❌ [AUTH] Login failed: $e');
+      
+      // Better error messages for timeout
+      String errorMsg = e.toString();
+      if (errorMsg.contains('timeout') || errorMsg.contains('TIMEOUT')) {
+        errorMsg = 'Connection timeout. The server might be starting up (this can take 30-60 seconds on first request). Please try again.';
+      } else {
+        errorMsg = errorMsg
+            .replaceAll('Exception: ', '')
+            .replaceAll('ApiException: ', '')
+            .replaceAll('AppException: ', '')
+            .trim();
+      }
+      
       state = state.copyWith(
         isLoading: false,
-        error: e.toString().replaceAll('Exception: ', ''),
+        error: errorMsg,
       );
       return false;
     }
@@ -240,12 +253,19 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       debugPrint('❌ [AUTH] Registration failed: $e');
       String errorMsg = e.toString();
-      // Remove exception class name prefixes
-      errorMsg = errorMsg
-          .replaceAll('Exception: ', '')
-          .replaceAll('ApiException: ', '')
-          .replaceAll('AppException: ', '')
-          .trim();
+      
+      // Better error messages for timeout
+      if (errorMsg.contains('timeout') || errorMsg.contains('TIMEOUT')) {
+        errorMsg = 'Connection timeout. The server might be starting up (this can take 30-60 seconds on first request). Please try again.';
+      } else {
+        // Remove exception class name prefixes
+        errorMsg = errorMsg
+            .replaceAll('Exception: ', '')
+            .replaceAll('ApiException: ', '')
+            .replaceAll('AppException: ', '')
+            .trim();
+      }
+      
       debugPrint('❌ [AUTH] Final error message: $errorMsg');
       state = state.copyWith(
         isLoading: false,
@@ -1115,8 +1135,8 @@ final appSettingsNotifierProvider =
     StateNotifierProvider<AppSettingsNotifier, AppSettings>((ref) {
   final storageService = ref.watch(storageServiceProvider);
   final notifier = AppSettingsNotifier(storageService);
-  // Load settings on creation
-  notifier.loadSettings();
+  // Don't load settings immediately - let screens request them when needed
+  // This speeds up app startup
   return notifier;
 });
 

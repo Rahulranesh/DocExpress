@@ -1,7 +1,7 @@
 name: docxpress
 description: All-in-one document scanner, converter, compressor, and note-taking app.
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.3+10
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -43,6 +43,7 @@ dependencies:
   share_plus: ^7.2.1
   open_filex: ^4.3.4
   mime: ^1.0.5
+  image_gallery_saver: ^2.0.3
 
   # Image Processing (for scan mode)
   image: ^4.1.4
@@ -76,6 +77,9 @@ dependencies:
   pdf: ^3.11.3
   archive: ^3.4.10
   syncfusion_flutter_pdf: ^24.1.41
+  
+  # AdMob
+  google_mobile_ads: ^5.1.0
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "978316310392",
+    "project_id": "docxpress-4ca3f",
+    "storage_bucket": "docxpress-4ca3f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978316310392:android:f0bc500c3ab02e053e7a8d",
+        "android_client_info": {
+          "package_name": "com.ranesh.docxpress"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "978316310392-lf8gqn4h300iai1jj56hpsjec0mfp184.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ranesh.docxpress",
+            "certificate_hash": "95d4fc2570ffeb28201abba867ca320f6645f61a"
+          }
+        },
+        {
+          "client_id": "978316310392-ei65rouno7j4tes279jc9j805qhpurg1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfIhZBtJ2PoLSTDdZovRm_E1SdLZfey3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "978316310392-ei65rouno7j4tes279jc9j805qhpurg1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

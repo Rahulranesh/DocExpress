@@ -10,6 +10,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/banner_ad_widget.dart';
 
 class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
@@ -181,7 +182,12 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         onRefresh: () async {
           ref.read(notesListProvider.notifier).loadNotes(refresh: true);
         },
-        child: _buildBody(notesState),
+        child: Column(
+          children: [
+            Expanded(child: _buildBody(notesState)),
+            const BannerAdWidget(),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.openNoteEditor(),

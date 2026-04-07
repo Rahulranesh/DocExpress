@@ -15,7 +15,9 @@ import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/permission_service.dart';
 import '../../services/storage_paths.dart';
+import '../../services/media_scanner_service.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/banner_ad_widget.dart';
 
 class FilesScreen extends ConsumerStatefulWidget {
   const FilesScreen({super.key});
@@ -165,6 +167,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                 child: _buildFileContent(filesState, theme, isDark),
               ),
             ),
+            
+            // Banner Ad
+            const BannerAdWidget(),
           ],
         ),
       ),
@@ -1018,10 +1023,18 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
 
       final fileSize = await savedFile.length();
       print('✅ File downloaded successfully: ${file.originalName} (${fileSize} bytes)');
+      
+      // Scan file to make it visible in gallery/file managers
+      final scanSuccess = await MediaScannerService.scanFile(savePath, file.mimeType);
+      if (scanSuccess) {
+        print('✅ File scanned and visible in device storage');
+      }
+      
       await _showDownloadSavedPrompt(
         fileName: file.originalName,
         savePath: savePath,
         fileSize: fileSize,
+        mimeType: file.mimeType,
       );
     } catch (e) {
       print('❌ Download error: $e');
@@ -1033,17 +1046,23 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
     required String fileName,
     required String savePath,
     required int fileSize,
+    required String mimeType,
   }) async {
     final displayPath = await StoragePaths.getDisplayPath();
+    
+    // Customize message based on file type
+    String message = 'Saved $fileName (${_formatFileSize(fileSize)}) to $displayPath';
+    if (MediaScannerService.shouldSaveToGallery(mimeType)) {
+      message = 'Saved $fileName (${_formatFileSize(fileSize)}) to Gallery and Downloads';
+    }
+    
     if (!mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        content: Text(
-          'Saved $fileName (${_formatFileSize(fileSize)}) to $displayPath',
-        ),
+        content: Text(message),
         backgroundColor: AppTheme.successColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

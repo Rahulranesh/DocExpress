@@ -58,6 +58,15 @@ class OfflineConversionRepository {
     );
 
     try {
+      // Calculate total input size
+      int totalInputSize = 0;
+      for (final filePath in filePaths) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          totalInputSize += await file.length();
+        }
+      }
+      
       final outputPath = await _pdfService.imagesToPdf(
         imagePaths: filePaths,
         title: title,
@@ -66,6 +75,9 @@ class OfflineConversionRepository {
 
       // Save to file service
       final savedFile = await _fileService.saveFile(File(outputPath));
+      
+      // Get result file size from saved file
+      final resultSize = savedFile.size;
 
       // Update job as completed
       await _jobsService.updateJob(
@@ -80,6 +92,8 @@ class OfflineConversionRepository {
         success: true,
         outputPath: savedFile.path,
         fileId: savedFile.id,
+        originalSize: totalInputSize,
+        compressedSize: resultSize,
         message: 'Successfully converted ${filePaths.length} images to PDF',
       );
     } catch (e) {
@@ -216,6 +230,9 @@ class OfflineConversionRepository {
     );
 
     try {
+      // Get original file size
+      final originalSize = await File(filePath).length();
+      
       final outputPath = await _imageService.convertFormat(
         inputPath: filePath,
         targetFormat: targetFormat,
@@ -225,6 +242,9 @@ class OfflineConversionRepository {
           '✅ [LOCAL PROCESSING] Conversion: Image format converted successfully');
 
       final savedFile = await _fileService.saveFile(File(outputPath));
+      
+      // Get result file size from saved file
+      final resultSize = savedFile.size;
 
       await _jobsService.updateJob(
         job.id,
@@ -238,6 +258,8 @@ class OfflineConversionRepository {
         success: true,
         outputPath: savedFile.path,
         fileId: savedFile.id,
+        originalSize: originalSize,
+        compressedSize: resultSize,
         message: 'Successfully converted to $targetFormat',
       );
     } catch (e) {
@@ -490,6 +512,15 @@ class OfflineConversionRepository {
     );
 
     try {
+      // Calculate total input size
+      int totalInputSize = 0;
+      for (final filePath in filePaths) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          totalInputSize += await file.length();
+        }
+      }
+
       final outputPath = await _imageService.mergeImages(
         inputPaths: filePaths,
         vertical: vertical,
@@ -497,6 +528,9 @@ class OfflineConversionRepository {
       );
 
       final savedFile = await _fileService.saveFile(File(outputPath));
+      
+      // Get result file size from saved file
+      final resultSize = savedFile.size;
 
       await _jobsService.updateJob(
         job.id,
@@ -510,6 +544,8 @@ class OfflineConversionRepository {
         success: true,
         outputPath: savedFile.path,
         fileId: savedFile.id,
+        originalSize: totalInputSize,
+        compressedSize: resultSize,
         message: 'Successfully merged ${filePaths.length} images',
       );
     } catch (e) {
@@ -597,12 +633,24 @@ class OfflineConversionRepository {
     );
 
     try {
+      // Calculate total input size
+      int totalInputSize = 0;
+      for (final filePath in paths) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          totalInputSize += await file.length();
+        }
+      }
+
       final outputPath = await _pdfService.mergePdfs(
         pdfPaths: paths,
         title: title,
       );
 
       final savedFile = await _fileService.saveFile(File(outputPath));
+      
+      // Get result file size from saved file
+      final resultSize = savedFile.size;
 
       await _jobsService.updateJob(
         job.id,
@@ -616,6 +664,8 @@ class OfflineConversionRepository {
         success: true,
         outputPath: savedFile.path,
         fileId: savedFile.id,
+        originalSize: totalInputSize,
+        compressedSize: resultSize,
         message: 'Successfully merged ${paths.length} PDFs',
       );
     } catch (e) {
@@ -664,6 +714,9 @@ class OfflineConversionRepository {
     );
 
     try {
+      // Get original file size
+      final originalSize = await File(actualPath).length();
+
       final outputPaths = await _pdfService.splitPdf(
         pdfPath: actualPath,
         pages: pages,
@@ -679,12 +732,16 @@ class OfflineConversionRepository {
       final savedFiles = <String>[];
       String? firstFileId;
       String? firstPath;
+      int totalResultSize = 0;
 
       for (final outputPath in outputPaths) {
         final savedFile = await _fileService.saveFile(File(outputPath));
         savedFiles.add(savedFile.name);
         firstFileId ??= savedFile.id;
         firstPath ??= savedFile.path;
+        
+        // Use saved file size
+        totalResultSize += savedFile.size;
       }
 
       await _jobsService.updateJob(
@@ -698,6 +755,8 @@ class OfflineConversionRepository {
       return ConversionResult(
         success: true,
         outputPath: firstPath,
+        originalSize: originalSize,
+        compressedSize: totalResultSize,
         fileId: firstFileId,
         message: 'Successfully split PDF into ${savedFiles.length} file(s)',
       );
@@ -848,12 +907,18 @@ class OfflineConversionRepository {
         if (outputPath != null) {
           // Save to file service
           final savedFile = await _fileService.saveFile(File(outputPath));
+          
+          // Get file sizes
+          final originalSize = await File(actualPath).length();
+          final resultSize = savedFile.size;
 
           debugPrint('✅ [BACKEND] Document converted successfully');
           return ConversionResult(
             success: true,
             outputPath: savedFile.path,
             fileId: savedFile.id,
+            originalSize: originalSize,
+            compressedSize: resultSize,
             message: 'Successfully converted to ${target.toUpperCase()}',
           );
         }
@@ -884,6 +949,9 @@ class OfflineConversionRepository {
     );
 
     try {
+      // Get original file size
+      final originalSize = await File(actualPath).length();
+      
       String outputPath;
 
       // Image to PDF
@@ -922,6 +990,9 @@ class OfflineConversionRepository {
 
       // Save to file service
       final savedFile = await _fileService.saveFile(File(outputPath));
+      
+      // Get result file size from saved file
+      final resultSize = savedFile.size;
 
       await _jobsService.updateJob(
         job.id,
@@ -936,6 +1007,8 @@ class OfflineConversionRepository {
         success: true,
         outputPath: savedFile.path,
         fileId: savedFile.id,
+        originalSize: originalSize,
+        compressedSize: resultSize,
         message: 'Successfully converted to ${target.toUpperCase()}',
       );
     } catch (e) {

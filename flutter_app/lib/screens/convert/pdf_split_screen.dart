@@ -162,10 +162,16 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
         });
 
         // Show success dialog with options
+        final inputSize = result.originalSize ?? 0;
+        final resultSize = result.compressedSize ?? 0;
+        final message = result.compressedSize != null
+            ? 'Your PDF has been split. Total result size: ${_formatFileSize(resultSize)} (from ${_formatFileSize(inputSize)})'
+            : 'Your PDF has been split. View the result in Files.';
+        
         final dialogResult = await ConversionSuccessDialog.show(
           context,
           title: 'PDF Split Complete!',
-          message: 'Your PDF has been split. View the result in Files.',
+          message: message,
           jobId: result.fileId,
         );
 
@@ -209,6 +215,15 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
         .toString()
         .replaceAll('Exception: ', '')
         .replaceAll('ApiException: ', '');
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   void _showSnackBar(String message, {required bool isSuccess}) {

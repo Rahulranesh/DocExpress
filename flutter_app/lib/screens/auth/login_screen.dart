@@ -402,6 +402,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         begin: 0.2,
                         duration: 500.ms,
                       ),
+                  
+                  // Info message for first-time users
+                  if (authState.isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 20,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'First login may take 30-60 seconds as the server starts up. Please wait...',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 2000.ms, duration: 500.ms),
 
                   const SizedBox(height: 32),
 

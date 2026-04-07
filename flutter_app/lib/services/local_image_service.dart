@@ -334,9 +334,10 @@ class LocalImageService {
     );
 
     final outputDir = await _getOutputDir();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
     final outputPath = path.join(
       outputDir.path,
-      'merged_${_uuid.v4()}.jpg',
+      'merged_images_$timestamp.jpg',
     );
 
     await File(outputPath).writeAsBytes(outputBytes);

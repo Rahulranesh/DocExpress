@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../../services/ad_counter_service.dart';
 
 class ImageCompressScreen extends ConsumerStatefulWidget {
   const ImageCompressScreen({super.key});
@@ -135,6 +136,9 @@ class _ImageCompressScreenState extends ConsumerState<ImageCompressScreen> {
         );
 
         if (!mounted) return;
+        
+        // Show interstitial ad after compression
+        await AdCounterService().incrementAndShowAd();
 
         switch (result) {
           case 'view_job':

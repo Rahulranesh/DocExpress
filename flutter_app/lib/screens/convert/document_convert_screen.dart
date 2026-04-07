@@ -10,6 +10,7 @@ import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 import '../../repositories/offline_conversion_repository.dart';
+import '../../services/ad_counter_service.dart';
 
 class DocumentConvertScreen extends ConsumerStatefulWidget {
   final String conversionType;
@@ -353,15 +354,31 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
         });
 
         // Show success dialog with options
+        String message = 'Your files have been converted. You can view them in Files or convert more.';
+        
+        // Add size information if available
+        if (result != null && result.compressedSize != null) {
+          final totalInputSize = _selectedFiles.fold<int>(0, (sum, file) => sum + file.size);
+          final resultSize = result.compressedSize!;
+          
+          if (widget.conversionType == 'IMAGE_MERGE') {
+            message = 'Images merged successfully. Result: ${_formatFileSize(resultSize)} (from ${_formatFileSize(totalInputSize)})';
+          } else {
+            message = 'Conversion complete. Result: ${_formatFileSize(resultSize)}';
+          }
+        }
+        
         final dialogResult = await ConversionSuccessDialog.show(
           context,
           title: 'Conversion Complete!',
-          message:
-              'Your files have been converted. You can view them in Files or convert more.',
+          message: message,
           jobId: null,
         );
 
         if (!mounted) return;
+        
+        // Show interstitial ad after conversion
+        await AdCounterService().incrementAndShowAd();
 
         switch (dialogResult) {
           case 'view_job':

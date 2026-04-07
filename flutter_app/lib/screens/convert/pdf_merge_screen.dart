@@ -101,10 +101,16 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
         });
 
         // Show success dialog with options
+        final totalInputSize = _selectedPdfs.fold<int>(0, (sum, pdf) => sum + pdf.size);
+        final resultSize = result.compressedSize ?? 0;
+        final message = result.compressedSize != null
+            ? 'Your PDFs have been merged. Result: ${_formatFileSize(resultSize)} (from ${_formatFileSize(totalInputSize)})'
+            : 'Your PDFs have been merged. View the result in Files.';
+        
         final dialogResult = await ConversionSuccessDialog.show(
           context,
           title: 'PDF Merge Complete!',
-          message: 'Your PDFs have been merged. View the result in Files.',
+          message: message,
           jobId: result.fileId,
         );
 
