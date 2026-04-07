@@ -9,6 +9,7 @@ import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/banner_ad_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -232,6 +233,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildStorageStats(context),
+
+                  const SizedBox(height: 20),
+                  
+                  // Banner Ad
+                  const BannerAdWidget(),
 
                   const SizedBox(height: 100),
                 ]),

@@ -17,6 +17,7 @@ import '../../services/permission_service.dart';
 import '../../services/storage_paths.dart';
 import '../../services/media_scanner_service.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/banner_ad_widget.dart';
 
 class FilesScreen extends ConsumerStatefulWidget {
   const FilesScreen({super.key});
@@ -166,6 +167,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
                 child: _buildFileContent(filesState, theme, isDark),
               ),
             ),
+            
+            // Banner Ad
+            const BannerAdWidget(),
           ],
         ),
       ),

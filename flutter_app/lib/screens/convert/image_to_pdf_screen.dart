@@ -10,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../../services/ad_counter_service.dart';
 
 class ImageToPdfScreen extends ConsumerStatefulWidget {
   const ImageToPdfScreen({super.key});
@@ -109,6 +110,9 @@ class _ImageToPdfScreenState extends ConsumerState<ImageToPdfScreen> {
           );
 
           if (!mounted) return;
+          
+          // Show interstitial ad after conversion
+          await AdCounterService().incrementAndShowAd();
 
           switch (dialogResult) {
             case 'view_job':

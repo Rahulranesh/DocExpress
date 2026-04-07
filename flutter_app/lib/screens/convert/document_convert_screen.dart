@@ -10,6 +10,7 @@ import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 import '../../repositories/offline_conversion_repository.dart';
+import '../../services/ad_counter_service.dart';
 
 class DocumentConvertScreen extends ConsumerStatefulWidget {
   final String conversionType;
@@ -375,6 +376,9 @@ class _DocumentConvertScreenState extends ConsumerState<DocumentConvertScreen> {
         );
 
         if (!mounted) return;
+        
+        // Show interstitial ad after conversion
+        await AdCounterService().incrementAndShowAd();
 
         switch (dialogResult) {
           case 'view_job':

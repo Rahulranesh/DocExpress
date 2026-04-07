@@ -8,6 +8,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'core/router/app_router.dart';
 import 'providers/theme_provider.dart';
 import 'services/offline_service_manager.dart';
+import 'services/admob_service.dart';
+import 'services/ad_counter_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +17,12 @@ void main() async {
   // Initialize Hive for local storage
   await Hive.initFlutter();
   await Hive.openBox('settings');
+
+  // Initialize AdMob
+  await AdMobService.initialize();
+  
+  // Initialize Ad Counter Service
+  await AdCounterService().initialize();
 
   // Initialize offline services in background to avoid blocking first frame
   unawaited(
