@@ -111,6 +111,40 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
     });
 
     try {
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => WillPopScope(
+            onWillPop: () async => false,
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Reordering PDF Pages...',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please wait',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       final filesRepo = ref.read(filesRepositoryProvider);
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
@@ -126,12 +160,21 @@ class _PdfReorderScreenState extends ConsumerState<PdfReorderScreen> {
         pageOrder: pageOrder,
       );
 
+      // Dismiss loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
       _showSnackBar('PDF pages reordering started!', isSuccess: true);
 
       if (mounted) {
         context.go('/jobs');
       }
     } on Exception catch (e) {
+      // Dismiss loading dialog if still showing
+      if (mounted && _isProcessing) {
+        Navigator.of(context).pop();
+      }
       _showSnackBar('Failed to reorder PDF: ${_getErrorMessage(e)}',
           isSuccess: false);
     } finally {

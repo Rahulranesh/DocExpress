@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../../services/server_wakeup_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +22,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _serverWakingUp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Wake up the auth server as soon as user lands on login screen
+    _wakeUpServer();
+  }
+
+  Future<void> _wakeUpServer() async {
+    setState(() {
+      _serverWakingUp = true;
+    });
+    
+    debugPrint('🚀 [LOGIN] Waking up auth server in background...');
+    await ServerWakeupService().wakeUpAuthServerOnly();
+    
+    if (mounted) {
+      setState(() {
+        _serverWakingUp = false;
+      });
+    }
+    debugPrint('✅ [LOGIN] Auth server ready!');
+  }
 
   @override
   void dispose() {
@@ -235,6 +260,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.disabled, // Don't validate until submit
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -403,8 +429,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         duration: 500.ms,
                       ),
                   
-                  // Info message for first-time users
-                  if (authState.isLoading)
+                  // Server status indicator (only show while waking up)
+                  if (_serverWakingUp)
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
                       child: Container(
@@ -418,15 +444,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 20,
-                              color: Colors.blue,
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.blue,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'First login may take 30-60 seconds as the server starts up. Please wait...',
+                                'Waking up server... This may take 20-30 seconds on first login.',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.blue,
                                 ),
@@ -435,10 +466,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ],
                         ),
                       ),
-                    ).animate().fadeIn(delay: 2000.ms, duration: 500.ms),
+                    ).animate().fadeIn(duration: 500.ms),
 
                   const SizedBox(height: 32),
 
+                  // TODO: Google Sign-In - Commented out for testing
+                  // Need to generate SHA-1 key from android folder and configure in Firebase Console
+                  // Run: cd android && ./gradlew signingReport
+                  // Then add SHA-1 to Firebase Console -> Project Settings -> Your apps -> Android app
+                  
+                  /* 
                   // Divider with text
                   Row(
                     children: [
@@ -485,6 +522,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ).animate().fadeIn(delay: 725.ms, duration: 500.ms),
 
                   const SizedBox(height: 20),
+                  */
 
                   // Register link
                   Center(

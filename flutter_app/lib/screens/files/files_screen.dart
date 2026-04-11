@@ -168,18 +168,11 @@ class _FilesScreenState extends ConsumerState<FilesScreen>
               ),
             ),
             
-            // Banner Ad
+            // Banner Ad at bottom
             const BannerAdWidget(),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _uploadFiles,
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.cloud_upload_rounded),
-        label: const Text('Upload'),
-      ).animate().scale(delay: 300.ms, duration: 300.ms),
     );
   }
 

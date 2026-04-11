@@ -1,18 +1,27 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/router/app_router.dart';
+import 'firebase_options.dart';
 import 'providers/theme_provider.dart';
 import 'services/offline_service_manager.dart';
 import 'services/admob_service.dart';
 import 'services/ad_counter_service.dart';
+import 'services/server_wakeup_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Initialize Hive for local storage
   await Hive.initFlutter();
@@ -23,6 +32,21 @@ void main() async {
   
   // Initialize Ad Counter Service
   await AdCounterService().initialize();
+
+  // Initialize Notification Service
+  unawaited(
+    NotificationService().initialize().catchError((error, stackTrace) {
+      debugPrint('⚠️ [STARTUP] Notification service init failed: $error');
+    }),
+  );
+
+  // Wake up backend servers in background (don't wait)
+  // This ensures servers are ready when user tries to login
+  unawaited(
+    ServerWakeupService().wakeUpServers().catchError((error, stackTrace) {
+      debugPrint('⚠️ [STARTUP] Server wake-up failed: $error');
+    }),
+  );
 
   // Initialize offline services in background to avoid blocking first frame
   unawaited(

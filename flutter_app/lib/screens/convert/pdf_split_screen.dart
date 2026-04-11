@@ -119,6 +119,40 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
     });
 
     try {
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => WillPopScope(
+            onWillPop: () async => false,
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Splitting PDF...',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please wait',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
       // Determine pages based on split mode
@@ -156,6 +190,11 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
         throw Exception(result.message);
       }
 
+      // Dismiss loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -191,6 +230,10 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
         }
       }
     } on Exception catch (e) {
+      // Dismiss loading dialog if still showing
+      if (mounted && _isProcessing) {
+        Navigator.of(context).pop();
+      }
       _showSnackBar('Failed to split PDF: ${_getErrorMessage(e)}',
           isSuccess: false);
       if (mounted) {

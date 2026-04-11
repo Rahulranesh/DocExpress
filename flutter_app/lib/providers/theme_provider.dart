@@ -8,7 +8,7 @@ import '../models/models.dart';
 
 /// Theme mode notifier - manages theme state
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system) {
+  ThemeModeNotifier() : super(ThemeMode.light) {  // Changed from ThemeMode.system to ThemeMode.light
     _loadThemeMode();
   }
 
@@ -16,11 +16,11 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   Future<void> _loadThemeMode() async {
     try {
       final box = Hive.box('settings');
-      final index = box.get(AppConstants.themeKey, defaultValue: 2);
+      final index = box.get(AppConstants.themeKey, defaultValue: 0);  // Changed from 2 to 0 (light mode)
       final themeSetting = ThemeModeSetting.values[index];
       state = _themeSettingToThemeMode(themeSetting);
     } catch (e) {
-      state = ThemeMode.system;
+      state = ThemeMode.light;  // Changed from ThemeMode.system to ThemeMode.light
     }
   }
 

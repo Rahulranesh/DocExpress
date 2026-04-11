@@ -10,6 +10,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/banner_ad_widget.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -119,6 +120,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 child: _buildJobContent(jobsState, theme, isDark),
               ),
             ),
+
+            // Banner Ad at bottom
+            const BannerAdWidget(),
           ],
         ),
       ),

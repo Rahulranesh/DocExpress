@@ -100,6 +100,40 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
     });
 
     try {
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => WillPopScope(
+            onWillPop: () async => false,
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Compressing PDFs...',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please wait',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       final compressionRepo = ref.read(compressionRepositoryProvider);
       int successCount = 0;
 
@@ -119,6 +153,11 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
             _progress = (i + 1) / _selectedFiles.length;
           });
         }
+      }
+
+      // Dismiss loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
       }
 
       if (mounted) {
@@ -155,6 +194,10 @@ class _PdfCompressScreenState extends ConsumerState<PdfCompressScreen> {
         }
       }
     } on Exception catch (e) {
+      // Dismiss loading dialog if still showing
+      if (mounted && _isCompressing) {
+        Navigator.of(context).pop();
+      }
       _showSnackBar('Compression failed: ${_getErrorMessage(e)}',
           isSuccess: false);
       if (mounted) {

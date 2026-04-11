@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
+import '../../services/server_wakeup_service.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -24,6 +25,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _serverWakingUp = false;
+  bool _formSubmitted = false; // Track if form has been submitted
+
+  @override
+  void initState() {
+    super.initState();
+    // Wake up the auth server as soon as user lands on register screen
+    _wakeUpServer();
+  }
+
+  Future<void> _wakeUpServer() async {
+    setState(() {
+      _serverWakingUp = true;
+    });
+    
+    debugPrint('🚀 [REGISTER] Waking up auth server in background...');
+    await ServerWakeupService().wakeUpAuthServerOnly();
+    
+    if (mounted) {
+      setState(() {
+        _serverWakingUp = false;
+      });
+    }
+    debugPrint('✅ [REGISTER] Auth server ready!');
+  }
 
   @override
   void dispose() {
@@ -35,6 +61,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
+    setState(() {
+      _formSubmitted = true; // Mark form as submitted
+    });
+    
     if (!_formKey.currentState!.validate()) return;
 
     // Clear any previous error
@@ -125,6 +155,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.disabled, // Don't validate until submit
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -214,23 +245,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       fillColor: isDark
                           ? Colors.white.withOpacity(0.05)
                           : Colors.grey.withOpacity(0.05),
-                      // Show error border if there's an email-related error
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: authState.error != null && 
-                          (authState.error!.toLowerCase().contains('email') ||
-                           authState.error!.toLowerCase().contains('registered'))
-                          ? const BorderSide(color: Colors.red, width: 2)
-                          : BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: authState.error != null && 
-                          (authState.error!.toLowerCase().contains('email') ||
-                           authState.error!.toLowerCase().contains('registered'))
-                          ? const BorderSide(color: Colors.red, width: 2)
-                          : BorderSide.none,
-                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -247,8 +261,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         duration: 500.ms,
                       ),
 
-                  // Show inline error if email-related
-                  if (authState.error != null && 
+                  // Show inline error if email-related AND form has been submitted
+                  if (_formSubmitted && 
+                      authState.error != null && 
                       (authState.error!.toLowerCase().contains('email') ||
                        authState.error!.toLowerCase().contains('registered')))
                     Padding(
@@ -383,8 +398,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         duration: 500.ms,
                       ),
                   
-                  // Info message for first-time users
-                  if (authState.isLoading)
+                  // Server status indicator (only show while waking up)
+                  if (_serverWakingUp)
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
                       child: Container(
@@ -398,15 +413,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 20,
-                              color: Colors.blue,
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.blue,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'First registration may take 30-60 seconds as the server starts up. Please wait...',
+                                'Preparing server... This happens once.',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.blue,
                                 ),
@@ -415,7 +435,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ],
                         ),
                       ),
-                    ).animate().fadeIn(delay: 2000.ms, duration: 500.ms),
+                    ).animate().fadeIn(duration: 500.ms),
 
                   const SizedBox(height: 24),
 

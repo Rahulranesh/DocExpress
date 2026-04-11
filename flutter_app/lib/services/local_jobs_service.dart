@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'notification_service.dart';
 
 /// Local Job model for Hive storage
 class LocalJob {
@@ -162,7 +163,37 @@ class LocalJobsService {
 
     await _jobsBox.put(id, updatedJob.toMap());
     debugPrint('✅ [LOCAL STORAGE] Jobs: Job updated - status: ${updatedJob.status}');
+
+    // Send notification for job completion or failure
+    if (status == 'completed') {
+      await NotificationService().showJobCompletionNotification(
+        jobType: _formatJobType(updatedJob.type),
+        fileName: updatedJob.inputFileName ?? 'Unknown file',
+        jobId: updatedJob.id,
+        fileId: updatedJob.outputFileId,
+      );
+    } else if (status == 'failed') {
+      await NotificationService().showJobFailureNotification(
+        jobType: _formatJobType(updatedJob.type),
+        fileName: updatedJob.inputFileName ?? 'Unknown file',
+        error: error,
+        jobId: updatedJob.id,
+      );
+    }
+
     return updatedJob;
+  }
+
+  /// Format job type for display
+  String _formatJobType(String type) {
+    // Convert snake_case or camelCase to Title Case
+    return type
+        .replaceAllMapped(RegExp(r'[_-]'), (match) => ' ')
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
+        .join(' ');
   }
 
   /// Get all jobs

@@ -10,6 +10,7 @@ import '../../providers/theme_provider.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/banner_ad_widget.dart';
+import '../../widgets/theme_guide_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -32,8 +33,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         });
         // Trigger data loading after UI is displayed
         _loadData();
+        // Show theme guide on first launch
+        _showThemeGuideIfNeeded();
       }
     });
+  }
+
+  Future<void> _showThemeGuideIfNeeded() async {
+    // Delay to let the home screen render first
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mounted) {
+      await ThemeGuideDialog.show(context);
+    }
   }
 
   Future<void> _loadData() async {
@@ -246,11 +257,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.openScan(),
-        icon: const Icon(Icons.document_scanner_rounded),
-        label: const Text('Scan'),
-      ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.5),
     );
   }
 

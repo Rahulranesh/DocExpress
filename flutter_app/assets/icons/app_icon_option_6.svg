@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main Background Gradient (Sky Blue to Deep Blue) -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0EA5E9;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0284C7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0369A1;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Thunder Gradient (Cyan to Light Teal) -->
+    <linearGradient id="thunderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFEB3B;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#FDD835;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#2DD4BF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- DX Text Gradient (White with glow) -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#E0F2FE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#BAE6FD;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Glow Effect -->
+    <radialGradient id="glowGrad" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#2DD4BF;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#06B6D4;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#0EA5E9;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- Thunder Glow (Yellow to Cyan) -->
+    <radialGradient id="thunderGlowGrad" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#FFEB3B;stop-opacity:0.6" />
+      <stop offset="50%" style="stop-color:#2DD4BF;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- Shadow for depth -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.5"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Strong glow filter for thunder -->
+    <filter id="thunderGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="10" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Text glow -->
+    <filter id="textGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  
+  <!-- Decorative circles for depth -->
+  <circle cx="100" cy="100" r="80" fill="url(#glowGrad)" opacity="0.3"/>
+  <circle cx="412" cy="412" r="100" fill="url(#glowGrad)" opacity="0.3"/>
+  
+  <!-- Subtle grid pattern for tech feel -->
+  <g opacity="0.08">
+    <line x1="0" y1="128" x2="512" y2="128" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="256" x2="512" y2="256" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="384" x2="512" y2="384" stroke="white" stroke-width="1"/>
+    <line x1="128" y1="0" x2="128" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="256" y1="0" x2="256" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="384" y1="0" x2="384" y2="512" stroke="white" stroke-width="1"/>
+  </g>
+  
+  <!-- Thunder glow background -->
+  <circle cx="256" cy="256" r="180" fill="url(#thunderGlowGrad)" opacity="0.4"/>
+  
+  <!-- "D" Letter - LEFT side (Bold, with gradient and glow) -->
+  <g filter="url(#textGlow)">
+    <text x="140" y="310" 
+          font-family="Arial, sans-serif" 
+          font-size="200" 
+          font-weight="900" 
+          fill="url(#textGrad)" 
+          text-anchor="middle">D</text>
+  </g>
+  
+  <!-- MAIN THUNDER/LIGHTNING BOLT - CENTER (Large, with strong glow) -->
+  <g filter="url(#thunderGlow)">
+    <path d="M 280 120 L 220 256 L 265 256 L 232 392 L 320 240 L 275 240 Z" 
+          fill="url(#thunderGrad)" 
+          stroke="#FFFFFF" 
+          stroke-width="6" 
+          stroke-linejoin="round"/>
+  </g>
+  
+  <!-- "X" Letter - RIGHT side (Bold, with gradient and glow) -->
+  <g filter="url(#textGlow)">
+    <text x="372" y="310" 
+          font-family="Arial, sans-serif" 
+          font-size="200" 
+          font-weight="900" 
+          fill="url(#textGrad)" 
+          text-anchor="middle">X</text>
+  </g>
+  
+  <!-- Energy particles around the composition -->
+  <g fill="#2DD4BF" opacity="0.8">
+    <circle cx="120" cy="180" r="5"/>
+    <circle cx="392" cy="180" r="5"/>
+    <circle cx="120" cy="340" r="4"/>
+    <circle cx="392" cy="340" r="4"/>
+    <circle cx="256" cy="100" r="4"/>
+    <circle cx="256" cy="420" r="4"/>
+  </g>
+  
+  <!-- Highlight sparkles on thunder -->
+  <g fill="white" opacity="0.95">
+    <circle cx="275" cy="135" r="4"/>
+    <circle cx="235" cy="250" r="3"/>
+    <circle cx="315" cy="245" r="3"/>
+    <circle cx="240" cy="380" r="4"/>
+  </g>
+  
+  <!-- Electric arcs connecting letters to thunder -->
+  <g stroke="#2DD4BF" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round">
+    <path d="M 180 260 Q 210 250 230 256"/>
+    <path d="M 332 260 Q 302 250 282 256"/>
+  </g>
+  
+  <!-- Speed lines for dynamic feel -->
+  <g stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.15">
+    <line x1="60" y1="256" x2="120" y2="256"/>
+    <line x1="392" y1="256" x2="452" y2="256"/>
+    <line x1="256" y1="60" x2="256" y2="100"/>
+    <line x1="256" y1="412" x2="256" y2="452"/>
+  </g>
+  
+  <!-- Corner accent lines -->
+  <g stroke="url(#thunderGrad)" stroke-width="4" stroke-linecap="round" opacity="0.6">
+    <line x1="80" y1="80" x2="120" y2="80"/>
+    <line x1="80" y1="80" x2="80" y2="120"/>
+    <line x1="432" y1="80" x2="392" y2="80"/>
+    <line x1="432" y1="80" x2="432" y2="120"/>
+    <line x1="80" y1="432" x2="120" y2="432"/>
+    <line x1="80" y1="432" x2="80" y2="392"/>
+    <line x1="432" y1="432" x2="392" y2="432"/>
+    <line x1="432" y1="432" x2="432" y2="392"/>
+  </g>
+</svg>

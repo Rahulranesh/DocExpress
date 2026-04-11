@@ -189,11 +189,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.openNoteEditor(),
-        icon: const Icon(Icons.add),
-        label: const Text('New Note'),
-      ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.5),
     );
   }
 

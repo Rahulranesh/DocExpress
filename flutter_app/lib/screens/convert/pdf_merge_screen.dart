@@ -83,6 +83,40 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
     try {
       final conversionRepo = ref.read(conversionRepositoryProvider);
 
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => WillPopScope(
+            onWillPop: () async => false,
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Merging PDFs...',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please wait',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       // Get file paths for merging
       final List<String> pdfPaths = _selectedPdfs.map((pdf) => pdf.path).toList();
 
@@ -90,6 +124,11 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
       final result = await conversionRepo.mergePdfs(
         filePaths: pdfPaths,
       );
+
+      // Dismiss loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
       if (!result.success) {
         throw Exception(result.message);
@@ -129,6 +168,10 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
         }
       }
     } on Exception catch (e) {
+      // Dismiss loading dialog if still showing
+      if (mounted && _isProcessing) {
+        Navigator.of(context).pop();
+      }
       _showSnackBar('Failed to merge PDFs: ${_getErrorMessage(e)}',
           isSuccess: false);
       if (mounted) {

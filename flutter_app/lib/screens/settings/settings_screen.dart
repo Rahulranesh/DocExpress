@@ -8,7 +8,10 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../services/offline_service_manager.dart';
+import '../../services/notification_service.dart';
+import '../../widgets/banner_ad_widget.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -112,6 +115,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: AppTheme.errorColor),
                   const SizedBox(height: 12),
                   _buildDangerSection(theme, isDark),
+
+                  const SizedBox(height: 24),
+
+                  // Banner Ad at bottom
+                  const BannerAdWidget(),
 
                   const SizedBox(height: 100),
                 ]),
@@ -291,12 +299,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Notifications',
             subtitle: 'Get notified when jobs complete',
             value: settings.notificationsEnabled,
-            onChanged: (value) {
-              ref
+            onChanged: (value) async {
+              // Update settings
+              await ref
                   .read(appSettingsNotifierProvider.notifier)
                   .setNotificationsEnabled(value);
-              _showSnackBar(
-                  value ? 'Notifications enabled' : 'Notifications disabled');
+              
+              // Initialize notification service if enabling
+              if (value) {
+                await NotificationService().initialize();
+                _showSnackBar('Notifications enabled');
+              } else {
+                _showSnackBar('Notifications disabled');
+              }
             },
             isDark: isDark,
           ),
@@ -313,20 +328,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildDivider(isDark),
 
           // Auto-delete completed
-          _SettingsSwitch(
-            icon: Icons.auto_delete_rounded,
-            title: 'Auto-delete Completed',
-            subtitle: 'Remove completed jobs after 7 days',
-            value: settings.autoDeleteCompleted,
-            onChanged: (value) {
-              ref
-                  .read(appSettingsNotifierProvider.notifier)
-                  .setAutoDeleteCompleted(value);
-              _showSnackBar(
-                  value ? 'Auto-delete enabled' : 'Auto-delete disabled');
-            },
-            isDark: isDark,
-          ),
+          // _SettingsSwitch(
+          //   icon: Icons.auto_delete_rounded,
+          //   title: 'Auto-delete Completed',
+          //   subtitle: 'Remove completed jobs after 7 days',
+          //   value: settings.autoDeleteCompleted,
+          //   onChanged: (value) {
+          //     ref
+          //         .read(appSettingsNotifierProvider.notifier)
+          //         .setAutoDeleteCompleted(value);
+          //     _showSnackBar(
+          //         value ? 'Auto-delete enabled' : 'Auto-delete disabled');
+          //   },
+          //   isDark: isDark,
+          // ),
         ],
       ),
     ).animate().fadeIn(delay: 250.ms, duration: 300.ms);
